@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reporte de operación · {{ nombre_app }}</title>
+<link rel="icon" type="image/svg+xml" href="{{ url_for('favicon') }}">
+<link rel="stylesheet" href="{{ url_for('static_shell', archivo='estilos.css') }}">
+<link rel="stylesheet" href="{{ url_for('static_shell', archivo='modulos.css') }}">
+<link rel="stylesheet" href="{{ url_for('static_shell', archivo='ui.css') }}">
+<style>
+  body{background:#fff;padding:0}
+  .hoja{max-width:900px;margin:0 auto;padding:34px 40px 60px}
+  .cab-doc{display:flex;align-items:flex-start;gap:16px;border-bottom:2px solid var(--acc-linea);padding-bottom:16px;margin-bottom:22px}
+  .cab-doc img{width:44px;height:44px;border-radius:12px}
+  .cab-doc h1{font-size:24px;font-weight:700;letter-spacing:-.03em}
+  .cab-doc .sub{font-size:13px;color:var(--mut);margin-top:3px}
+  .cab-doc .der{margin-left:auto;text-align:right;font-size:12px;color:var(--mut);line-height:1.6}
+  .barra-imprimir{position:sticky;top:0;z-index:10;background:rgba(250,250,250,.94);backdrop-filter:blur(14px);
+    border-bottom:.5px solid var(--line);padding:10px 0}
+  .barra-imprimir .wrap{max-width:900px;margin:0 auto;padding:0 40px;display:flex;gap:10px;align-items:center}
+  .card{box-shadow:none;border:.5px solid var(--line);break-inside:avoid;page-break-inside:avoid}
+  .kpi{box-shadow:none;border:.5px solid var(--line)}
+  .panel-graficas{gap:14px}
+  @media print{
+    .barra-imprimir{display:none}
+    .hoja{padding:0;max-width:none}
+    @page{margin:14mm}
+  }
+</style>
+</head>
+<body>
+<div class="barra-imprimir"><div class="wrap">
+  <button class="btn" onclick="window.print()">Guardar como PDF / Imprimir</button>
+  <button class="btn secundario" onclick="window.close()">Cerrar</button>
+  <span class="mut" style="font-size:12.5px">En el diálogo elige «Guardar como PDF» como destino.</span>
+</div></div>
+
+<div class="hoja">
+  <div class="cab-doc">
+    <img src="{{ url_for('static_shell', archivo='marca.svg') }}" alt="">
+    <div>
+      <h1>Reporte de operación</h1>
+      <div class="sub" id="subFiltros">—</div>
+    </div>
+    <div class="der">
+      <b>{{ nombre_app }}</b><br>{{ lema_app }}<br>
+      <span id="generado"></span>
+    </div>
+  </div>
+
+  <div class="kpis" id="kpis"></div>
+
+  <div class="panel-graficas">
+    <div class="card ancho">
+      <div class="card-cab"><h3>Evolución de la operación</h3></div>
+      <div id="gEvolucion" style="height:230px"></div>
+      <div id="legEvolucion"></div>
+    </div>
+    <div class="card">
+      <div class="card-cab"><h3>Horas por equipo</h3></div>
+      <div id="gEquipo" style="height:210px"></div>
+    </div>
+    <div class="card">
+      <div class="card-cab"><h3>Estado de la flota</h3></div>
+      <div id="gEstado" style="height:210px"></div>
+      <div id="legEstado"></div>
+    </div>
+    <div class="card">
+      <div class="card-cab"><h3>Hectáreas por producto</h3></div>
+      <div id="gProducto"></div>
+    </div>
+    <div class="card">
+      <div class="card-cab"><h3>Horas por piloto</h3></div>
+      <div id="gPiloto"></div>
+    </div>
+    <div class="card ancho">
+      <div class="card-cab"><h3>Detalle por mes</h3></div>
+      <table><thead><tr><th>Mes</th><th class="num">Op.</th><th class="num">Horas</th>
+        <th class="num">Hectáreas</th><th class="num">Litros</th><th class="num">Ha / h</th></tr></thead>
+        <tbody id="tMes"></tbody></table>
+    </div>
+    <div class="card ancho">
+      <div class="card-cab"><h3>Próximos repuestos a cambiar</h3></div>
+      <table><thead><tr><th>Pieza</th><th>Equipo</th><th class="num">Uso</th>
+        <th class="num">Vida útil</th><th class="num">Estimado</th><th>Fecha</th></tr></thead>
+        <tbody id="tRep"></tbody></table>
+    </div>
+  </div>
+</div>
+
+<script src="{{ url_for('static_shell', archivo='app.js') }}"></script>
+<script src="{{ url_for('static_shell', archivo='ui.js') }}"></script>
+<script src="{{ url_for('static_shell', archivo='graficos.js') }}"></script>
+<script>
+(async function(){
+  const consulta = location.search.slice(1);
+  const R = await api('/api/reportes' + (consulta ? '?' + consulta : ''));
+  const t = R.totales, f = R.filtros;
+  const cM = R.mantenimientos.reduce((a,m)=>a+(m.costo||0), 0);
+
+  document.getElementById('generado').textContent =
+    'Generado ' + new Date().toLocaleString('es-CO', {dateStyle:'medium', timeStyle:'short'});
+  const eq = document.getElementById('subFiltros');
+  const p = new URLSearchParams(consulta);
+  eq.textContent = [
+    p.get('equipo_id') ? 'Un equipo seleccionado' : 'Toda la flota',
+    f.desde ? `desde ${fmtFecha(f.desde)}` : null,
+    f.hasta ? `hasta ${fmtFecha(f.hasta)}` : null,
+  ].filter(Boolean).join(' · ');
+
+  document.getElementById('kpis').innerHTML = [
+    ['Operaciones', t.n, `${fmt(t.despegues,0)} despegues`],
+    ['Horas de vuelo', fmt(t.horas), `${fmt(t.tiempo_total)} h totales`],
+    ['Hectáreas', fmt(t.hectareas,0), t.horas ? `${fmt(t.hectareas/t.horas,1)} ha/h` : ''],
+    ['Litros', fmt(t.litros,0), t.hectareas ? `${fmt(t.litros/t.hectareas,1)} L/ha` : ''],
+    ['Costo mantenimiento', fmt(cM,0), `${R.mantenimientos.reduce((a,m)=>a+m.n,0)} registros`],
+  ].map(([l,v,n])=>`<div class="kpi"><div class="lbl">${l}</div><div class="val">${v}</div>
+      <div class="note">${n||''}</div></div>`).join('');
+
+  const usarDias = R.por_dia.length && R.por_dia.length <= 90;
+  const serie = usarDias ? R.por_dia.map(d=>({x:fmtFecha(d.dia).slice(0,5), h:d.horas, a:d.hectareas}))
+                         : R.por_mes.map(m=>({x:m.mes, h:m.horas, a:m.hectareas}));
+  graficoLinea('gEvolucion', [
+    {nombre:'Horas de vuelo', unidad:'h', color:PALETA_G[0], datos:serie.map(d=>({x:d.x, y:d.h}))},
+    {nombre:'Hectáreas', unidad:'ha', eje:'derecha', color:PALETA_G[1], datos:serie.map(d=>({x:d.x, y:d.a}))},
+  ], {alto:230});
+  leyendaGrafica('legEvolucion', [{nombre:'Horas de vuelo', color:PALETA_G[0]},
+                                  {nombre:'Hectáreas', color:PALETA_G[1]}]);
+
+  graficoBarras('gEquipo', R.por_equipo.map(e=>e.equipo),
+    [{nombre:'Horas', unidad:'h', color:PALETA_G[0], datos:R.por_equipo.map(e=>e.horas)}], {alto:210});
+
+  const a = R.alertas_resumen;
+  const totalPiezas = R.flota.reduce((s,x)=>s+x.ok+x.proximo+x.critico+x.vencido, 0);
+  graficoDona('gEstado', [
+    {etiqueta:'En vida útil', valor: totalPiezas - a.total, color: COLOR_NIVEL.ok},
+    {etiqueta:'Próximas', valor: a.proximo, color: COLOR_NIVEL.proximo},
+    {etiqueta:'Críticas', valor: a.critico, color: COLOR_NIVEL.critico},
+    {etiqueta:'Vencidas', valor: a.vencido, color: COLOR_NIVEL.vencido},
+  ], {alto:210, centro:'piezas'});
+  leyendaGrafica('legEstado', [{nombre:'En vida útil', color:COLOR_NIVEL.ok},
+    {nombre:'Próximas', color:COLOR_NIVEL.proximo}, {nombre:'Críticas', color:COLOR_NIVEL.critico},
+    {nombre:'Vencidas', color:COLOR_NIVEL.vencido}]);
+
+  graficoRanking('gProducto', R.por_producto.map(x=>({etiqueta:x.producto, valor:x.hectareas,
+    detalle:`${fmt(x.litros,0)} L`, color:PALETA_G[1]})), {unidad:'ha'});
+  graficoRanking('gPiloto', R.por_piloto.map(x=>({etiqueta:x.piloto, valor:x.horas,
+    detalle:`${fmt(x.hectareas,0)} ha`, color:PALETA_G[2]})), {unidad:'h'});
+
+  document.getElementById('tMes').innerHTML = R.por_mes.map(m=>`<tr><td><b>${m.mes}</b></td>
+    <td class="num">${m.n}</td><td class="num">${fmt(m.horas)}</td><td class="num">${fmt(m.hectareas)}</td>
+    <td class="num">${fmt(m.litros,0)}</td><td class="num">${m.horas?fmt(m.hectareas/m.horas,1):'—'}</td></tr>`
+  ).join('') || '<tr><td colspan="6" class="empty">Sin datos.</td></tr>';
+
+  document.getElementById('tRep').innerHTML = R.repuestos.map(x=>`<tr>
+    <td><b>${escapar(x.nombre)}</b><div class="mut" style="font-size:11.5px">${escapar(x.modulo)}</div></td>
+    <td>${escapar(x.equipo)}</td><td class="num">${fmt(x.horas_uso)} h</td>
+    <td class="num">${vidaPieza(x)}</td><td class="num">${fmtDias(x.dias_estimados)}</td>
+    <td>${x.fecha_estimada ? fmtFecha(x.fecha_estimada) : '—'}</td></tr>`
+  ).join('') || '<tr><td colspan="6" class="empty">Sin piezas próximas a cambio.</td></tr>';
+
+  // Las gráficas necesitan estar dibujadas antes de abrir el diálogo de impresión.
+  setTimeout(()=>window.print(), 700);
+})();
+</script>
+</body>
+</html>

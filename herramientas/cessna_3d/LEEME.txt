@@ -1,0 +1,19 @@
+Revisión de las entregas del despiece 3D del Cessna 188A (Claude Design)
+
+Al recibir un cessna-188-despiece.glb nuevo, ANTES de instalarlo:
+1. python3 revisar_glb.py <glb>      → mallas, faltantes frente al catálogo, estaciones y medidas.
+2. GLB=<glb> python3 auditar_glb.py → piezas sueltas, apiladas, izquierda/derecha, cajas.
+3. comparar.py (editar rutas)       → qué mallas movió respecto a la versión instalada.
+4. Mirarlo en el visor (con y sin «Quitar cubiertas») desde varios ángulos.
+5. Instalar como los drones: el original va a «Informacion Drones/C188/3D» (la versión anterior a
+   anteriores/) y se COPIA a Hangar app/static_shell/modelos/c188-despiece.glb (y .mtl).
+
+Ojo con el aviso «izquierda y derecha no son espejo»: en el fuselaje hay piezas que en el avión
+real NO son simétricas (puerta de acceso derecha, revestimientos laterales, puerta de cabina).
+Pedir a Design que las «corrija» las sacó de su sitio en la entrega del 27-09-2026 20:38.
+
+hibrido.py <glb nuevo> <salida>: parte del GLB nuevo y devuelve a la posición de la versión
+anterior (anteriores/…13.28) las mallas de revertir.json y las cubiertas exteriores que Design
+movió; pasa a MOD_VARIANTES las piezas «abertura grande» que quedaron montadas.
+La versión instalada el 27-09-2026 es esa combinación; la entrega original está en
+C188/3D/anteriores/ «(entrega de Design)».

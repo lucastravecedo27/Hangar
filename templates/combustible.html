@@ -1,0 +1,1123 @@
+{% extends "_layout.html" %}
+{% block titulo %}Combustible{% endblock %}
+{% block encabezado %}Estación de combustible{% endblock %}
+{% block subtitulo %}Tanqueos de los aviones, depósitos, precio y consumo por hora de vuelo{% endblock %}
+
+{% block acciones %}
+<button class="btn secundario" id="btnAyuda" type="button">Cómo funciona</button>
+<button class="btn secundario" id="btnPlan" type="button">Calcular combustible</button>
+<button class="btn secundario" id="btnCompra" type="button">Registrar compra</button>
+<button class="btn" id="btnTanquear" type="button">Tanquear</button>
+{% endblock %}
+
+{% block head %}
+<style>
+/* ======================= Surtidor ======================= */
+.est-hero{display:grid;grid-template-columns:minmax(300px,380px) 1fr;gap:18px;margin-bottom:18px}
+.est-hero>*{min-width:0}
+.surtidor{position:relative;border-radius:26px;padding:22px 22px 18px;color:#e8eaee;overflow:hidden;
+  background:linear-gradient(160deg,#252a34 0%,#1a1d24 55%,#14171d 100%);box-shadow:var(--shadow-l);
+  border:1px solid #2c313b}
+.surtidor::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse 80% 50% at 20% 0%,rgba(253,185,19,.13),transparent 60%)}
+.surt-cab{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;position:relative}
+.surt-cab .marca{font-family:var(--font-marca);font-weight:800;font-size:13px;letter-spacing:.16em;color:#a3a8b1}
+.grado{display:inline-flex;align-items:center;gap:6px;font-family:var(--font-marca);font-weight:800;font-size:12px;
+  padding:4px 10px 4px 6px;border-radius:980px;background:rgba(255,255,255,.08);color:#fff;letter-spacing:.04em}
+.grado i{width:14px;height:14px;border-radius:50%;box-shadow:inset 0 0 0 2px rgba(255,255,255,.25)}
+.lcd{background:#0b0d10;border-radius:14px;padding:12px 14px;border:1px solid #2a2f3a;
+  box-shadow:inset 0 2px 14px rgba(0,0,0,.7);position:relative}
+.lcd-fila{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:5px 0}
+.lcd-fila+.lcd-fila{border-top:1px dashed #1f242c}
+.lcd-fila .et{font-size:10.5px;font-weight:700;letter-spacing:.14em;color:#6b7280;text-transform:uppercase}
+.lcd-num{position:relative;font-family:var(--font-marca);font-weight:800;font-variant-numeric:tabular-nums;
+  letter-spacing:.04em;line-height:1;text-align:right}
+.lcd-num .fantasma{color:rgba(253,185,19,.07)}
+.lcd-num .vivo{position:absolute;right:0;top:0;color:#fdb913;text-shadow:0 0 12px rgba(253,185,19,.45)}
+.lcd-num.g{font-size:38px}.lcd-num.m{font-size:22px}
+.lcd-num.m .vivo{color:#f5d27a;text-shadow:0 0 8px rgba(253,185,19,.25)}
+.surt-pie{display:flex;align-items:center;gap:12px;margin-top:14px;position:relative}
+.surt-pie .txt{flex:1;font-size:12px;color:#a3a8b1;line-height:1.45}
+.surt-pie .txt b{color:#e8eaee;font-weight:650}
+.pistola{flex:none;width:74px;height:74px;border-radius:22px;border:0;cursor:pointer;display:grid;place-items:center;
+  background:var(--acc);color:#1a1d24;box-shadow:0 8px 24px rgba(253,185,19,.35);transition:transform .15s}
+.pistola:hover{transform:translateY(-2px) rotate(-4deg)}
+.pistola svg{width:40px;height:40px}
+.pistola:focus-visible{outline:3px solid #fff;outline-offset:3px}
+.manguera{position:absolute;right:-30px;bottom:-40px;width:160px;height:160px;opacity:.14;pointer-events:none}
+
+/* ======================= Depósitos ======================= */
+.depositos{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px}
+/* .tanque, .cil, .liquido: compartidos en static_shell/modulos.css (static_shell/tanques.js) */
+
+/* ======================= Control ======================= */
+.control{display:grid;gap:8px;margin-bottom:18px}
+.al{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border-radius:14px;background:var(--bg2);
+  border:1px solid var(--line);border-left:4px solid var(--mut);cursor:pointer;text-align:left;font:inherit;color:inherit;width:100%}
+.al:hover{box-shadow:var(--shadow)}
+.al.vencido{border-left-color:#b3261e}.al.critico{border-left-color:var(--red)}
+.al.proximo{border-left-color:var(--amber)}.al.info{border-left-color:var(--teal)}
+.al .t{font-weight:700;font-size:13.5px}.al .d{font-size:12.5px;color:var(--ink2);margin-top:2px;line-height:1.45}
+.al .n{margin-left:auto;flex:none;font-size:11px;color:var(--mut);white-space:nowrap}
+.control-cab{display:flex;align-items:center;gap:10px;margin:0 0 8px}
+.control-cab h3{margin:0;font-size:15px}
+.control-ok{display:flex;gap:10px;align-items:center;padding:12px 14px;border-radius:14px;background:var(--bg2);
+  border:1px solid var(--line);font-size:13px;color:var(--ink2)}
+.control-ok svg{width:20px;height:20px;color:var(--green);flex:none}
+
+/* ======================= KPIs ======================= */
+.kpis.cb{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+.kpis.cb .kpi{cursor:default;text-align:left;align-items:flex-start;display:flex;flex-direction:column}
+.kpis.cb .kpi .val{font-size:28px;white-space:nowrap}
+.kpis.cb .kpi .val small{font-size:13px;font-weight:700;color:var(--mut);margin-left:3px}
+.kpis.cb .kpi .ayuda{margin-left:auto;width:20px;height:20px;border-radius:50%;border:1px solid var(--line2);background:transparent;color:var(--mut);font:700 11px var(--font);cursor:pointer;flex:none}
+.kpis.cb .kpi .ayuda:hover{color:var(--ink);border-color:var(--ink)}
+.kpis.cb .kpi .lbl{display:flex;align-items:center;gap:6px;width:100%}
+/* Cómo funciona */
+.flujo{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:6px 0 14px}
+.flujo button{border:1.5px solid var(--line);background:var(--bg2);border-radius:14px;padding:12px 8px;cursor:pointer;font:inherit;color:inherit;display:flex;flex-direction:column;align-items:center;gap:6px;position:relative}
+.flujo button:not(:last-child)::after{content:"›";position:absolute;right:-9px;top:50%;transform:translateY(-50%);color:var(--mut);font-size:18px;font-weight:700}
+.flujo button.sel{border-color:var(--acc);box-shadow:0 0 0 3px var(--acc-soft)}
+.flujo .ic{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:var(--o-gris,#f1f2f4)}
+.flujo .ic svg{width:20px;height:20px}
+.flujo b{font-size:12.5px;text-align:center}
+.flujo-txt{font-size:13.5px;line-height:1.6;color:var(--ink2);min-height:120px}
+.flujo-txt .ej{margin-top:10px;padding:10px 12px;border-radius:12px;background:var(--o-gris,#f1f2f4);font-size:12.5px}
+@media(max-width:720px){.flujo{grid-template-columns:repeat(3,1fr)}}
+
+/* ======================= Consumo por activo ======================= */
+.consumo{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.cons{background:var(--bg2);border:1px solid var(--line);border-radius:18px;padding:16px;cursor:pointer;
+  text-align:left;font:inherit;color:inherit;transition:transform .15s,box-shadow .15s}
+.cons:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+.cons-cab{display:flex;align-items:center;gap:10px}
+.cons-cab .av{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:var(--o-grafito,#1a1d24);color:var(--acc);flex:none}
+.cons-cab .av svg{width:20px;height:20px}
+.cons-cab b{font-size:14px;display:block}.cons-cab small{font-size:11.5px;color:var(--mut)}
+.reloj{display:block;margin:6px auto 0}
+.reloj .v{font-family:var(--font-marca);font-weight:800;font-size:24px;fill:var(--ink)}
+.reloj .u{font-size:10.5px;fill:var(--mut);font-weight:650}
+.cons-datos{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:6px;text-align:center}
+.cons-datos div{font-size:11px;color:var(--mut)}.cons-datos b{display:block;font-size:14px;color:var(--ink);font-variant-numeric:tabular-nums}
+.concil{margin-top:12px;font-size:11.5px;color:var(--mut)}
+/* ======================= Seguimiento de un tanqueo ======================= */
+.seg{position:relative;margin-top:4px;padding:20px 22px 18px;border-radius:22px;border:1px solid var(--line);overflow:hidden;
+  background:radial-gradient(120% 140% at 100% 0%,color-mix(in srgb,var(--c) 14%,transparent),transparent 55%),var(--bg2)}
+.seg-cab{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.seg-eti{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--mut)}
+.seg-big{font-family:var(--font-marca);font-weight:800;font-size:46px;letter-spacing:-.05em;line-height:1;margin-top:8px;font-variant-numeric:tabular-nums}
+.seg-big small{font-size:16px;letter-spacing:0;color:var(--mut);margin-left:4px;font-weight:700}
+.seg-sub{font-size:13px;color:var(--ink2);margin-top:6px}.seg-sub b{color:var(--ink)}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:99px;font-size:11.5px;font-weight:700;white-space:nowrap;
+  background:color-mix(in srgb,var(--ink) 6%,transparent);color:var(--ink2)}
+.pill::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.pill.vivo{color:var(--teal);background:color-mix(in srgb,var(--teal) 13%,transparent)}.pill.vivo::before{animation:latido 1.6s ease-in-out infinite}
+.pill.ok{color:var(--green);background:color-mix(in srgb,var(--green) 13%,transparent)}
+.pill.mal{color:var(--red);background:color-mix(in srgb,var(--red) 13%,transparent)}
+/* Indicador del tanque: lo que queda, la huella de lo que había al salir y la zona de reserva. */
+.medidor{position:relative;margin:22px 0 6px;height:16px;border-radius:99px;background:color-mix(in srgb,var(--ink) 7%,transparent)}
+.medidor .huella{position:absolute;inset:0 auto 0 0;border-radius:inherit;border:1.5px dashed color-mix(in srgb,var(--c) 70%,transparent);
+  background:color-mix(in srgb,var(--c) 10%,transparent)}
+.medidor .nivel{position:absolute;inset:0 auto 0 0;width:0;border-radius:inherit;transition:width 1.3s cubic-bezier(.2,.8,.2,1);
+  background:linear-gradient(90deg,color-mix(in srgb,var(--c) 70%,#000) ,var(--c));box-shadow:0 0 18px color-mix(in srgb,var(--c) 55%,transparent)}
+.medidor .nivel::after{content:"";position:absolute;inset:0;border-radius:inherit;background:linear-gradient(90deg,transparent,rgba(255,255,255,.35),transparent);
+  background-size:40% 100%;background-repeat:no-repeat;animation:brillo 2.8s ease-in-out infinite}
+@keyframes brillo{from{background-position:-60% 0}to{background-position:160% 0}}
+.medidor .reserva{position:absolute;inset:-5px auto -5px 0;border-right:2px solid var(--red);border-radius:6px 0 0 6px;
+  background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--red) 22%,transparent) 0 3px,transparent 3px 7px)}
+.medidor-esc{display:flex;justify-content:space-between;font-size:10.5px;color:var(--mut);font-variant-numeric:tabular-nums;margin-bottom:4px}
+.medidor-esc{position:relative}.medidor-esc .r,.medidor-esc .m{position:absolute;top:0;transform:translateX(-50%)}
+.medidor-esc .r{color:var(--red)}.medidor-esc .m{left:50%}
+.seg-cifras{display:grid;grid-template-columns:repeat(5,1fr);margin-top:16px;border-top:1px solid var(--line);padding-top:14px}
+.seg-cifras div{font-size:11px;color:var(--mut);padding:0 12px;border-left:1px solid var(--line)}.seg-cifras div:first-child{padding-left:0;border-left:0}
+.seg-cifras b{display:block;margin-top:4px;font-family:var(--font-marca);font-weight:800;font-size:19px;letter-spacing:-.03em;color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap}
+.seg-cifras b small{font-size:11px;color:var(--mut);margin-left:2px;letter-spacing:0}
+.seg-nota{display:flex;gap:10px;margin:14px 0 0;padding:12px 14px;border-radius:14px;font-size:12.8px;line-height:1.5;color:var(--ink2);
+  background:color-mix(in srgb,var(--ink) 4%,transparent)}
+.seg-nota svg{flex:none;width:18px;height:18px;margin-top:1px;color:var(--mut)}
+.seg-nota b{color:var(--ink)}
+.seg-nota.mal{background:color-mix(in srgb,var(--red) 10%,transparent)}.seg-nota.mal svg{color:var(--red)}
+.seg-nota.bien{background:color-mix(in srgb,var(--green) 10%,transparent)}.seg-nota.bien svg{color:var(--green)}
+/* Línea de tiempo de los vuelos que salieron de la carga. */
+.linea{list-style:none;margin:10px 0 0;padding:0;position:relative}
+.linea::before{content:"";position:absolute;left:15px;top:18px;bottom:18px;width:2px;border-radius:2px;
+  background:linear-gradient(var(--c),color-mix(in srgb,var(--c) 15%,transparent))}
+.linea li{position:relative;display:grid;grid-template-columns:32px 1fr auto;gap:12px;align-items:center;padding:9px 10px 9px 0;border-radius:14px}
+.linea li[data-op]{cursor:pointer;transition:background .15s}
+.linea li[data-op]:hover{background:color-mix(in srgb,var(--ink) 5%,transparent)}
+.linea .nodo{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;z-index:1;background:var(--bg2);border:2px solid var(--line2);color:var(--mut)}
+.linea .nodo svg{width:15px;height:15px}
+.linea li.carga .nodo,.linea li.ahora .nodo{border-color:var(--c);color:var(--c);box-shadow:0 0 0 5px color-mix(in srgb,var(--c) 14%,transparent)}
+.linea .qué{font-size:13px;font-weight:650;line-height:1.3}.linea .qué small{display:block;font-weight:500;font-size:11.5px;color:var(--mut);margin-top:2px}
+.linea .cuanto{text-align:right;font-family:var(--font-marca);font-weight:800;font-size:15px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.linea .cuanto small{display:block;font-family:var(--font);font-weight:500;font-size:11px;color:var(--mut);margin-top:2px}
+.linea .cuanto .est{font-style:italic}
+.cons .abordo{margin-top:12px;padding-top:12px;border-top:1px dashed var(--line)}
+.cons .abordo .fila{display:flex;justify-content:space-between;align-items:baseline;font-size:11.5px;color:var(--mut)}
+.cons .abordo .fila b{font-family:var(--font-marca);font-size:16px;font-weight:800;color:var(--ink);letter-spacing:-.02em}
+.cons .abordo .medidor{margin:8px 0 0;height:8px}.cons .abordo .medidor .reserva{inset:-3px auto -3px 0}
+.cons .abordo.bajo .fila b{color:var(--red)}
+@media (max-width:620px){.seg-cifras{grid-template-columns:repeat(2,1fr);row-gap:12px}.seg-cifras div{border-left:0;padding-left:0}.seg-big{font-size:38px}}
+.concil .trk{height:8px;border-radius:4px;background:var(--o-gris,#f1f2f4);position:relative;margin-top:5px;overflow:hidden}
+.concil .trk i{position:absolute;left:0;top:0;bottom:0;border-radius:4px;background:var(--teal)}
+.concil .trk em{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--ink)}
+
+/* ======================= Registro (tiquetes) ======================= */
+.filtro-tipos{display:flex;gap:6px;flex-wrap:wrap}
+.tiquetes td{font-variant-numeric:tabular-nums;white-space:nowrap}
+.tiquetes tr{cursor:pointer}
+.tiquetes tr:hover td{background:var(--acc-soft)}
+.ico-mov{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:8px;background:var(--o-gris,#f1f2f4);vertical-align:middle;margin-right:8px}
+.ico-mov svg{width:15px;height:15px}
+.ico-mov.tanqueo{color:var(--acc-deep)}.ico-mov.compra{color:var(--green)}.ico-mov.merma{color:var(--red)}.ico-mov.medicion{color:var(--teal)}
+.chip-comb{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:2px 8px 2px 5px;border-radius:980px;background:var(--o-gris,#f1f2f4)}
+.chip-comb i{width:10px;height:10px;border-radius:50%}
+.sello{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:2px 8px;border-radius:980px}
+.sello.ok{background:rgba(47,143,78,.13);color:var(--o-tx-verde,#1d6b38)}
+.sello.no{background:rgba(232,164,0,.15);color:var(--o-tx-ambar,#8a5f00)}
+.sello svg{width:12px;height:12px}
+
+/* ======================= Asistente de tanqueo ======================= */
+.pasos{display:flex;gap:6px;margin:-2px 0 16px}
+.pasos span{flex:1;height:4px;border-radius:2px;background:var(--line)}
+.pasos span.hecho{background:var(--acc)}
+.paso-tit{font-family:var(--font-marca);font-weight:800;font-size:18px;margin:0 0 4px}
+.paso-sub{font-size:12.5px;color:var(--mut);margin:0 0 14px}
+.eleccion{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}
+.opc{border:1.5px solid var(--line);border-radius:16px;padding:14px;background:var(--bg2);cursor:pointer;text-align:left;
+  font:inherit;color:inherit;display:flex;flex-direction:column;gap:6px;transition:border-color .12s,transform .12s}
+.opc:hover{border-color:var(--acc-d);transform:translateY(-1px)}
+.opc.sel{border-color:var(--acc);box-shadow:0 0 0 3px var(--acc-soft)}
+.opc .ic{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;background:var(--o-gris,#f1f2f4);color:var(--ink2)}
+.opc .ic svg{width:20px;height:20px}
+.opc b{font-size:14px}.opc small{font-size:11.5px;color:var(--mut);line-height:1.35}
+.bomba-form{display:grid;grid-template-columns:minmax(240px,300px) 1fr;gap:18px;align-items:start}
+.bomba-form .surtidor{padding:18px}
+.lcd input.gal-input{width:100%;background:transparent!important;border:0!important;outline:0;box-shadow:none!important;color:#fdb913;
+  font-family:var(--font-marca);font-weight:800;font-size:44px;line-height:1.1;height:auto;text-align:right;font-variant-numeric:tabular-nums;
+  text-shadow:0 0 12px rgba(253,185,19,.45);padding:2px 0!important;-moz-appearance:textfield;appearance:textfield}
+.lcd input.gal-input::-webkit-outer-spin-button,.lcd input.gal-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.gal-input::placeholder{color:rgba(253,185,19,.18)}
+.rapidos{display:flex;gap:6px;margin-top:10px}
+.rapidos button{flex:1;border:0;border-radius:10px;padding:8px 0;background:rgba(255,255,255,.08);color:#e8eaee;font:inherit;
+  font-weight:700;font-size:12.5px;cursor:pointer}
+.rapidos button:hover{background:rgba(253,185,19,.2)}
+.aviso-vivo{font-size:12.5px;padding:9px 12px;border-radius:12px;margin-top:10px;display:none;line-height:1.45}
+.aviso-vivo.ver{display:block}
+.aviso-vivo.rojo{background:var(--o-suave-rojo,#fdecea);color:var(--o-tx-rojo,#a4271f)}
+.aviso-vivo.ambar{background:var(--o-suave-ambar,#fffbef);color:var(--o-tx-ambar,#8a5f00)}
+.interruptor{display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px;font-weight:600}
+.interruptor input{appearance:none;width:40px;height:24px;border-radius:12px;background:var(--line2);position:relative;cursor:pointer;transition:background .15s;flex:none;margin:0}
+.interruptor input::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .15s;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.interruptor input:checked{background:var(--green)}
+.interruptor input:checked::after{transform:translateX(16px)}
+.chequeo{display:grid;gap:8px}
+.chk{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1.5px solid var(--line);border-radius:14px;cursor:pointer;background:var(--bg2);transition:border-color .12s,background .12s}
+.chk input{display:none}
+.chk .caja{width:26px;height:26px;border-radius:8px;border:2px solid var(--line2);display:grid;place-items:center;flex:none;transition:all .12s}
+.chk .caja svg{width:16px;height:16px;opacity:0;color:#fff}
+.chk.si{border-color:rgba(47,143,78,.5);background:rgba(47,143,78,.06)}
+.chk.si .caja{background:var(--green);border-color:var(--green)}.chk.si .caja svg{opacity:1}
+.chk .tx{flex:1;font-size:13.5px;font-weight:600}
+.chk .tx small{display:block;font-weight:500;font-size:11px;color:var(--mut);margin-top:2px}
+.chk .ob{font-size:10.5px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.06em}
+.recibo{max-width:360px;margin:0 auto;background:var(--bg2);border:1px solid var(--line);border-radius:6px;padding:20px 20px 24px;
+  font-size:13px;position:relative;box-shadow:var(--shadow);
+  -webkit-mask:radial-gradient(circle 7px at 50% 100%,transparent 6.5px,#000 7px) 0 0/18px 100% repeat-x;
+          mask:radial-gradient(circle 7px at 50% 100%,transparent 6.5px,#000 7px) 0 0/18px 100% repeat-x}
+.recibo h4{text-align:center;font-family:var(--font-marca);font-weight:800;letter-spacing:.14em;margin:0 0 2px;font-size:13px}
+.recibo .c{text-align:center;color:var(--mut);font-size:11.5px;margin-bottom:12px}
+.recibo .l{display:flex;justify-content:space-between;gap:10px;padding:4px 0;border-bottom:1px dashed var(--line)}
+.recibo .l span{color:var(--mut)}.recibo .l b{text-align:right;font-variant-numeric:tabular-nums}
+.recibo .tot{display:flex;justify-content:space-between;align-items:baseline;margin-top:10px;font-family:var(--font-marca);font-weight:800;font-size:22px}
+.plan-barra{display:flex;height:34px;border-radius:10px;overflow:hidden;background:var(--o-gris,#f1f2f4);margin:12px 0 6px;position:relative}
+.plan-barra i{display:block;height:100%}
+.plan-barra em{position:absolute;top:-4px;bottom:-4px;width:3px;background:var(--ink);border-radius:2px}
+.plan-ley{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--ink2)}
+.plan-ley span{display:inline-flex;align-items:center;gap:6px}.plan-ley i{width:10px;height:10px;border-radius:3px}
+.veredicto{font-family:var(--font-marca);font-weight:800;font-size:20px;margin-top:12px}
+.veredicto.ok{color:var(--o-tx-verde,#1d6b38)}.veredicto.no{color:var(--o-tx-rojo,#a4271f)}
+.norma{font-size:11.5px;color:var(--mut);margin-top:10px;line-height:1.5}
+@media(max-width:900px){.est-hero,.bomba-form{grid-template-columns:1fr}}
+</style>
+{% endblock %}
+
+{% block barra %}
+<div class="tabsbar"><div class="wrap">
+  <div class="rt-barra" style="display:flex;align-items:center;gap:10px 14px;flex-wrap:wrap;width:100%">
+    <div class="segmento" id="segPeriodo">
+      <button data-p="30d">30 días</button><button data-p="90d" class="activo">90 días</button>
+      <button data-p="anio">Este año</button><button data-p="todo">Todo</button>
+    </div>
+    <div style="margin-left:auto;font-size:12px;color:var(--mut)" id="rangoTxt"></div>
+  </div>
+</div></div>
+{% endblock %}
+
+{% block contenido %}
+<div class="est-hero">
+  <div class="surtidor" id="surtidor">
+    <svg class="manguera" viewBox="0 0 100 100" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round"><path d="M10 10c40 0 70 20 70 60v20"/></svg>
+    <div class="surt-cab"><span class="marca">ÚLTIMO TANQUEO</span><span class="grado" id="surtGrado"><i></i>—</span></div>
+    <div class="lcd">
+      <div class="lcd-fila"><span class="et">Galones</span><span class="lcd-num g"><span class="fantasma">8888.8</span><span class="vivo" id="lcdGal">0.0</span></span></div>
+      <div class="lcd-fila"><span class="et">$ / galón</span><span class="lcd-num m"><span class="fantasma">88,888</span><span class="vivo" id="lcdPrecio">0</span></span></div>
+      <div class="lcd-fila"><span class="et">Total $</span><span class="lcd-num m"><span class="fantasma">8,888,888</span><span class="vivo" id="lcdTotal">0</span></span></div>
+    </div>
+    <div class="surt-pie">
+      <div class="txt" id="surtTxt">Aún no hay tanqueos registrados.</div>
+      <button class="pistola" id="pistola" type="button" title="Tanquear" aria-label="Tanquear">
+        <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 14h16l4 4v4H16l-2 10H8l2-10"/><path d="M28 18l6-6"/><path d="M24 14V9h-8v5"/><path d="M34 12v6"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="card" style="margin:0">
+    <div class="card-cab"><h3>Depósitos</h3><div class="der" id="depNota">nivel calculado con cada movimiento</div></div>
+    <div class="depositos" id="depositos"></div>
+  </div>
+</div>
+
+<div class="control-cab"><h3>Control</h3><span class="mut" style="font-size:12px" id="controlNota"></span></div>
+<div class="control" id="control"></div>
+
+<div class="kpis cb" id="kpis"></div>
+
+<div class="card">
+  <div class="card-cab"><h3>Consumo por avión</h3><div class="der">gal/h real · clic para ver tramos, historial y ajustes</div></div>
+  <div class="consumo" id="consumo"></div>
+</div>
+
+<div class="grid2">
+  <div class="card">
+    <div class="card-cab"><h3>Galones por mes</h3><div class="der" id="leyMes"></div></div>
+    <div id="gMes"></div>
+  </div>
+  <div class="card">
+    <div class="card-cab"><h3>Precio del galón</h3><div class="der">compras y tanqueos pagados</div></div>
+    <div id="gPrecio"></div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-cab"><h3>Registro</h3>
+    <div class="der filtro-tipos" id="filtroTipos"></div></div>
+  <div class="tabla-envoltura"><table class="tiquetes" id="tRegistro" style="min-width:860px"></table></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const IC = {
+  dron:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="5.5" r="2.8"/><circle cx="18.5" cy="5.5" r="2.8"/><circle cx="5.5" cy="18.5" r="2.8"/><circle cx="18.5" cy="18.5" r="2.8"/><path d="M7.6 7.6l2.4 2.4M16.4 7.6 14 10M7.6 16.4 10 14M16.4 16.4 14 14"/><rect x="9.6" y="9.6" width="4.8" height="4.8" rx="1.2"/></svg>`,
+  avion:`<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.4c.8 0 1.3.9 1.3 2.1v3.3l5.5 3.1v1.7l-5.5-1.6v3.3l1.8 1.4v1.4L10 16.4l-3.1.7v-1.4l1.8-1.4v-3.3l-5.5 1.6v-1.7l5.5-3.1V4.5c0-1.2.5-2.1 1.3-2.1z"/></svg>`,
+  tanqueo:`<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16V5a1.6 1.6 0 0 1 1.6-1.6h5A1.6 1.6 0 0 1 12.2 5v11"/><path d="M3 16.6h10.2M12.2 8.4h1.6a1.4 1.4 0 0 1 1.4 1.4v3.4a1.2 1.2 0 0 0 2.4 0V7.4L15 5"/><path d="M6.2 7.4h3.8"/></svg>`,
+  compra:`<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3v10M6 9l4 4 4-4"/><path d="M3.6 14.6v1a1.4 1.4 0 0 0 1.4 1.4h10a1.4 1.4 0 0 0 1.4-1.4v-1"/></svg>`,
+  merma:`<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3.2s-4.6 5-4.6 8.2a4.6 4.6 0 0 0 9.2 0C14.6 8.2 10 3.2 10 3.2z"/><path d="M7.6 12.4h4.8"/></svg>`,
+  medicion:`<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8.4 2.8h3.2v14.4H8.4z"/><path d="M11.6 6h-1.6M11.6 9h-2.2M11.6 12h-1.6M11.6 15h-2.2"/></svg>`,
+  deposito:`<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="10" cy="5" rx="6" ry="2.2"/><path d="M4 5v10c0 1.2 2.7 2.2 6 2.2s6-1 6-2.2V5"/><path d="M4 10c0 1.2 2.7 2.2 6 2.2s6-1 6-2.2"/></svg>`,
+  proveedor:`<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 16.8h14M4.6 16.8V8.4L10 4l5.4 4.4v8.4"/><path d="M8 16.8v-4.4h4v4.4"/></svg>`,
+  mas:`<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M10 4v12M4 10h12"/></svg>`,
+  ok:`<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m4.6 10.4 3.4 3.4 7.4-7.6"/></svg>`,
+  escudo:`<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.8 16 5v4.6c0 3.6-2.6 6.2-6 7.6-3.4-1.4-6-4-6-7.6V5z"/></svg>`,
+};
+const ES_ADMIN = {{ 'true' if es_admin else 'false' }};
+const EST = {periodo:'90d', tipo:'', filtro:''};
+let D = null, CFG = null;
+
+const dinero = v => (v===null||v===undefined||isNaN(v)) ? '—' : '$ ' + Number(v).toLocaleString('es-CO',{maximumFractionDigits:0});
+const gal = (v, dec=1) => v===null||v===undefined ? '—' : fmt(v, dec) + ' gal';
+const comb = k => (CFG && CFG.combustibles[k]) || {nombre:k||'—', corto:'', color:'#737a86'};
+const chipComb = k => `<span class="chip-comb"><i style="background:${comb(k).color}"></i>${escapar(comb(k).corto||comb(k).nombre)}</span>`;
+
+async function cargar(){
+  document.querySelectorAll('#segPeriodo button').forEach(b=>b.classList.toggle('activo', b.dataset.p===EST.periodo));
+  const q = new URLSearchParams({periodo:EST.periodo}); if(EST.tipo) q.set('tipo', EST.tipo);
+  try{ [D, CFG] = await Promise.all([api('/api/combustible?'+q), api('/api/combustible/config')]); }
+  catch(e){ toast(e.message); return; }
+  const f = D.filtros||{};
+  document.getElementById('rangoTxt').textContent = f.desde ? `${fmtFecha(f.desde)} → ${fmtFecha(f.hasta)}` : 'Histórico completo';
+  pintarSurtidor(); pintarDepositos(); pintarControl(); pintarKpis(); pintarConsumo(); pintarGraficas(); pintarRegistro();
+}
+
+// ---------- Surtidor: el último tanqueo, contado como en una bomba de verdad ----------
+function contar(el, hasta, dec, dur=900){
+  const t0 = performance.now();
+  const paso = t=>{
+    const k = Math.min(1, (t-t0)/dur), e = 1-Math.pow(1-k,3);
+    el.textContent = Number(hasta*e).toLocaleString('es-CO',{minimumFractionDigits:dec, maximumFractionDigits:dec});
+    if(k<1) requestAnimationFrame(paso);
+  };
+  requestAnimationFrame(paso);
+}
+function pintarSurtidor(m){
+  m = m || (D.movimientos||[]).find(x=>x.tipo==='tanqueo');
+  const g = document.getElementById('surtGrado');
+  if(!m){ g.innerHTML = '<i style="background:#737a86"></i>—'; return; }
+  // La tarjeta abre el tiquete (seguimiento y edición); la pistola sigue siendo «Tanquear».
+  const sur = document.getElementById('surtidor');
+  sur.style.cursor = 'pointer'; sur.title = 'Ver y editar este tanqueo';
+  sur.onclick = e=>{ if(!e.target.closest('#pistola')) abrirMovimiento(m.id); };
+  g.innerHTML = `<i style="background:${comb(m.combustible).color}"></i>${escapar(comb(m.combustible).nombre)}`;
+  contar(document.getElementById('lcdGal'), m.galones||0, 1);
+  contar(document.getElementById('lcdPrecio'), m.precio_gal||0, 0);
+  contar(document.getElementById('lcdTotal'), m.total||0, 0);
+  document.getElementById('surtTxt').innerHTML = `<b>${escapar(m.equipo||'—')}</b>${m.matricula?' · '+escapar(m.matricula):''}<br>
+    ${fmtFecha(m.fecha)}${m.hora?' · '+escapar(m.hora):''} · ${escapar(m.deposito || m.proveedor || 'proveedor sin nombre')}`;
+}
+
+// ---------- Depósitos como tanques con el color real del combustible ----------
+function tanqueHTML(d, extra=''){
+  return Tanques.html({pct: d.pct, color: comb(d.combustible).color, clase: Tanques.alerta(d.pct),
+                      attrs: `data-dep="${d.id}" ${extra}`, cuerpo: `
+    <div class="pct">${d.pct==null?'—':fmt(d.pct,0)+' %'}</div>
+    <div class="nom">${escapar(d.nombre)}</div>
+    <div class="sub">${fmt(d.nivel_gal,0)} / ${fmt(d.capacidad_gal,0)} gal · ${escapar(comb(d.combustible).corto)}</div>
+    <div class="sub">${d.dias_autonomia!=null ? `alcanza ~${fmt(d.dias_autonomia,0)} días` : (d.activo?'sin consumo en 30 días':'inactivo')}</div>`});
+}
+function pintarDepositos(){
+  const c = document.getElementById('depositos');
+  const deps = D.depositos||[];
+  c.innerHTML = deps.map(d=>tanqueHTML(d)).join('') +
+    (ES_ADMIN ? `<button class="tanque nuevo" type="button" id="btnNuevoDep">${IC.mas}<b>Nuevo depósito</b><span class="sub">cisterna, carrotanque o bidones</span></button>` : '');
+  if(!deps.length && !ES_ADMIN) c.innerHTML = `<div class="empty">Sin depósitos propios: los tanqueos se registran como compra en el aeródromo.</div>`;
+  c.querySelectorAll('[data-dep]').forEach(b=>b.onclick=()=>abrirDeposito(Number(b.dataset.dep)));
+  const n = document.getElementById('btnNuevoDep'); if(n) n.onclick=()=>formDeposito();
+  llenarTanques(c);
+}
+
+// ---------- Control: alertas que no hay que ir a buscar ----------
+function pintarControl(){
+  const al = D.alertas||[];
+  const c = document.getElementById('control');
+  document.getElementById('controlNota').textContent = al.length ? `${al.length} ${al.length===1?'punto':'puntos'} por revisar` : '';
+  if(!al.length){
+    c.innerHTML = `<div class="control-ok">${IC.ok}<div>Todo cuadra: niveles, mediciones, tipo de combustible, chequeos de seguridad y consumo dentro de lo normal.</div></div>`;
+    return;
+  }
+  const TXT = {vencido:'Urgente', critico:'Crítico', proximo:'Revisar', info:'Aviso'};
+  c.innerHTML = al.slice(0,8).map((a,i)=>`<button class="al ${a.nivel}" type="button" data-i="${i}">
+    <div><div class="t">${escapar(a.titulo)}</div><div class="d">${escapar(a.detalle)}</div></div>
+    <span class="n">${TXT[a.nivel]||''}${a.rac?' · RAC':''}</span></button>`).join('') +
+    (al.length>8 ? `<button class="pillbtn" id="verTodas" type="button">Ver las ${al.length}</button>` : '');
+  c.querySelectorAll('.al').forEach(b=>b.onclick=()=>{
+    const a = al[b.dataset.i];
+    if(a.mov_id) abrirMovimiento(a.mov_id);
+    else if(a.deposito_id) abrirDeposito(a.deposito_id);
+    else if(a.equipo_id) abrirEquipo(a.equipo_id);
+  });
+  const t = document.getElementById('verTodas');
+  if(t) t.onclick = ()=>{ const v = ventana({titulo:'Control de combustible', ancho:'ancha',
+    cuerpo:`<div class="control">${al.map((a,i)=>`<div class="al ${a.nivel}" style="cursor:default"><div><div class="t">${escapar(a.titulo)}</div><div class="d">${escapar(a.detalle)}</div></div></div>`).join('')}</div>`}); };
+}
+
+function pintarKpis(){
+  const k = D.kpis||{};
+  const kpi = (lbl, val, unidad, nota, ayuda) => `<div class="kpi"><div class="lbl">${lbl}${ayuda?`<button class="ayuda" type="button" data-ayuda="${ayuda}" title="¿Cómo se calcula?">?</button>`:''}</div><div class="val">${val}${unidad?`<small>${unidad}</small>`:''}</div><div class="note">${nota||''}</div></div>`;
+  const compacto = v => v==null ? '—' : Math.abs(v) >= 1e6 ? '$ ' + (v/1e6).toLocaleString('es-CO',{maximumFractionDigits:1}) + ' M' : dinero(v);
+  document.getElementById('kpis').innerHTML =
+    kpi('Galones tanqueados', fmt(k.galones,0), 'gal', `${k.tanqueos||0} tanqueos`, 'tanqueo') +
+    kpi('Gasto en combustible', compacto(k.gasto), '', `${fmt(k.comprado,0)} gal comprados a depósito`, 'compra') +
+    kpi('Precio medio', dinero(k.precio_medio), '/gal', k.combustible_principal ? comb(k.combustible_principal).nombre + ' · ponderado por galón' : 'ponderado por galón') +
+    kpi('Consumo de la flota', k.gal_h==null?'—':fmt(k.gal_h,1), 'gal/h', 'galones ÷ horas de vuelo', 'consumo') +
+    kpi('Costo por hora', compacto(k.costo_h), '/h', 'combustible por hora volada', 'consumo');
+  document.querySelectorAll('#kpis [data-ayuda]').forEach(b=>b.onclick=()=>comoFunciona(b.dataset.ayuda));
+}
+
+// ---------- Consumo: un reloj por activo ----------
+function reloj(v, ref, max){
+  const W=200, H=112, cx=100, cy=100, R=80;
+  max = max || Math.max(ref ? ref*1.6 : 0, v ? v*1.3 : 0, 1);
+  const ang = x => Math.PI + Math.min(1, Math.max(0, x/max))*Math.PI;
+  const pt = (a, r=R) => [cx + Math.cos(a)*r, cy + Math.sin(a)*r];
+  const arco = (a0, a1, r=R) => { const [x0,y0]=pt(a0,r), [x1,y1]=pt(a1,r); return `M${x0} ${y0} A${r} ${r} 0 ${a1-a0>Math.PI?1:0} 1 ${x1} ${y1}`; };
+  let color = 'var(--teal)';
+  if(v!=null && ref){ const d = (v-ref)/ref; color = Math.abs(d) > .15 ? 'var(--red)' : (Math.abs(d) > .08 ? 'var(--amber)' : 'var(--green)'); }
+  const aguja = v==null ? '' : (()=>{ const [x,y]=pt(ang(v), R-18); return `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="var(--ink)" stroke-width="3" stroke-linecap="round"/>`; })();
+  const marcaRef = ref ? (()=>{ const [x0,y0]=pt(ang(ref), R-12), [x1,y1]=pt(ang(ref), R+8); return `<line x1="${x0}" y1="${y0}" x2="${x1}" y2="${y1}" stroke="var(--ink)" stroke-width="2"/><text x="${x1}" y="${y1-4}" text-anchor="middle" class="u">ref</text>`; })() : '';
+  return `<svg class="reloj" viewBox="0 0 ${W} ${H}" width="100%" style="max-width:210px">
+    <path d="${arco(Math.PI, 2*Math.PI)}" stroke="var(--o-gris,#f1f2f4)" stroke-width="14" fill="none" stroke-linecap="round"/>
+    ${v!=null?`<path d="${arco(Math.PI, ang(v))}" stroke="${color}" stroke-width="14" fill="none" stroke-linecap="round"/>`:''}
+    ${marcaRef}${aguja}<circle cx="${cx}" cy="${cy}" r="5" fill="var(--ink)"/>
+    <text x="${cx}" y="${cy-26}" text-anchor="middle" class="v">${v==null?'—':fmt(v,1)}</text>
+    <text x="${cx}" y="${cy-10}" text-anchor="middle" class="u">gal / h</text></svg>`;
+}
+function pintarConsumo(){
+  const lista = (D.consumo||[]).filter(c=>c.galones || c.horas);
+  const c = document.getElementById('consumo');
+  if(!lista.length){ c.innerHTML = `<div class="empty">${CFG.equipos.length ? 'Cuando registres tanqueos, aquí verás los galones por hora de vuelo de cada avión.' : 'No hay aviones en la flota: el tanqueo es sólo para aviones.'}</div>`; return; }
+  c.innerHTML = lista.map(x=>{
+    const pctRep = x.galones && x.galones_reportados!=null ? Math.min(100, x.galones_reportados/x.galones*100) : null;
+    return `<button class="cons" type="button" data-e="${x.equipo_id}">
+      <div class="cons-cab"><span class="av">${x.tipo_activo==='avion'?IC.avion:IC.dron}</span>
+        <div><b>${escapar(x.equipo)}</b><small>${escapar(x.matricula||x.modelo)} · ${escapar(comb(x.espec.combustible).nombre)}</small></div></div>
+      ${reloj(x.gal_h, x.consumo_ref)}
+      <div class="cons-datos"><div><b>${fmt(x.galones,0)}</b>galones</div><div><b>${fmt(x.horas,1)}</b>horas</div>
+        <div><b>${x.gal_ha==null?'—':fmt(x.gal_ha,2)}</b>gal/ha</div></div>
+      ${pctRep!=null?`<div class="concil">Reportado por los pilotos: <b>${fmt(x.galones_reportados,0)} gal</b> de ${fmt(x.galones,0)} cargados
+        <div class="trk"><i style="width:${pctRep}%"></i><em style="left:calc(100% - 2px)"></em></div></div>`:
+        `<div class="concil">${x.metodo==='lleno'?'Medido de tanque lleno a tanque lleno':(x.metodo==='periodo'?'Estimado con el total del período':'Sin horas de vuelo en el período')}</div>`}
+      ${abordoHTML(x.carga_actual)}
+    </button>`;
+  }).join('');
+  c.querySelectorAll('.cons').forEach(b=>b.onclick=()=>abrirEquipo(Number(b.dataset.e)));
+  animarMedidores(c);
+}
+
+function pintarGraficas(){
+  const pm = D.por_mes||[];
+  const meses = pm.map(m=>{ const [y,mm]=m.mes.split('-'); return new Date(y, mm-1, 1).toLocaleDateString('es-CO',{month:'short', year:'2-digit'}); });
+  graficoBarras('gMes', meses, [
+    {nombre:'Tanqueado', color:'#fdb913', datos:pm.map(m=>m.tanqueado), unidad:'gal'},
+    {nombre:'Comprado a depósito', color:'#0d9488', datos:pm.map(m=>m.comprado), unidad:'gal'},
+  ], {alto:220, vacio:'Sin movimientos en el período.', alClic:({indice})=>listaMovimientos(`Movimientos de ${meses[indice]}`, D.movimientos.filter(m=>m.fecha.startsWith(pm[indice].mes)))});
+  leyendaGrafica('leyMes', [{nombre:'Tanqueado', color:'#fdb913'}, {nombre:'Comprado', color:'#0d9488'}]);
+  const pr = D.precios||[];
+  graficoLinea('gPrecio', [{nombre:'$/gal', color:'#1a1d24', datos:pr.map(p=>({x:fmtFecha(p.fecha), y:p.precio}))}],
+    {alto:220, vacio:'Aún no hay precios registrados.', alClic: d=>{ const p = pr[d.indice]; if(p) abrirMovimiento(p.id); }});
+}
+
+// ---------- Registro ----------
+function filaMov(m){
+  const chk = m.tipo==='tanqueo' ? (m.chequeo_ok ? `<span class="sello ok">${IC.escudo}completo</span>` : `<span class="sello no">${IC.escudo}incompleto</span>`) : '';
+  const origen = m.tipo==='compra' ? (m.proveedor||'—') + ' → ' + (m.deposito||'') :
+                 m.tipo==='tanqueo' ? (m.deposito || m.proveedor || 'aeródromo') : (m.deposito || m.equipo || '');
+  const signo = m.tipo==='medicion' ? (m.galones>=0?'+':'') : (m.tipo==='compra'?'+':'−');
+  return `<tr data-m="${m.id}">
+    <td>${fmtFecha(m.fecha)}${m.hora?`<br><span class="mut" style="font-size:11px">${escapar(m.hora)}</span>`:''}</td>
+    <td><span class="ico-mov ${m.tipo}">${IC[m.tipo]}</span>${escapar(CFG.tipos[m.tipo])}${m.lleno?' <span class="tag ok">lleno</span>':''}</td>
+    <td>${m.equipo?escapar(m.equipo):'<span class="mut">—</span>'}</td>
+    <td>${chipComb(m.combustible)}</td>
+    <td class="num"><b>${signo}${fmt(Math.abs(m.tipo==='medicion'?m.galones:m.galones),1)}</b> gal${m.tipo==='medicion'?`<br><span class="mut" style="font-size:11px">medido ${fmt(m.nivel_medido,0)}</span>`:''}</td>
+    <td class="num">${dinero(m.precio_gal)}</td><td class="num">${dinero(m.total)}</td>
+    <td>${escapar(origen)}</td><td>${chk}</td></tr>`;
+}
+function marcarChequeo(movs){
+  const obligatorios = t => (t==='aeronave' ? CFG.chequeo_aeronave : CFG.chequeo_apoyo).filter(x=>x.obligatorio).map(x=>x.clave);
+  movs.forEach(m=>{ if(m.tipo!=='tanqueo') return;
+    let c={}; try{ c = JSON.parse(m.chequeo||'{}'); }catch(e){}
+    m.chequeo_ok = obligatorios(m.destino).every(k=>c[k]); });
+}
+function pintarRegistro(){
+  marcarChequeo(D.movimientos);
+  const tipos = [['', 'Todo'], ...Object.entries(CFG.tipos)];
+  document.getElementById('filtroTipos').innerHTML = `<div class="segmento">${tipos.map(([k,t])=>`<button data-f="${k}" class="${EST.filtro===k?'activo':''}">${t}</button>`).join('')}</div>`;
+  document.querySelectorAll('#filtroTipos button').forEach(b=>b.onclick=()=>{ EST.filtro=b.dataset.f; pintarRegistro(); });
+  const movs = D.movimientos.filter(m=>!EST.filtro || m.tipo===EST.filtro);
+  const t = document.getElementById('tRegistro');
+  t.innerHTML = `<thead><tr><th>Fecha</th><th>Movimiento</th><th>Activo</th><th>Combustible</th><th>Galones</th><th>$/gal</th><th>Total</th><th>Origen</th><th>Seguridad</th></tr></thead>
+    <tbody>${movs.map(filaMov).join('') || `<tr><td colspan="9"><div class="empty">Sin movimientos en el período. Pulsa «Tanquear» para registrar el primero.</div></td></tr>`}</tbody>`;
+  t.querySelectorAll('tr[data-m]').forEach(r=>r.onclick=()=>abrirMovimiento(Number(r.dataset.m)));
+}
+function listaMovimientos(titulo, movs){
+  marcarChequeo(movs);
+  const v = ventana({titulo, ancho:'ancha', cuerpo:`<div class="tabla-envoltura"><table class="tiquetes" style="min-width:820px">
+    <thead><tr><th>Fecha</th><th>Movimiento</th><th>Activo</th><th>Combustible</th><th>Galones</th><th>$/gal</th><th>Total</th><th>Origen</th><th>Seguridad</th></tr></thead>
+    <tbody>${movs.map(filaMov).join('') || '<tr><td colspan="9"><div class="empty">Sin movimientos.</div></td></tr>'}</tbody></table></div>`});
+  v.$$('tr[data-m]').forEach(r=>r.onclick=async ()=>{ await v.cerrar(); abrirMovimiento(Number(r.dataset.m)); });
+}
+
+// ---------- Seguimiento de un tanqueo: a dónde se fue ese combustible ----------
+const IC_SEG = {
+  info:`<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="10" cy="10" r="7.4"/><path d="M10 9v4.4M10 6.4v.1"/></svg>`,
+  ok:`<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="7.4"/><path d="m6.8 10.2 2.2 2.2 4.2-4.6"/></svg>`,
+  alerta:`<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3.2 17.4 16H2.6z"/><path d="M10 8.2v3.6M10 14v.1"/></svg>`,
+  gota:`<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M10 2.8s5 5.4 5 9a5 5 0 0 1-10 0c0-3.6 5-9 5-9z"/></svg>`,
+  ahora:`<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="10" cy="10" r="7"/><path d="M10 6v4l2.6 1.6"/></svg>`,
+};
+// Indicador horizontal del tanque. `ahora` y `antes` en galones; `usable` es el 100 %.
+function medidorHTML({ahora, antes, usable, reserva}){
+  const p = v => usable ? Math.max(0, Math.min(100, v/usable*100)) : 0;
+  return `<div class="medidor">
+    ${antes!=null?`<div class="huella" style="width:${p(antes)}%"></div>`:''}
+    ${reserva?`<div class="reserva" style="width:${p(reserva)}%" title="Reserva de 30 min"></div>`:''}
+    <div class="nivel" data-w="${p(ahora)}"></div></div>`;
+}
+function animarMedidores(raiz){ requestAnimationFrame(()=>(raiz||document).querySelectorAll('.medidor .nivel[data-w]').forEach(n=>n.style.width = n.dataset.w + '%')); }
+function abordoHTML(c){
+  if(!c) return '';
+  if(c.restante==null) return `<div class="abordo"><div class="fila"><span>Carga del ${fmtFecha(c.fecha)}</span><span><b>${fmt(c.consumido,1)}</b> / ${fmt(c.galones,1)} gal gastados</span></div></div>`;
+  return `<div class="abordo ${c.bajo_reserva?'bajo':''}" style="--c:${comb(c.combustible).color}">
+    <div class="fila"><span>A bordo ahora</span><span><b>${fmt(c.restante,1)}</b> gal${c.horas_restantes!=null?` · ${fmt(c.horas_restantes,1)} h`:''}</span></div>
+    ${medidorHTML({ahora:c.restante, usable:c.usable, reserva:c.reserva_gal})}</div>`;
+}
+function seguimientoHTML(s, titulo){
+  if(!s) return '';
+  const cerrado = s.estado==='cerrado';
+  const color = comb(s.combustible).color;
+  const gastado = s.real!=null ? s.real : s.consumido;
+  const desc = s.diferencia_pct!=null && Math.abs(s.diferencia_pct)>0.1;
+  const pill = !cerrado ? (s.bajo_reserva?'<span class="pill mal">Bajo la reserva</span>':'<span class="pill vivo">En el tanque</span>')
+             : desc ? `<span class="pill mal">Descuadre ${s.diferencia>0?'+':''}${fmt(s.diferencia,1)} gal</span>`
+             : s.real!=null ? '<span class="pill ok">Cuadra</span>' : '<span class="pill">Cerrada</span>';
+  // Cifra principal: lo que queda (carga abierta) o lo que de verdad se gastó (carga cerrada).
+  const big = !cerrado
+    ? {eti:'A bordo ahora', val:s.restante!=null?s.restante:(s.galones-s.consumido), sub: s.restante==null ? `de los ${fmt(s.galones,1)} gal cargados`
+        : (s.horas_restantes!=null?`Alcanza para <b>${fmt(s.horas_restantes,1)} h</b> de vuelo y deja la reserva de 30 min`:'')}
+    : {eti: s.real!=null?'Consumo real de la carga':'Consumo según los vuelos', val:gastado,
+       sub:`en <b>${fmt(s.horas,1)} h</b> de vuelo${s.gal_h!=null?` · <b>${fmt(s.gal_h,1)} gal/h</b>`:''}`};
+  let nota, cls = '', ico = IC_SEG.info;
+  if(cerrado && s.real!=null){
+    cls = desc ? 'mal' : 'bien'; ico = desc ? IC_SEG.alerta : IC_SEG.ok;
+    nota = `Al volver a llenar el <b>${fmtFecha(s.siguiente.fecha)}</b> se repusieron <b>${fmt(s.siguiente.galones,1)} gal</b>: eso es lo que de verdad se gastó. `
+      + (s.diferencia==null ? (s.vuelos_sin_dato?`${s.vuelos_sin_dato} vuelo(s) sin horas: no se puede cuadrar.`:'')
+        : desc ? `Los vuelos sólo explican ${fmt(s.consumido,1)} gal: <b>${s.diferencia>0?'faltan':'sobran'} ${fmt(Math.abs(s.diferencia),1)} gal</b> (${fmt(Math.abs(s.diferencia_pct*100),0)} %). Revisa horas sin registrar, fugas o el tanqueo.`
+        : `Los vuelos explican ${fmt(s.consumido,1)} gal: diferencia de ${s.diferencia>=0?'+':''}${fmt(s.diferencia,1)} gal, dentro de lo normal.`);
+  } else if(cerrado){
+    nota = `Le siguió un tanqueo el <b>${fmtFecha(s.siguiente.fecha)}</b>${s.siguiente.lleno?'':' sin llenar'}. Marca «Tanque lleno» al tanquear para conocer el consumo real de cada carga.`;
+  } else {
+    if(s.bajo_reserva){ cls = 'mal'; ico = IC_SEG.alerta; }
+    nota = (s.restante!=null ? '' : 'No se sabe cuánto había antes de cargar; el próximo tanque lleno dará el consumo real. ')
+      + (s.tasa?`Los vuelos sin combustible anotado se estiman a <b>${fmt(s.tasa,1)} gal/h</b> (${s.tasa_fuente==='real'?'consumo real del avión':'referencia del modelo'}). `:'')
+      + 'Al volver a llenar con «Tanque lleno» la carga se cierra con el consumo real.';
+  }
+  // Línea de tiempo: la carga, cada vuelo con lo que se llevó y lo que quedaba, y el cierre.
+  let queda = s.a_bordo_despues!=null ? s.a_bordo_despues : s.galones;
+  const linea = [`<li class="carga"><span class="nodo">${IC_SEG.gota}</span>
+      <div class="qué">Tanqueo${s.lleno?' a tanque lleno':''}<small>${fmtFecha(s.fecha)}${s.hora?' · '+escapar(s.hora):''}${s.costo?' · '+dinero(s.costo):''}</small></div>
+      <div class="cuanto">+${fmt(s.galones,1)} gal<small>${s.a_bordo_despues!=null?`${fmt(s.a_bordo_despues,1)} a bordo`:''}</small></div></li>`]
+    .concat(s.vuelos.map(v=>{ queda = Math.max(0, queda-(v.gal||0));
+      return `<li data-op="${v.id}"><span class="nodo">${IC.avion}</span>
+        <div class="qué">${escapar(v.zona||v.cliente||'Vuelo')}<small>${fmtFecha(v.fecha)}${v.hora?' · '+escapar(v.hora):''} · ${fmt(v.horas,1)} h${v.hectareas?` · ${fmt(v.hectareas,0)} ha`:''}${v.piloto?' · '+escapar(v.piloto):''}</small></div>
+        <div class="cuanto">${v.gal==null?'—':'−'+fmt(v.gal,1)+' gal'}<small class="${v.fuente==='estimado'?'est':''}">${v.fuente==='piloto'?'anotado':(v.fuente==='estimado'?'estimado':'sin dato')} · quedan ${fmt(queda,1)}</small></div></li>`; }));
+  linea.push(cerrado
+    ? `<li class="carga"><span class="nodo">${IC_SEG.gota}</span><div class="qué">Siguiente tanqueo<small>${fmtFecha(s.siguiente.fecha)}${s.siguiente.lleno?' · a tanque lleno':''}</small></div>
+        <div class="cuanto">+${fmt(s.siguiente.galones,1)} gal<small>${s.real!=null?`quedaban ${fmt(s.restante,1)}`:''}</small></div></li>`
+    : `<li class="ahora"><span class="nodo">${IC_SEG.ahora}</span><div class="qué">Ahora<small>${s.n_vuelos} ${s.n_vuelos===1?'vuelo':'vuelos'} desde el tanqueo</small></div>
+        <div class="cuanto">${s.restante!=null?fmt(s.restante,1)+' gal':'—'}<small>a bordo</small></div></li>`);
+  return `<div class="cfg-sec" style="margin-top:18px">${titulo||'Seguimiento de este combustible'}</div>
+    <div class="seg" style="--c:${color}">
+      <div class="seg-cab"><div><div class="seg-eti">${big.eti}</div>
+        <div class="seg-big">${fmt(big.val,1)}<small>gal</small></div><div class="seg-sub">${big.sub}</div></div>${pill}</div>
+      ${s.usable?`${medidorHTML({ahora:s.restante??0, antes:s.a_bordo_despues, usable:s.usable, reserva:!cerrado?s.reserva_gal:null})}
+        <div class="medidor-esc"><span>0</span>${!cerrado&&s.reserva_gal?`<span class="r" style="left:${s.reserva_gal/s.usable*100}%">reserva ${fmt(s.reserva_gal,1)}</span>`:''}${cerrado&&s.restante!=null?`<span class="m">quedaban ${fmt(s.restante,1)} gal al volver a tanquear</span>`:'<span class="m">½</span>'}<span>${fmt(s.usable,0)} gal usables</span></div>`:''}
+      <div class="seg-cifras">
+        <div>Cargado<b>${fmt(s.galones,1)}<small>gal</small></b></div>
+        <div>${s.real!=null?'Gastado (real)':'Gastado'}<b>${fmt(gastado,1)}<small>gal</small></b></div>
+        <div>Vuelos<b>${s.n_vuelos}<small>· ${fmt(s.horas,1)} h</small></b></div>
+        <div>Consumo<b>${s.gal_h==null?'—':fmt(s.gal_h,1)}<small>${s.gal_h==null?'':'gal/h'}</small></b></div>
+        <div>Costo / hora<b>${s.precio_gal && s.horas && gastado ? dinero(gastado*s.precio_gal/s.horas) : '—'}</b></div>
+      </div>
+      <div class="seg-nota ${cls}">${ico}<div>${nota}</div></div>
+    </div>
+    ${s.vuelos.length?`<div class="cfg-sec" style="margin-top:16px">Cómo se fue vaciando</div><div id="gSeg"></div>
+      <ul class="linea" style="--c:${color}">${linea.join('')}</ul>`
+      : `<p class="mut" style="font-size:12.5px;margin:12px 0 0">Todavía no hay vuelos registrados con esta carga.</p>`}`;
+}
+// La curva de vaciado: combustible a bordo después de cada vuelo. Clic en un punto → sus operaciones.
+function pintarCurvaSeg(ctrl, s, equipoId){
+  animarMedidores();
+  const nodo = ctrl.$('#gSeg'); if(!nodo || !s || !s.vuelos.length) return;
+  let queda = s.a_bordo_despues!=null ? s.a_bordo_despues : s.galones;
+  const corta = (f,h) => f.slice(8,10)+'/'+f.slice(5,7)+(h?' '+h:'');
+  const datos = [{x:'Carga '+corta(s.fecha), y:queda}].concat(s.vuelos.map(v=>{ queda = Math.max(0, queda-(v.gal||0)); return {x:corta(v.fecha, v.hora), y:Math.round(queda*10)/10}; }));
+  graficoLinea(nodo, [{nombre: s.a_bordo_despues!=null?'A bordo':'Queda de lo cargado', color:comb(s.combustible).color, datos, unidad:'gal'}],
+    {alto:170, alClic: x=>{ const v = s.vuelos[x.indice-1]; if(v) editarVuelo(v, equipoId, ctrl); }});
+  ctrl.$$('li[data-op]').forEach(r=>r.onclick=()=>editarVuelo(s.vuelos.find(v=>v.id===Number(r.dataset.op)), equipoId, ctrl));
+}
+// Corregir un vuelo sin salir de combustible: horas, hora de salida y galones anotados. Al guardar
+// se reabre la ficha de donde vino para que el seguimiento se recalcule.
+function editarVuelo(vu, equipoId, origen){
+  if(!vu) return;
+  const v = ventana({titulo:'Editar vuelo', subtitulo:`${fmtFecha(vu.fecha)} · ${escapar(vu.zona||vu.cliente||'')}`, ancho:'angosta',
+    cuerpo:`<form class="form-grid" id="fV" style="grid-template-columns:1fr 1fr">
+      ${campo('Horas de vuelo', `<input name="horas_vuelo" type="number" min="0.1" step="0.1" required value="${vu.horas??''}">`)}
+      ${campo('Hora de salida', `<input name="hora_salida" type="time" value="${escapar(vu.hora||'')}">`)}
+      ${campo('Combustible usado (gal)', `<input name="combustible_gal" type="number" min="0" step="0.1" value="${vu.reportado??''}" placeholder="${vu.estimado!=null?'estimado: '+fmt(vu.estimado,1):''}">`)}
+    </form>
+    <p class="mut" style="font-size:12px;margin:10px 0 0;line-height:1.5">Si el piloto no anotó el combustible, déjalo vacío y se estima con el consumo real del avión.
+      La hora de salida decide de qué tanqueo salió el vuelo.</p>`,
+    pie:`<a class="btn secundario" href="/operaciones?equipo=${equipoId}">Abrir en Operaciones</a><div class="der"><button class="btn" data-ok>Guardar</button></div>`});
+  v.$('[data-ok]').onclick = async ()=>{
+    const datos = Object.fromEntries(new FormData(v.$('#fV')));
+    if(!(Number(datos.horas_vuelo) > 0)) return toast('Las horas deben ser mayores a 0');
+    try{ await api('/api/operaciones/'+vu.id, {method:'PUT', body:datos}); }catch(e){ return toast(e.message); }
+    toast('Vuelo actualizado'); await v.cerrar(); if(origen && origen.recargar) origen.recargar(); cargar();
+  };
+}
+
+// ---------- Tiquete de un movimiento ----------
+async function abrirMovimiento(id){
+  let m; try{ m = await api('/api/combustible/'+id); }catch(e){ toast(e.message); return; }
+  marcarChequeo([m]);
+  let chk = {}; try{ chk = JSON.parse(m.chequeo||'{}'); }catch(e){}
+  const lista = m.destino==='aeronave' ? CFG.chequeo_aeronave : CFG.chequeo_apoyo;
+  const l = (a,b) => b===null||b===undefined||b==='' ? '' : `<div class="l"><span>${a}</span><b>${b}</b></div>`;
+  const v = ventana({
+    titulo: CFG.tipos[m.tipo] + ' · ' + fmtFecha(m.fecha), subtitulo: m.equipo ? escapar(m.equipo) : escapar(m.deposito||''),
+    cuerpo: `${m.seguimiento?seguimientoHTML(m.seguimiento,'A dónde se fue este combustible').replace('margin-top:18px','margin-top:0')+'<div class="cfg-sec" style="margin-top:22px">Tiquete</div>':''}<div class="recibo">
+      <h4>HANGAR · COMBUSTIBLE</h4><div class="c">Movimiento n.º ${m.id}${m.documento?' · '+escapar(m.documento):''}</div>
+      ${l('Fecha', fmtFecha(m.fecha) + (m.hora?' '+escapar(m.hora):''))}
+      ${l('Activo', m.equipo?escapar(m.equipo)+(m.matricula?' · '+escapar(m.matricula):''):null)}
+      ${l('Destino', m.destino?escapar(CFG.destinos[m.destino]||m.destino):null)}
+      ${l('Combustible', escapar(comb(m.combustible).nombre))}
+      ${l('Origen', escapar(m.deposito || m.proveedor || ''))}
+      ${m.tipo==='compra'?l('Proveedor', escapar(m.proveedor||'')):''}
+      ${l('Galones', fmt(m.galones,2))}
+      ${m.tipo==='medicion'?l('Nivel medido', fmt(m.nivel_medido,1)+' gal')+l('Descuadre', (m.galones>=0?'+':'')+fmt(m.galones,1)+' gal'):''}
+      ${l('Precio por galón', m.precio_gal?dinero(m.precio_gal):null)}
+      ${l('Tanque lleno', m.lleno?'Sí':null)}
+      ${l('Lectura Hobbs / horómetro', m.lectura!=null?fmt(m.lectura,1):null)}
+      ${l('Responsable', escapar(m.responsable||''))}
+      ${l('Registró', escapar(m.usuario||''))}
+      ${m.total?`<div class="tot"><span style="font-size:13px;color:var(--mut)">TOTAL</span><span>${dinero(m.total)}</span></div>`:''}
+    </div>
+    ${m.tipo==='tanqueo'?`<div class="cfg-sec" style="margin-top:18px">Seguridad del tanqueo</div>
+      <div class="chequeo">${lista.map(x=>`<div class="chk ${chk[x.clave]?'si':''}" style="cursor:default"><span class="caja">${IC.ok}</span>
+        <span class="tx">${escapar(x.texto)}${x.rac?`<small>${escapar(x.rac)}</small>`:''}</span>${x.obligatorio?'<span class="ob">obligatorio</span>':''}</div>`).join('')}</div>`:''}
+    ${m.nota?`<p style="margin-top:14px;font-size:13px">${escapar(m.nota)}</p>`:''}
+    ${m.archivo?`<p style="margin-top:10px"><a href="/archivos/${encodeURIComponent(m.archivo)}" target="_blank">Ver soporte adjunto</a></p>`:''}`,
+    pie: `${ES_ADMIN?'<button class="btn secundario rojo" data-borrar>Borrar</button>':''}<div class="der"><button class="btn secundario" data-cerrar>Cerrar</button><button class="btn" data-editar>Editar</button></div>`,
+    alAbrir: ctrl=>{ ctrl.recargar = async ()=>{ await ctrl.cerrar(); abrirMovimiento(id); }; setTimeout(()=>pintarCurvaSeg(ctrl, m.seguimiento, m.equipo_id), 60); },
+  });
+  v.$('[data-cerrar]').onclick = v.cerrar;
+  v.$('[data-editar]').onclick = async ()=>{ await v.cerrar(); editarMovimiento(m); };
+  const b = v.$('[data-borrar]');
+  if(b) b.onclick = async ()=>{
+    if(!await confirmar({titulo:'Borrar movimiento', mensaje:'El nivel del depósito y el consumo se recalculan sin él. Queda constancia en la auditoría.', aceptar:'Borrar', peligro:true})) return;
+    try{ await api('/api/combustible/'+id, {method:'DELETE'}); toast('Movimiento borrado'); v.cerrar(); cargar(); }catch(e){ toast(e.message); }
+  };
+}
+
+// ---------- Depósito ----------
+async function abrirDeposito(id){
+  let d; try{ d = await api('/api/combustible/depositos/'+id); }catch(e){ toast(e.message); return; }
+  marcarChequeo(d.movimientos);
+  const p = panelLateral({titulo: escapar(d.nombre), subtitulo: `${escapar(comb(d.combustible).nombre)}${d.ubicacion?' · '+escapar(d.ubicacion):''}`,
+    cuerpo: `<div style="display:flex;gap:16px;align-items:center;margin-bottom:10px">
+        <div style="width:150px;flex:none" id="pTanque">${tanqueHTML(d, 'style="cursor:default;width:100%"')}</div>
+        <div style="font-size:13px;line-height:1.7">
+          <div><span class="mut">Precio medio</span> <b>${dinero(d.precio_medio)}</b>/gal</div>
+          <div><span class="mut">Salida 30 días</span> <b>${fmt(d.salida_30d,0)} gal</b></div>
+          <div><span class="mut">Última medición</span> <b>${d.ultima_medicion?fmtFecha(d.ultima_medicion.fecha)+' ('+(d.ultima_medicion.galones>=0?'+':'')+fmt(d.ultima_medicion.galones,1)+' gal)':'nunca'}</b></div>
+        </div></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+        <button class="btn peq" data-a="compra">Registrar compra</button>
+        <button class="btn peq secundario" data-a="medicion">Medir con varilla</button>
+        <button class="btn peq secundario" data-a="merma">Merma / drenaje</button>
+        ${ES_ADMIN?'<button class="btn peq secundario" data-a="editar">Editar</button>':''}
+      </div>
+      <div class="cfg-sec">Nivel en el tiempo</div><div id="gDep"></div>
+      <div class="cfg-sec" style="margin-top:14px">Movimientos</div>
+      <div class="tabla-envoltura"><table class="tiquetes" style="min-width:560px"><tbody>${d.movimientos.map(filaMov).join('')||'<tr><td><div class="empty">Sin movimientos.</div></td></tr>'}</tbody></table></div>`});
+  llenarTanques(p.raiz);
+  setTimeout(()=>graficoLinea(p.$('#gDep'), [{nombre:'Nivel', color:comb(d.combustible).color, datos:d.serie.map(s=>({x:fmtFecha(s.fecha), y:s.nivel}))}],
+    {alto:180, alClic: x=>{ const s = d.serie[x.indice]; if(s && s.id){ p.cerrar().then(()=>abrirMovimiento(s.id)); } }}), 280);
+  p.$$('[data-a]').forEach(b=>b.onclick=async ()=>{
+    const a = b.dataset.a; await p.cerrar();
+    if(a==='editar') formDeposito(d); else if(a==='compra') formCompra(d.id); else if(a==='medicion') formMedicion(d.id); else formMerma(d.id);
+  });
+  p.$$('tr[data-m]').forEach(r=>r.onclick=async ()=>{ await p.cerrar(); abrirMovimiento(Number(r.dataset.m)); });
+}
+
+function opcionesComb(sel){ return Object.entries(CFG.combustibles).map(([k,c])=>`<option value="${k}" ${k===sel?'selected':''}>${escapar(c.nombre)}</option>`).join(''); }
+function opcionesDep(sel){ return CFG.depositos.filter(d=>d.activo).map(d=>`<option value="${d.id}" ${String(d.id)===String(sel)?'selected':''}>${escapar(d.nombre)} · ${fmt(d.nivel_gal,0)} gal</option>`).join(''); }
+const campo = (lbl, html, clase='') => `<div class="campo ${clase}"><label>${lbl}</label>${html}</div>`;
+
+function formDeposito(d={}){
+  const v = ventana({titulo: d.id ? 'Editar depósito' : 'Nuevo depósito', subtitulo:'Cisterna, carrotanque, bidones del generador…',
+    cuerpo:`<form class="form-grid" id="fDep">
+      ${campo('Nombre', `<input name="nombre" required value="${escapar(d.nombre||'')}" placeholder="Cisterna pista La Esperanza">`)}
+      ${campo('Combustible', `<select name="combustible">${opcionesComb(d.combustible||'avgas_100ll')}</select>`)}
+      ${campo('Capacidad (gal)', `<input name="capacidad_gal" type="number" min="0" step="any" value="${d.capacidad_gal??''}">`)}
+      ${campo('Nivel inicial (gal)', `<input name="nivel_inicial_gal" type="number" min="0" step="any" value="${d.nivel_inicial_gal??''}">`)}
+      ${campo('Desde (fecha del nivel inicial)', `<input name="fecha_inicial" type="date" value="${d.fecha_inicial||hoyISO()}">`)}
+      ${campo('Ubicación', `<input name="ubicacion" value="${escapar(d.ubicacion||'')}">`)}
+    </form>`,
+    pie:`${d.id?'<button class="btn secundario rojo" data-borrar>Borrar</button>':''}<div class="der"><button class="btn" data-ok>Guardar</button></div>`});
+  v.$('[data-ok]').onclick = async ()=>{
+    const datos = Object.fromEntries(new FormData(v.$('#fDep')));
+    try{ await api('/api/combustible/depositos'+(d.id?'/'+d.id:''), {method:d.id?'PUT':'POST', body:datos}); toast('Depósito guardado'); v.cerrar(); cargar(); }
+    catch(e){ toast(e.message); }
+  };
+  const b = v.$('[data-borrar]');
+  if(b) b.onclick = async ()=>{
+    if(!await confirmar({titulo:'Borrar depósito', mensaje:'Sus movimientos se conservan, pero quedan sin depósito.', aceptar:'Borrar', peligro:true})) return;
+    await api('/api/combustible/depositos/'+d.id, {method:'DELETE'}); v.cerrar(); cargar();
+  };
+}
+
+async function enviar(datos, v, msg){
+  try{ await api('/api/combustible', {method:'POST', body:datos}); toast(msg); v.cerrar(); cargar(); }
+  catch(e){ toast(e.message); }
+}
+
+function formCompra(depId){
+  if(!CFG.depositos.length){ toast('Primero crea un depósito'); if(ES_ADMIN) formDeposito(); return; }
+  const v = ventana({titulo:'Registrar compra', subtitulo:'Combustible que entra a un depósito propio',
+    cuerpo:`<form class="form-grid" id="fC">
+      ${campo('Depósito', `<select name="deposito_id">${opcionesDep(depId)}</select>`)}
+      ${campo('Fecha', `<input name="fecha" type="date" value="${hoyISO()}">`)}
+      ${campo('Galones', `<input name="galones" type="number" min="0" step="any" required>`)}
+      ${campo('Precio por galón', `<input name="precio_gal" type="number" min="0" step="any">`)}
+      ${campo('Total pagado', `<input name="total" type="number" min="0" step="any">`)}
+      ${campo('Proveedor', `<input name="proveedor" list="provs"><datalist id="provs">${CFG.proveedores.map(p=>`<option value="${escapar(p)}">`).join('')}</datalist>`)}
+      ${campo('Factura / remisión', `<input name="documento">`)}
+      ${campo('Nota', `<input name="nota">`)}
+    </form>`, pie:`<div class="der"><button class="btn" data-ok>Registrar compra</button></div>`});
+  const f = v.$('#fC');
+  const dep = ()=>CFG.depositos.find(d=>String(d.id)===f.deposito_id.value);
+  const precio = ()=>{ const d = dep(); const u = d && CFG.precios[d.combustible]; if(u && !f.precio_gal.value) f.precio_gal.placeholder = 'último: '+fmt(u.precio_gal,0); };
+  f.deposito_id.onchange = precio; precio();
+  f.galones.oninput = f.precio_gal.oninput = ()=>{ if(f.galones.value && f.precio_gal.value) f.total.value = Math.round(f.galones.value*f.precio_gal.value); };
+  v.$('[data-ok]').onclick = ()=>enviar({...Object.fromEntries(new FormData(f)), tipo:'compra'}, v, 'Compra registrada');
+}
+
+function formMedicion(depId){
+  const v = ventana({titulo:'Medir con varilla', subtitulo:'Compara lo que hay de verdad con lo que dice el sistema', ancho:'angosta',
+    cuerpo:`<form class="form-grid" id="fM" style="grid-template-columns:1fr">
+      ${campo('Depósito', `<select name="deposito_id">${opcionesDep(depId)}</select>`)}
+      ${campo('Nivel medido (gal)', `<input name="nivel_medido" type="number" min="0" step="any" required>`)}
+      ${campo('Fecha', `<input name="fecha" type="date" value="${hoyISO()}">`)}
+      ${campo('Responsable', `<input name="responsable">`)}
+    </form><div class="aviso-vivo" id="descuadre"></div>`,
+    pie:`<div class="der"><button class="btn" data-ok>Guardar medición</button></div>`});
+  const f = v.$('#fM'), a = v.$('#descuadre');
+  const calc = ()=>{ const d = CFG.depositos.find(x=>String(x.id)===f.deposito_id.value); if(!d || f.nivel_medido.value==='') { a.className='aviso-vivo'; return; }
+    const diff = f.nivel_medido.value - d.nivel_gal;
+    const grave = Math.abs(diff) > Math.max(5, (d.capacidad_gal||0)*.02);
+    a.className = 'aviso-vivo ver ' + (grave?'rojo':'ambar');
+    a.innerHTML = `El sistema espera <b>${fmt(d.nivel_gal,1)} gal</b>. Diferencia: <b>${diff>=0?'+':''}${fmt(diff,1)} gal</b>. ${grave?'Es un descuadre importante: revisa fugas, tanqueos sin registrar o el nivel inicial.':'Dentro de lo tolerable.'}`; };
+  f.nivel_medido.oninput = f.deposito_id.onchange = calc;
+  v.$('[data-ok]').onclick = ()=>enviar({...Object.fromEntries(new FormData(f)), tipo:'medicion'}, v, 'Medición registrada');
+}
+
+function formMerma(depId){
+  const v = ventana({titulo:'Merma o drenaje', subtitulo:'Muestras drenadas, combustible contaminado, derrames', ancho:'angosta',
+    cuerpo:`<form class="form-grid" id="fX" style="grid-template-columns:1fr">
+      ${campo('Depósito', `<select name="deposito_id">${opcionesDep(depId)}</select>`)}
+      ${campo('Galones', `<input name="galones" type="number" min="0" step="any" required>`)}
+      ${campo('Fecha', `<input name="fecha" type="date" value="${hoyISO()}">`)}
+      ${campo('Motivo', `<input name="nota" placeholder="Drenaje diario de sumidero, agua en la muestra…">`)}
+    </form>`, pie:`<div class="der"><button class="btn" data-ok>Registrar</button></div>`});
+  v.$('[data-ok]').onclick = ()=>enviar({...Object.fromEntries(new FormData(v.$('#fX'))), tipo:'merma'}, v, 'Merma registrada');
+}
+
+// ---------- Editar un movimiento ya registrado ----------
+// Mismo formulario para los cuatro tipos, con los campos de cada uno. El servidor recalcula el total,
+// el costo del depósito, los niveles y el consumo, y deja cada cambio en la auditoría.
+function editarMovimiento(m){
+  const t = m.tipo;
+  const opDep = sel => CFG.depositos.map(d=>`<option value="${d.id}" ${String(d.id)===String(sel)?'selected':''}>${escapar(d.nombre)}${d.activo?'':' (inactivo)'}</option>`).join('');
+  const val = k => m[k]==null ? '' : escapar(String(m[k]));
+  let campos = '';
+  if(t==='tanqueo') campos = `
+      ${campo('Avión', `<select name="equipo_id">${CFG.equipos.map(e=>`<option value="${e.id}" ${e.id===m.equipo_id?'selected':''}>${escapar(e.nombre)}${e.matricula?' · '+escapar(e.matricula):''}</option>`).join('')}</select>`)}
+      ${campo('Sale de', `<select name="deposito_id"><option value="">Proveedor externo</option>${opDep(m.deposito_id)}</select>`)}
+      ${campo('Galones', `<input name="galones" type="number" min="0.1" step="0.1" required value="${val('galones')}">`)}
+      ${campo('Combustible', `<select name="combustible">${opcionesComb(m.combustible)}</select>`)}
+      ${campo('Fecha', `<input name="fecha" type="date" value="${val('fecha')}">`)}
+      ${campo('Hora', `<input name="hora" type="time" value="${val('hora')}">`)}
+      ${campo('Hobbs al tanquear', `<input name="lectura" type="number" step="0.1" value="${val('lectura')}">`)}
+      ${campo('Responsable', `<input name="responsable" value="${val('responsable')}">`)}
+      ${campo('Precio por galón', `<input name="precio_gal" type="number" min="0" step="any" value="${m.deposito_id?'':val('precio_gal')}">`, 'externo')}
+      ${campo('Proveedor', `<input name="proveedor" list="provsE" value="${val('proveedor')}"><datalist id="provsE">${CFG.proveedores.map(p=>`<option value="${escapar(p)}">`).join('')}</datalist>`, 'externo')}
+      ${campo('Factura / recibo', `<input name="documento" value="${val('documento')}">`, 'externo')}
+      ${campo('Nota', `<input name="nota" value="${val('nota')}">`)}`;
+  else if(t==='compra') campos = `
+      ${campo('Depósito', `<select name="deposito_id">${opDep(m.deposito_id)}</select>`)}
+      ${campo('Fecha', `<input name="fecha" type="date" value="${val('fecha')}">`)}
+      ${campo('Galones', `<input name="galones" type="number" min="0.1" step="any" required value="${val('galones')}">`)}
+      ${campo('Precio por galón', `<input name="precio_gal" type="number" min="0" step="any" value="${val('precio_gal')}">`)}
+      ${campo('Proveedor', `<input name="proveedor" list="provsE" value="${val('proveedor')}"><datalist id="provsE">${CFG.proveedores.map(p=>`<option value="${escapar(p)}">`).join('')}</datalist>`)}
+      ${campo('Factura / remisión', `<input name="documento" value="${val('documento')}">`)}
+      ${campo('Nota', `<input name="nota" value="${val('nota')}">`)}`;
+  else if(t==='medicion') campos = `
+      ${campo('Depósito', `<select name="deposito_id">${opDep(m.deposito_id)}</select>`)}
+      ${campo('Nivel medido (gal)', `<input name="nivel_medido" type="number" min="0" step="any" required value="${val('nivel_medido')}">`)}
+      ${campo('Fecha', `<input name="fecha" type="date" value="${val('fecha')}">`)}
+      ${campo('Responsable', `<input name="responsable" value="${val('responsable')}">`)}`;
+  else campos = `
+      ${campo('Depósito', `<select name="deposito_id">${opDep(m.deposito_id)}</select>`)}
+      ${campo('Galones', `<input name="galones" type="number" min="0.1" step="any" required value="${val('galones')}">`)}
+      ${campo('Fecha', `<input name="fecha" type="date" value="${val('fecha')}">`)}
+      ${campo('Motivo', `<input name="nota" value="${val('nota')}">`)}`;
+  const v = ventana({titulo:'Editar ' + CFG.tipos[t].toLowerCase(), subtitulo:`Movimiento n.º ${m.id} · ${fmtFecha(m.fecha)}`, ancho: t==='tanqueo'?'':'angosta',
+    cuerpo:`<form class="form-grid" id="fE" ${t==='tanqueo'?'':'style="grid-template-columns:1fr"'}>${campos}</form>
+      ${t==='tanqueo'?`<label class="interruptor" style="margin-top:12px"><input type="checkbox" id="eLleno" ${m.lleno?'checked':''}> Tanque lleno <span class="mut" style="font-weight:500;font-size:12px">— cierra la carga anterior con el consumo real</span></label>`:''}
+      <div class="aviso-vivo ver" style="background:color-mix(in srgb,var(--ink) 5%,transparent);color:var(--ink2)">Los niveles de los depósitos, el costo y el consumo de cada carga se recalculan solos. El cambio queda en la auditoría con tu usuario.</div>`,
+    pie:`<div class="der"><button class="btn secundario" data-cancelar>Cancelar</button><button class="btn" data-ok>Guardar cambios</button></div>`});
+  const f = v.$('#fE');
+  const externo = ()=>{ if(t!=='tanqueo') return; const ext = !f.deposito_id.value; v.$$('.campo.externo').forEach(c=>c.style.display = ext ? '' : 'none');
+    const d = CFG.depositos.find(x=>String(x.id)===f.deposito_id.value); if(d) f.combustible.value = d.combustible; };
+  if(t==='tanqueo'){ f.deposito_id.onchange = externo; externo(); }
+  v.$('[data-cancelar]').onclick = async ()=>{ await v.cerrar(); abrirMovimiento(m.id); };
+  v.$('[data-ok]').onclick = async ()=>{
+    const datos = Object.fromEntries(new FormData(f));
+    if(t==='tanqueo'){
+      datos.lleno = v.$('#eLleno').checked;
+      if(datos.deposito_id){ delete datos.precio_gal; delete datos.proveedor; delete datos.documento; }
+      else if(m.deposito_id){ datos.deposito_id = null; }
+    }
+    // Sólo se envía lo que cambió: así el total y el precio se recalculan sólo cuando toca.
+    const cambios = {};
+    for(const [k, x] of Object.entries(datos)){
+      const antes = m[k]==null ? '' : String(k==='lleno' ? !!m[k] : m[k]);
+      const ahora = x==null ? '' : String(x);
+      if(antes !== ahora && !(k.match(/galones|precio_gal|lectura|nivel_medido/) && Number(antes)===Number(ahora) && ahora!=='')) cambios[k] = x===''?null:x;
+    }
+    if(!Object.keys(cambios).length){ await v.cerrar(); abrirMovimiento(m.id); return; }
+    try{ await api('/api/combustible/'+m.id, {method:'PUT', body:cambios}); }catch(e){ return toast(e.message); }
+    toast('Cambios guardados'); await v.cerrar(); await cargar(); abrirMovimiento(m.id);
+  };
+}
+
+// ---------- Asistente de tanqueo ----------
+function tanquear(equipoId){
+  if(!CFG.equipos.length){ toast('No hay aviones en la flota: el tanqueo es sólo para aviones'); return; }
+  const T = {paso:0, equipo:null, origen:null, chequeo:{}};
+  const v = ventana({titulo:'Tanquear', ancho:'ancha', cuerpo:'<div class="pasos"><span></span><span></span><span></span></div><div id="pasoCuerpo"></div>',
+    pie:`<button class="btn secundario" data-atras>Atrás</button><div class="der"><button class="btn" data-sig>Siguiente</button></div>`});
+  const cuerpo = v.$('#pasoCuerpo'), bAtras = v.$('[data-atras]'), bSig = v.$('[data-sig]');
+  const eq = ()=>CFG.equipos.find(e=>e.id===T.equipo);
+
+  function pasos(){ v.$$('.pasos span').forEach((s,i)=>s.classList.toggle('hecho', i<=T.paso)); bAtras.style.visibility = T.paso ? 'visible' : 'hidden'; }
+
+  function paso0(){
+    T.paso=0; pasos(); bSig.textContent='Siguiente';
+    cuerpo.innerHTML = `<p class="paso-tit">¿Qué avión vas a tanquear?</p><p class="paso-sub">Elige la aeronave; el combustible y la capacidad de su tanque se cargan solos.</p>
+      <div class="eleccion">${CFG.equipos.map(e=>`<button class="opc ${T.equipo===e.id?'sel':''}" type="button" data-e="${e.id}">
+        <span class="ic">${e.tipo_activo==='avion'?IC.avion:IC.dron}</span><b>${escapar(e.nombre)}</b>
+        <small>${escapar(e.matricula||e.modelo)} · ${chipComb(e.espec.combustible)}</small>
+        <small>${e.ultimo?'Último: '+fmtFecha(e.ultimo.fecha)+' · '+fmt(e.ultimo.galones,1)+' gal':'Sin tanqueos'}</small></button>`).join('')}</div>`;
+    cuerpo.querySelectorAll('[data-e]').forEach(b=>b.onclick=()=>{ T.equipo=Number(b.dataset.e); T.combustible = eq().espec.combustible; paso1(); });
+    bSig.onclick = ()=>{ if(!T.equipo) return toast('Elige qué vas a tanquear'); paso1(); };
+  }
+
+  function paso1(){
+    T.paso=1; pasos(); bSig.textContent='Siguiente';
+    const e = eq(), esp = e.espec;
+    const deps = CFG.depositos.filter(d=>d.activo);
+    const origenes = deps.map(d=>`<button class="opc ${T.origen==='d'+d.id?'sel':''}" type="button" data-o="d${d.id}">
+        <span class="ic">${IC.deposito}</span><b>${escapar(d.nombre)}</b><small>${fmt(d.nivel_gal,0)} gal · ${chipComb(d.combustible)}</small></button>`).join('') +
+      `<button class="opc ${T.origen==='x'?'sel':''}" type="button" data-o="x"><span class="ic">${IC.proveedor}</span><b>Proveedor externo</b><small>Compra en el aeródromo o la estación</small></button>`;
+    if(!T.origen) T.origen = deps.length===1 && deps[0].combustible===esp.combustible ? 'd'+deps[0].id : (deps.length ? null : 'x');
+    const u = CFG.precios[T.combustible];
+    cuerpo.innerHTML = `<p class="paso-tit">${escapar(e.nombre)}: ¿de dónde sale y cuánto?</p>
+      <p class="paso-sub">${esp.capacidad_gal?`Tanque de ${fmt(esp.capacidad_gal,0)} gal (${fmt(esp.usable_gal,0)} usables).`:''} ${esp.fuente?escapar(esp.fuente):''}</p>
+      <div class="eleccion" id="origenes" style="margin-bottom:16px">${origenes}</div>
+      <div class="bomba-form">
+        <div class="surtidor">
+          <div class="surt-cab"><span class="marca">SURTIDOR</span><span class="grado"><i style="background:${comb(T.combustible).color}"></i>${escapar(comb(T.combustible).nombre)}</span></div>
+          <div class="lcd">
+            <div class="lcd-fila"><span class="et">Galones</span></div>
+            <input class="gal-input" id="tGal" type="number" inputmode="decimal" min="0" step="0.1" placeholder="0.0" value="${T.galones??''}">
+            <div class="lcd-fila"><span class="et">Total $</span><span class="lcd-num m"><span class="fantasma">8,888,888</span><span class="vivo" id="tTot">0</span></span></div>
+          </div>
+          <div class="rapidos"><button type="button" data-s="1">+1</button><button type="button" data-s="5">+5</button><button type="button" data-s="10">+10</button><button type="button" data-s="0">Borrar</button></div>
+        </div>
+        <div>
+          <form class="form-grid" id="fT">
+            ${campo('Combustible', `<select name="combustible">${opcionesComb(T.combustible)}</select>`)}
+            ${campo('Precio por galón', `<input name="precio_gal" type="number" min="0" step="any" placeholder="${u?'último: '+fmt(u.precio_gal,0):''}" value="${T.precio_gal??''}">`, 'precio')}
+            ${campo('Proveedor', `<input name="proveedor" list="provsT" value="${escapar(T.proveedor||'')}"><datalist id="provsT">${CFG.proveedores.map(p=>`<option value="${escapar(p)}">`).join('')}</datalist>`, 'precio')}
+            ${campo('Factura / recibo', `<input name="documento" value="${escapar(T.documento||'')}">`, 'precio')}
+            ${campo(e.tipo_activo==='avion'?'Hobbs al tanquear':'Horómetro del generador', `<input name="lectura" type="number" step="0.1" value="${T.lectura ?? (e.lectura_actual ? e.lectura_actual : '')}" placeholder="${e.lectura_actual!=null ? 'actual: '+fmt(e.lectura_actual,1) : ''}">`)}
+            ${campo('Fecha y hora', `<div style="display:flex;gap:6px"><input name="fecha" type="date" value="${T.fecha||hoyISO()}"><input name="hora" type="time" value="${T.hora||new Date().toTimeString().slice(0,5)}" style="max-width:110px"></div>`)}
+            ${campo('Responsable', `<input name="responsable" value="${escapar(T.responsable||'')}">`)}
+            ${campo('Soporte (foto del recibo)', `<input name="archivo_sub" type="file" accept="image/*,application/pdf">`)}
+          </form>
+          <label class="interruptor" style="margin-top:12px"><input type="checkbox" id="tLleno" ${T.lleno?'checked':''}> Tanque lleno <span class="mut" style="font-weight:500;font-size:12px">— así se mide el consumo exacto de lleno a lleno</span></label>
+          <div class="aviso-vivo" id="tAviso"></div>
+        </div>
+      </div>`;
+    const f = cuerpo.querySelector('#fT'), g = cuerpo.querySelector('#tGal'), aviso = cuerpo.querySelector('#tAviso');
+    const esExterno = ()=>T.origen==='x';
+    const actualizar = ()=>{
+      cuerpo.querySelectorAll('.campo.precio').forEach(c=>c.style.display = esExterno() ? '' : 'none');
+      const dep = !esExterno() && T.origen ? CFG.depositos.find(d=>'d'+d.id===T.origen) : null;
+      const precio = esExterno() ? Number(f.precio_gal.value || (u&&u.precio_gal) || 0) : (dep && dep.precio_medio || 0);
+      const n = Number(g.value||0);
+      document.getElementById('tTot').textContent = Math.round(n*precio).toLocaleString('es-CO');
+      const msgs = []; let rojo = false;
+      if(esp.combustible && f.combustible.value !== esp.combustible){ rojo = true; msgs.push(`<b>Combustible equivocado.</b> ${escapar(e.nombre)} usa ${escapar(comb(esp.combustible).nombre)}. Cargar ${escapar(comb(f.combustible.value).nombre)} puede destruir el motor.`); }
+      if(dep && dep.combustible !== f.combustible.value){ rojo = true; msgs.push(`El depósito ${escapar(dep.nombre)} contiene ${escapar(comb(dep.combustible).nombre)}.`); }
+      if(esp.capacidad_gal && n > esp.capacidad_gal){ rojo = true; msgs.push(`Son más galones que la capacidad del tanque (${fmt(esp.capacidad_gal,0)} gal).`); }
+      if(dep && n > dep.nivel_gal){ msgs.push(`El depósito sólo tiene ${fmt(dep.nivel_gal,1)} gal según el sistema.`); }
+      aviso.className = 'aviso-vivo' + (msgs.length ? ' ver ' + (rojo?'rojo':'ambar') : '');
+      aviso.innerHTML = msgs.join('<br>');
+    };
+    cuerpo.querySelectorAll('[data-o]').forEach(b=>b.onclick=()=>{ T.origen=b.dataset.o; cuerpo.querySelectorAll('[data-o]').forEach(x=>x.classList.toggle('sel', x===b));
+      const dep = CFG.depositos.find(d=>'d'+d.id===T.origen); if(dep) f.combustible.value = dep.combustible; actualizar(); });
+    cuerpo.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{ const s=Number(b.dataset.s); g.value = s ? (Number(g.value||0)+s).toFixed(1) : ''; actualizar(); });
+    g.oninput = f.precio_gal.oninput = f.combustible.onchange = actualizar;
+    actualizar(); setTimeout(()=>g.focus(), 80);
+    bSig.onclick = async ()=>{
+      if(!T.origen) return toast('Elige de dónde sale el combustible');
+      if(!(Number(g.value) > 0)) return toast('Indica los galones');
+      Object.assign(T, Object.fromEntries(new FormData(f)));
+      delete T.archivo_sub;
+      T.galones = g.value; T.lleno = cuerpo.querySelector('#tLleno').checked;
+      const arch = f.archivo_sub.files[0];
+      if(arch){
+        const fd = new FormData(); fd.append('archivo', arch);
+        try{ const r = await fetch('/api/archivos', {method:'POST', body:fd}); const j = await r.json(); if(!r.ok) throw new Error(j.error); T.archivo = j.archivo; }
+        catch(err){ return toast('No se pudo subir el soporte: '+err.message); }
+      }
+      paso2();
+    };
+  }
+
+  function paso2(){
+    T.paso=2; pasos(); bSig.textContent='Registrar tanqueo';
+    const e = eq(), lista = e.tipo_activo==='avion' ? CFG.chequeo_aeronave : CFG.chequeo_apoyo;
+    cuerpo.innerHTML = `<p class="paso-tit">Seguridad y calidad del combustible</p>
+      <p class="paso-sub">Confirma cada punto${e.tipo_activo==='avion'?' conforme a los RAC':''}. Los obligatorios deben estar marcados para registrar el tanqueo.</p>
+      <div class="chequeo">${lista.map(x=>`<label class="chk ${T.chequeo[x.clave]?'si':''}"><input type="checkbox" data-k="${x.clave}" ${T.chequeo[x.clave]?'checked':''}>
+        <span class="caja">${IC.ok}</span><span class="tx">${escapar(x.texto)}${x.rac?`<small>${escapar(x.rac)}</small>`:''}</span>${x.obligatorio?'<span class="ob">obligatorio</span>':''}</label>`).join('')}</div>`;
+    cuerpo.querySelectorAll('.chk input').forEach(i=>i.onchange=()=>{ T.chequeo[i.dataset.k]=i.checked; i.closest('.chk').classList.toggle('si', i.checked); });
+    bSig.onclick = async ()=>{
+      const falta = lista.filter(x=>x.obligatorio && !T.chequeo[x.clave]);
+      if(falta.length) return toast('Falta: ' + falta[0].texto);
+      const datos = {tipo:'tanqueo', equipo_id:T.equipo, deposito_id: T.origen && T.origen!=='x' ? T.origen.slice(1) : null,
+        combustible:T.combustible, galones:T.galones, precio_gal: T.origen==='x' ? (T.precio_gal || (CFG.precios[T.combustible]||{}).precio_gal || null) : null,
+        proveedor: T.origen==='x' ? T.proveedor : null, documento:T.documento, lectura:T.lectura, fecha:T.fecha, hora:T.hora,
+        responsable:T.responsable, lleno:T.lleno, chequeo:T.chequeo, archivo:T.archivo, destino: e.espec.destino};
+      bSig.disabled = true;
+      try{ await api('/api/combustible', {method:'POST', body:datos}); }
+      catch(err){ bSig.disabled = false; return toast(err.message); }
+      await v.cerrar();
+      toast(`Tanqueo registrado: ${fmt(T.galones,1)} gal a ${e.nombre}`);
+      await cargar();
+      document.getElementById('surtidor').scrollIntoView({behavior:'smooth', block:'center'});
+    };
+  }
+  bAtras.onclick = ()=>{ if(T.paso===2) paso1(); else paso0(); };
+  if(equipoId){ T.equipo = equipoId; T.combustible = eq() ? eq().espec.combustible : 'avgas_100ll'; eq() ? paso1() : paso0(); } else paso0();
+}
+
+// ---------- Detalle de consumo de un activo ----------
+async function abrirEquipo(id){
+  const q = new URLSearchParams({periodo:EST.periodo});
+  let c; try{ c = await api(`/api/combustible/equipo/${id}?`+q); }catch(e){ toast(e.message); return; }
+  marcarChequeo(c.movimientos);
+  const esp = c.espec;
+  const v = ventana({titulo: escapar(c.equipo), subtitulo:`${escapar(c.matricula||c.modelo)} · consumo de combustible`, ancho:'ancha',
+    cuerpo:`<div class="grid2" style="margin:0">
+        <div>${reloj(c.gal_h, c.consumo_ref)}
+          <p class="mut" style="text-align:center;font-size:12px;margin:4px 0 0">${c.metodo==='lleno'?'Medido de tanque lleno a tanque lleno':(c.metodo==='periodo'?'Galones tanqueados ÷ horas del período':'Sin datos suficientes')}</p></div>
+        <div class="kpis" style="grid-template-columns:1fr 1fr;margin:0">
+          <div class="kpi"><div class="lbl">Tanqueado</div><div class="val">${fmt(c.galones,0)}<small> gal</small></div><div class="note">${c.tanqueos} tanqueos</div></div>
+          <div class="kpi"><div class="lbl">Horas voladas</div><div class="val">${fmt(c.horas,1)}<small> h</small></div><div class="note">${fmt(c.hectareas,0)} ha</div></div>
+          <div class="kpi"><div class="lbl">Reportado</div><div class="val">${c.gal_h_reportado==null?'—':fmt(c.gal_h_reportado,1)}<small> gal/h</small></div><div class="note">${c.galones_reportados==null?'los pilotos no anotan combustible':fmt(c.galones_reportados,0)+' gal en operaciones'}</div></div>
+          <div class="kpi"><div class="lbl">Costo por hora</div><div class="val" style="font-size:22px">${dinero(c.costo_h)}</div><div class="note">${dinero(c.costo)} en el período</div></div>
+        </div></div>
+      ${c.carga_actual?seguimientoHTML(c.carga_actual, 'Combustible a bordo · carga del '+fmtFecha(c.carga_actual.fecha)):''}
+      ${c.cargas.length?`<div class="cfg-sec" style="margin-top:14px">Cada tanqueo y su consumo</div>
+        <div class="tabla-envoltura"><table style="min-width:620px"><thead><tr><th>Tanqueo</th><th>Cargado</th><th>Vuelos</th><th>Horas</th><th>Consumido</th><th>gal/h</th><th>Estado</th></tr></thead>
+        <tbody>${c.cargas.map(x=>`<tr data-m="${x.id}" style="cursor:pointer"><td>${fmtFecha(x.fecha)}${x.lleno?' <span class="tag ok">lleno</span>':''}</td>
+          <td class="num">${fmt(x.galones,1)}</td><td class="num">${x.n_vuelos}</td><td class="num">${fmt(x.horas,1)}</td>
+          <td class="num"><b>${fmt(x.real!=null?x.real:x.consumido,1)}</b>${x.real!=null?' <small class="mut">real</small>':''}</td>
+          <td class="num">${x.gal_h==null?'—':fmt(x.gal_h,1)}</td>
+          <td>${x.estado==='en_uso'?'<span class="tag acc">en el tanque</span>':(x.diferencia_pct!=null&&Math.abs(x.diferencia_pct)>0.1?`<span class="tag red">descuadre ${x.diferencia>0?'+':''}${fmt(x.diferencia,1)} gal</span>`:'cerrado')}</td></tr>`).join('')}</tbody></table></div>`:''}
+      <div class="cfg-sec" style="margin-top:16px">Mes a mes</div><div id="gEq"></div><div id="leyEq"></div>
+      ${c.tramos.length?`<div class="cfg-sec" style="margin-top:14px">Tramos de lleno a lleno</div>
+        <div class="tabla-envoltura"><table style="min-width:520px"><thead><tr><th>Desde</th><th>Hasta</th><th>Galones</th><th>Horas</th><th>gal/h</th><th>Horas según</th></tr></thead>
+        <tbody>${c.tramos.map(t=>`<tr><td>${fmtFecha(t.desde)}</td><td>${fmtFecha(t.hasta)}</td><td class="num">${fmt(t.galones,1)}</td><td class="num">${fmt(t.horas,2)}</td><td class="num"><b>${t.gal_h==null?'—':fmt(t.gal_h,2)}</b></td><td>${t.fuente==='lectura'?'Hobbs / horómetro':'operaciones'}</td></tr>`).join('')}</tbody></table></div>`:''}
+      <div class="cfg-sec" style="margin-top:14px">Ajustes de combustible de este activo</div>
+      <form class="form-grid" id="fEsp">
+        ${campo('Combustible', `<select name="combustible">${opcionesComb(esp.combustible)}</select>`)}
+        ${campo('Capacidad total (gal)', `<input name="capacidad_gal" type="number" min="0" step="any" value="${esp.capacidad_gal??''}">`)}
+        ${campo('Usable (gal)', `<input name="usable_gal" type="number" min="0" step="any" value="${esp.usable_gal??''}">`)}
+        ${campo('Consumo de referencia (gal/h)', `<input name="consumo_ref" type="number" min="0" step="any" value="${esp.consumo_ref??''}" placeholder="p. ej. el del manual">`)}
+      </form>
+      <p class="mut" style="font-size:11.5px;margin:6px 0 0">${escapar(esp.fuente||'')}</p>
+      <div class="cfg-sec" style="margin-top:14px">Movimientos</div>
+      <div class="tabla-envoltura"><table class="tiquetes" style="min-width:820px"><tbody>${c.movimientos.map(filaMov).join('')||'<tr><td><div class="empty">Sin tanqueos en el período.</div></td></tr>'}</tbody></table></div>`,
+    pie:`<button class="btn secundario" data-tq>Tanquear este activo</button><div class="der"><button class="btn" data-g>Guardar ajustes</button></div>`,
+    alAbrir: ctrl=>{ ctrl.recargar = async ()=>{ await ctrl.cerrar(); abrirEquipo(id); }; setTimeout(()=>{
+      pintarCurvaSeg(ctrl, c.carga_actual, id);
+      const pm = c.por_mes;
+      const et = pm.map(m=>{ const [y,mm]=m.mes.split('-'); return new Date(y, mm-1, 1).toLocaleDateString('es-CO',{month:'short', year:'2-digit'}); });
+      graficoBarras(ctrl.$('#gEq'), et, [{nombre:'Tanqueado', color:'#fdb913', datos:pm.map(m=>m.tanqueado||0), unidad:'gal'},
+        {nombre:'Reportado', color:'#0d9488', datos:pm.map(m=>m.reportado||0), unidad:'gal'},
+        {nombre:'Horas', color:'#1a1d24', datos:pm.map(m=>m.horas||0), unidad:'h'}], {alto:190, vacio:'Sin operaciones en el período.'});
+      leyendaGrafica(ctrl.$('#leyEq'), [{nombre:'Tanqueado (gal)', color:'#fdb913'},{nombre:'Reportado (gal)', color:'#0d9488'},{nombre:'Horas', color:'#1a1d24'}]);
+    }, 60); }});
+  v.$('[data-g]').onclick = async ()=>{
+    try{ await api('/api/combustible/equipo/'+id, {method:'PUT', body:Object.fromEntries(new FormData(v.$('#fEsp')))}); toast('Ajustes guardados'); v.cerrar(); cargar(); }
+    catch(e){ toast(e.message); }
+  };
+  v.$('[data-tq]').onclick = async ()=>{ await v.cerrar(); tanquear(id); };
+  v.$$('tr[data-m]').forEach(r=>r.onclick=async ()=>{ await v.cerrar(); abrirMovimiento(Number(r.dataset.m)); });
+}
+
+// ---------- Calculadora de combustible mínimo (RAC) ----------
+function planificar(){
+  const aviones = CFG.equipos.filter(e=>e.tipo_activo==='avion');
+  if(!aviones.length){ toast('La calculadora es para aeronaves: no hay aviones en la flota'); return; }
+  const R = CFG.reservas;
+  const v = ventana({titulo:'Calcular combustible mínimo', subtitulo:'Combustible requerido para el vuelo según los RAC', ancho:'ancha',
+    cuerpo:`<form class="form-grid" id="fP">
+      ${campo('Aeronave', `<select name="e">${aviones.map(e=>`<option value="${e.id}">${escapar(e.nombre)}${e.matricula?' · '+escapar(e.matricula):''}</option>`).join('')}</select>`)}
+      ${campo('Tipo de vuelo', `<select name="r">${R.casos.map((c,i)=>`<option value="${i}">${escapar(c.nombre)}</option>`).join('')}</select>`)}
+      ${campo('Tiempo de vuelo planeado (min)', `<input name="min" type="number" min="0" step="1" value="60">`)}
+      ${campo('Consumo (gal/h)', `<input name="gph" type="number" min="0" step="0.1">`)}
+      ${campo('Rodaje y arranque (gal)', `<input name="rodaje" type="number" min="0" step="0.1" value="${R.rodaje_gal}">`)}
+      ${campo('Combustible a bordo (gal)', `<input name="bordo" type="number" min="0" step="0.1">`)}
+    </form><div id="pRes"></div>`});
+  const f = v.$('#fP');
+  const consumoDe = id => { const c = (D.consumo||[]).find(x=>x.equipo_id===Number(id)); return c && (c.gal_h || c.consumo_ref); };
+  const alCambiarEq = ()=>{ const g = consumoDe(f.e.value); f.gph.value = g ? g.toFixed(1) : ''; f.gph.placeholder = g ? '' : 'sin historial: indícalo'; calc(); };
+  function calc(){
+    const e = aviones.find(x=>String(x.id)===f.e.value), caso = R.casos[Number(f.r.value)];
+    const gph = Number(f.gph.value||0), min = Number(f.min.value||0);
+    const viaje = gph*min/60, cont = viaje*(caso.contingencia_pct||0)/100, reserva = gph*caso.reserva_min/60, rodaje = Number(f.rodaje.value||0);
+    const total = rodaje+viaje+cont+reserva, usable = e.espec.usable_gal || e.espec.capacidad_gal;
+    const bordo = f.bordo.value==='' ? null : Number(f.bordo.value);
+    const escala = Math.max(total, usable||0, bordo||0) || 1;
+    const seg = [['Rodaje', rodaje, '#737a86'], ['Viaje', viaje, '#fdb913'], ['Contingencia', cont, '#9757c9'], ['Reserva final', reserva, '#e0473e']].filter(s=>s[1]>0);
+    const cabe = usable ? total <= usable : null, alcanza = bordo!=null ? bordo >= total : null;
+    v.$('#pRes').innerHTML = gph ? `
+      <div class="plan-barra">${seg.map(s=>`<i style="width:${s[1]/escala*100}%;background:${s[2]}" title="${s[0]}"></i>`).join('')}
+        ${usable?`<em style="left:${usable/escala*100}%" title="Usable"></em>`:''}</div>
+      <div class="plan-ley">${seg.map(s=>`<span><i style="background:${s[2]}"></i>${s[0]} <b>${fmt(s[1],1)} gal</b></span>`).join('')}${usable?`<span><i style="background:var(--ink)"></i>Usable ${fmt(usable,0)} gal</span>`:''}</div>
+      <div class="veredicto ${cabe===false||alcanza===false?'no':'ok'}">Mínimo: ${fmt(total,1)} gal ${
+        alcanza===false ? `· faltan ${fmt(total-bordo,1)} gal a bordo` : alcanza ? '· lo que hay a bordo alcanza' : cabe===false ? '· no cabe en los tanques: acorta el vuelo' : ''}</div>
+      <p class="mut" style="font-size:12.5px;margin:4px 0 0">Autonomía con tanques llenos: ${usable?fmt((usable-rodaje)/gph*60 - caso.reserva_min,0)+' min de vuelo dejando la reserva':'—'}.</p>
+      <div class="norma">${escapar(caso.norma)}<br>${escapar(R.nota)}</div>` : `<div class="empty">Indica el consumo en gal/h.</div>`;
+  }
+  f.e.onchange = alCambiarEq; f.oninput = calc; f.onchange = calc;
+  alCambiarEq();
+}
+
+document.getElementById('segPeriodo').onclick = e=>{ const b=e.target.closest('button'); if(b){ EST.periodo=b.dataset.p; cargar(); } };
+document.getElementById('btnTanquear').onclick = ()=>tanquear();
+document.getElementById('pistola').onclick = ()=>tanquear();
+document.getElementById('btnCompra').onclick = ()=>formCompra();
+document.getElementById('btnPlan').onclick = ()=>planificar();
+document.getElementById('btnAyuda').onclick = ()=>comoFunciona();
+
+// ---------- Cómo funciona: el circuito del combustible, paso a paso ----------
+const PASOS = [
+  {k:'compra', ic:'compra', t:'Compra', txt:`Entra combustible a un depósito propio (cisterna, carrotanque o bidones). Anota galones, precio y factura: con eso la app conoce el <b>costo medio por galón</b> de cada depósito.`,
+   ej:'Compras 500 gal de 100LL a $ 32.000: la cisterna sube 500 gal y cada galón que salga de ella se valora a $ 32.000.'},
+  {k:'deposito', ic:'deposito', t:'Depósito', txt:`El nivel no se digita: se <b>calcula</b> con cada movimiento (inicial + compras − tanqueos − mermas). Por eso cualquier corrección hacia atrás arregla sola todos los niveles.`,
+   ej:'Nivel inicial 200 + compra 500 − tanqueo 40 − tanqueo 30 = 630 gal.'},
+  {k:'tanqueo', ic:'tanqueo', t:'Tanqueo', txt:`Sale combustible al tanque de un avión. El asistente pide el <b>chequeo de seguridad de la RAC</b> y avisa si el combustible no es el del motor o si se carga más de lo que cabe. Marca <b>«Tanque lleno»</b> siempre que llenes: es la clave del consumo exacto.`,
+   ej:'Cargar Jet A-1 a un motor de pistón destruye el motor: la app lo marca en rojo antes de guardar.'},
+  {k:'consumo', ic:'medicion', t:'Consumo', txt:`<b>De lleno a lleno</b>: todo lo cargado desde el lleno anterior hasta este, dividido entre las horas voladas en ese tramo (Hobbs si lo anotas, si no las operaciones). Es el método de los operadores y el que admite la RAC 91.2012(b)(1) para planear con datos reales.`,
+   ej:'Lleno el lunes con Hobbs 100,0 · lleno el viernes con 32 gal y Hobbs 102,0 → 32 ÷ 2 = 16 gal/h.'},
+  {k:'control', ic:'escudo', t:'Control', txt:`La app cruza tres fuentes que deberían cuadrar: lo que <b>se compró</b>, lo que <b>se tanqueó</b> y lo que los pilotos <b>reportan consumido</b> en cada operación. La varilla semanal cierra el círculo. Si algo no cuadra, aparece en «Control».`,
+   ej:'Se tanquearon 300 gal pero los pilotos reportan 240 → 60 gal sin explicar (20 %): alerta crítica.'},
+];
+function comoFunciona(inicio){
+  let i = Math.max(0, PASOS.findIndex(p=>p.k===inicio));
+  const v = ventana({titulo:'Cómo funciona la estación', subtitulo:'El recorrido de cada galón, de la factura al motor', ancho:'ancha',
+    cuerpo:`<div class="flujo">${PASOS.map((p,j)=>`<button type="button" data-j="${j}"><span class="ic">${IC[p.ic]}</span><b>${p.t}</b></button>`).join('')}</div><div class="flujo-txt" id="flujoTxt"></div>`,
+    pie:`<button class="btn secundario" data-ant>Anterior</button><div class="der"><button class="btn" data-sig>Siguiente</button></div>`});
+  const pintarPaso = ()=>{
+    v.$$('.flujo button').forEach((b,j)=>b.classList.toggle('sel', j===i));
+    v.$('#flujoTxt').innerHTML = `${PASOS[i].txt}<div class="ej"><b>Ejemplo.</b> ${PASOS[i].ej}</div>`;
+    v.$('[data-ant]').style.visibility = i ? 'visible' : 'hidden';
+    v.$('[data-sig]').textContent = i === PASOS.length-1 ? 'Registrar mi primer tanqueo' : 'Siguiente';
+  };
+  v.$$('.flujo button').forEach(b=>b.onclick=()=>{ i = Number(b.dataset.j); pintarPaso(); });
+  v.$('[data-ant]').onclick = ()=>{ i--; pintarPaso(); };
+  v.$('[data-sig]').onclick = async ()=>{ if(i < PASOS.length-1){ i++; pintarPaso(); } else { await v.cerrar(); tanquear(); } };
+  pintarPaso();
+}
+redibujarGraficas(()=>D && pintarGraficas());
+cargar().then(()=>{ const e = paramURL('equipo'); if(e) abrirEquipo(Number(e)); if(paramURL('tanquear')) tanquear(Number(paramURL('tanquear'))||undefined); });
+</script>
+{% endblock %}

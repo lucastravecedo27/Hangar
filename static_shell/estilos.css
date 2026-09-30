@@ -1,0 +1,249 @@
+/* =====================================================================
+   SISTEMA VISUAL — "Claro sobre crema, acento amarillo"
+   Basado en el patrón de tarjetas/KPIs/tablas usado en paneles internos,
+   recoloreado y sin marca de terceros. Reutilizable en cualquier pantalla.
+   ===================================================================== */
+:root{
+  color-scheme:light;
+
+  /* Identidad Hangar: blanco dominante, grafito para el texto, amarillo señal como único acento */
+  --bg:#fafafa; --bg2:#ffffff;
+  --ink:#1a1d24; --ink2:#3a3f4a; --mut:#737a86;
+  --line:#e6e7ea; --line2:#d3d6dc;
+
+  --acc:#fdb913; --acc-d:#e5a200; --acc-ink:#8a5f00; --acc-deep:#7a5500; --acc-soft:#fff6db; --acc-txt:#1a1d24; --acc-linea:#c08600;
+
+  --green:#2f8f4e; --amber:#e8a400; --red:#e0473e; --teal:#0d9488; --purple:#9757c9;
+  --cat-1:#fdb913; --cat-2:#1a1d24; --cat-3:#2f8f4e; --cat-4:#9757c9;
+
+  --shadow:0 1px 2px rgba(0,0,0,.04), 0 8px 28px rgba(0,0,0,.06);
+  --shadow-l:0 2px 6px rgba(0,0,0,.05), 0 18px 50px rgba(0,0,0,.1);
+  --r:20px; --r-s:14px;
+
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Helvetica Neue",Helvetica,Arial,sans-serif;
+  --font-marca:"Manrope",-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;
+}
+
+
+/* ===== MODO OSCURO =====
+   Cada usuario elige en Ajustes: claro, oscuro o «sistema» (sigue al sistema operativo). La raíz
+   lleva <html data-tema="…">. Sólo se redefinen variables: las reglas usan var(--x) o, donde había
+   un color fijo, var(--o-algo, color-original) — en claro --o-algo no existe y se ve igual que
+   siempre; en oscuro toma el valor de aquí. Envuelto en @media screen: al imprimir, siempre claro. */
+@media screen{
+  html[data-tema="oscuro"]{
+    color-scheme:dark;
+    --bg:#0f1116; --bg2:#171a21;
+    --ink:#e8eaee; --ink2:#c3c7cf; --mut:#8b919c;
+    --line:#262a33; --line2:#333844;
+    --acc-ink:#fdc94a; --acc-deep:#fdc94a; --acc-soft:rgba(253,185,19,.12); --acc-linea:#fdb913;
+    --green:#2f9a52; --amber:#f0b429; --red:#ef5b53; --teal:#2bb3a6; --purple:#b388e6;
+    --cat-2:#c3c7cf;
+    --shadow:0 1px 2px rgba(0,0,0,.35), 0 8px 28px rgba(0,0,0,.28);
+    --shadow-l:0 2px 6px rgba(0,0,0,.4), 0 18px 50px rgba(0,0,0,.45);
+    --side-1:#0b0d11; --side-2:#0b0d11; --side-txt:#c3c7cf; --side-mut:#7d8390;
+    --o-sup:#171a21; --o-gris:#1d2129; --o-gris-2:#1a1d24; --o-gris-3:#232731; --o-grafito:#2a2f3a;
+    --o-suave-ambar:rgba(253,185,19,.13); --o-suave-rojo:rgba(239,91,83,.15); --o-borde-rojo:rgba(239,91,83,.45);
+    --o-velo-sup:rgba(29,33,41,.92); --o-velo-bg:rgba(15,17,22,.88);
+    --o-tx-verde:#6fd08c; --o-tx-rojo:#ff8a80; --o-tx-ambar:#f5c451; --o-tx-teal:#5fd4c6; --o-tx-morado:#c9a2ee; --o-tx-azul:#8fb4ee; --o-tx-gris:#c3c7cf; --o-borde-gris:#4b5261;
+    --o-linea-hover:#4b5261; --o-card-borde:#232731; --o-verde-d:#35a058;
+    --o-sombra-hover:0 12px 30px rgba(0,0,0,.55),0 2px 6px rgba(0,0,0,.4);
+    --o-sombra-corta:0 4px 12px rgba(0,0,0,.5);
+    --o-toast:rgba(38,43,54,.97); --o-toast-borde:#3a404d;
+    --o-rejilla:#262a33; --o-rejilla-base:#3a404d; --o-marca:#e8eaee;
+    --o-destacado:#1f1b10; --o-destacado-borde:rgba(253,185,19,.30); --o-destacado-tx:#e8eaee; --o-destacado-mut:#aca58f;
+    --o-mezcla:#fff; --o-tinte:rgba(255,255,255,.08); --o-hero:#1d2129;
+    --o-avd-ln:#c9cdd4; --o-avd-ln2:#8b919c; --o-avd-grid:#1a1d24; --o-avd-grid2:#222630;
+    --o-avd-papel:#12151a; --o-avd-marco:#333844;
+    --o-avd-sin:#20242d; --o-avd-ok:#1c3526; --o-avd-proximo:#43360f; --o-avd-critico:#4d2321; --o-avd-vencido:#5e1f1c;
+    --o-borde-ventana:#2c313b; --o-cab-ventana:#1a1d24; --o-globo:rgba(38,43,54,.97); --o-borde-globo:#3a404d;
+    --o-visor:radial-gradient(ellipse at 50% 30%,#232731 0%,#1a1d24 60%,#14171d 100%);
+  }
+}
+@media screen and (prefers-color-scheme:dark){
+  html[data-tema="sistema"]{
+    color-scheme:dark;
+    --bg:#0f1116; --bg2:#171a21;
+    --ink:#e8eaee; --ink2:#c3c7cf; --mut:#8b919c;
+    --line:#262a33; --line2:#333844;
+    --acc-ink:#fdc94a; --acc-deep:#fdc94a; --acc-soft:rgba(253,185,19,.12); --acc-linea:#fdb913;
+    --green:#2f9a52; --amber:#f0b429; --red:#ef5b53; --teal:#2bb3a6; --purple:#b388e6;
+    --cat-2:#c3c7cf;
+    --shadow:0 1px 2px rgba(0,0,0,.35), 0 8px 28px rgba(0,0,0,.28);
+    --shadow-l:0 2px 6px rgba(0,0,0,.4), 0 18px 50px rgba(0,0,0,.45);
+    --side-1:#0b0d11; --side-2:#0b0d11; --side-txt:#c3c7cf; --side-mut:#7d8390;
+    --o-sup:#171a21; --o-gris:#1d2129; --o-gris-2:#1a1d24; --o-gris-3:#232731; --o-grafito:#2a2f3a;
+    --o-suave-ambar:rgba(253,185,19,.13); --o-suave-rojo:rgba(239,91,83,.15); --o-borde-rojo:rgba(239,91,83,.45);
+    --o-velo-sup:rgba(29,33,41,.92); --o-velo-bg:rgba(15,17,22,.88);
+    --o-tx-verde:#6fd08c; --o-tx-rojo:#ff8a80; --o-tx-ambar:#f5c451; --o-tx-teal:#5fd4c6; --o-tx-morado:#c9a2ee; --o-tx-azul:#8fb4ee; --o-tx-gris:#c3c7cf; --o-borde-gris:#4b5261;
+    --o-linea-hover:#4b5261; --o-card-borde:#232731; --o-verde-d:#35a058;
+    --o-sombra-hover:0 12px 30px rgba(0,0,0,.55),0 2px 6px rgba(0,0,0,.4);
+    --o-sombra-corta:0 4px 12px rgba(0,0,0,.5);
+    --o-toast:rgba(38,43,54,.97); --o-toast-borde:#3a404d;
+    --o-rejilla:#262a33; --o-rejilla-base:#3a404d; --o-marca:#e8eaee;
+    --o-destacado:#1f1b10; --o-destacado-borde:rgba(253,185,19,.30); --o-destacado-tx:#e8eaee; --o-destacado-mut:#aca58f;
+    --o-mezcla:#fff; --o-tinte:rgba(255,255,255,.08); --o-hero:#1d2129;
+    --o-avd-ln:#c9cdd4; --o-avd-ln2:#8b919c; --o-avd-grid:#1a1d24; --o-avd-grid2:#222630;
+    --o-avd-papel:#12151a; --o-avd-marco:#333844;
+    --o-avd-sin:#20242d; --o-avd-ok:#1c3526; --o-avd-proximo:#43360f; --o-avd-critico:#4d2321; --o-avd-vencido:#5e1f1c;
+    --o-borde-ventana:#2c313b; --o-cab-ventana:#1a1d24; --o-globo:rgba(38,43,54,.97); --o-borde-globo:#3a404d;
+    --o-visor:radial-gradient(ellipse at 50% 30%,#232731 0%,#1a1d24 60%,#14171d 100%);
+  }
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:14px;line-height:1.5;
+  -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility}
+body{min-height:100vh}
+a{color:var(--acc-ink)}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px;border-radius:6px}
+::selection{background:rgba(253,185,19,.28)}
+body.with-side{padding-left:216px}
+.wrap{max-width:1320px;margin:0 auto;padding:0 28px}
+
+/* ===== HEADER =====
+   Ya no hay barra superior fija: el título vive dentro del contenido (.pagina-cab en shell.css)
+   y la navegación está sólo en la barra lateral. */
+.spacer{flex:1}
+.btn-refresh{display:inline-flex;align-items:center;gap:8px;background:var(--acc);color:var(--acc-txt);border:none;border-radius:980px;padding:9px 17px;font-size:13.5px;font-weight:590;font-family:var(--font);cursor:pointer;transition:.18s;box-shadow:0 1px 2px rgba(197,140,0,.35)}
+.btn-refresh:hover{background:var(--acc-d);transform:translateY(-1px);box-shadow:0 6px 18px rgba(197,140,0,.3)}
+
+/* ===== FILTROS / TABS ===== */
+.tabsbar{position:sticky;top:0;z-index:40;background:var(--o-velo-bg,rgba(250,250,250,.88));backdrop-filter:saturate(180%) blur(18px);-webkit-backdrop-filter:saturate(180%) blur(18px);border-bottom:.5px solid var(--line)}
+.tabsbar .wrap{display:flex;align-items:center;gap:14px;padding-top:10px;padding-bottom:10px;flex-wrap:wrap;min-height:54px}
+.filters{display:flex;align-items:center;gap:9px 14px;flex-wrap:wrap;margin-left:auto}
+select,input[type=text],input[type=date],input[type=number],input[type=search],input[type=password],textarea{font-family:var(--font);font-size:13px;font-weight:520;color:var(--ink);background:var(--o-sup,#fff);border:.5px solid var(--line2);border-radius:10px;padding:8px 11px;outline:none;transition:border-color .15s,box-shadow .15s}
+select:focus,input:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(253,185,19,.2)}
+.pillbtn{font-family:var(--font);font-size:12px;font-weight:560;color:var(--ink2);background:var(--o-sup,#fff);border:.5px solid var(--line2);border-radius:980px;padding:6px 13px;cursor:pointer;transition:.15s}
+.pillbtn:hover{border-color:var(--acc);color:var(--acc-ink)}
+.pillbtn.active{background:var(--acc);border-color:var(--acc-d);color:var(--acc-txt)}
+
+/* ===== LAYOUT ===== */
+main{padding:0 0 72px}
+.wrap{max-width:1320px;margin:0 auto;padding:0 30px}
+
+/* ===== KPIs ===== */
+/* Estilo "editorial": borde fino en vez de sombra, cifra en Manrope, variación en color y,
+   cuando la pantalla la aporta, una mini-gráfica de tendencia a la derecha (.tend + .spark). */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:24px}
+.kpi{position:relative;background:var(--bg2);border-radius:18px;padding:18px 20px 15px;border:1px solid var(--line);
+  display:grid;grid-template-columns:1fr auto;column-gap:10px;align-items:end;transition:border-color .2s,box-shadow .2s,transform .2s cubic-bezier(.22,.7,.25,1)}
+.kpi:hover{border-color:var(--line2);box-shadow:0 10px 30px rgba(0,0,0,.06);transform:translateY(-2px)}
+.kpi>.lbl{grid-column:1/-1}.kpi>.val,.kpi>.note,.kpi>.sub,.kpi>.delta{grid-column:1}
+.kpi .lbl{font-size:10.5px;font-weight:700;color:var(--mut);letter-spacing:.08em;text-transform:uppercase;line-height:1.35}
+.kpi .val{font-family:var(--font-marca);font-size:34px;font-weight:800;letter-spacing:-.045em;line-height:1;margin:10px 0 7px;font-variant-numeric:tabular-nums;color:var(--ink)}
+.kpi .val.acc{color:var(--acc-ink)}
+.kpi .note,.kpi .sub{font-size:12px;color:var(--mut);line-height:1.4}
+.kpi .delta{font-size:11.5px;font-weight:650;color:var(--mut);line-height:1.4;white-space:nowrap}
+.kpi .delta.up{color:var(--green)}.kpi .delta.dn{color:var(--red)}.kpi .delta.acc{color:var(--acc-deep)}
+.kpi .spark{grid-column:2;grid-row:2/span 2;align-self:end;width:92px;height:40px;margin-bottom:2px}
+.kpi .spark path{fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.kpi .spark .area{fill:currentColor;opacity:.08;stroke:none}
+@media(max-width:640px){.kpi .spark{width:64px}}
+@media print{.kpi{border-color:var(--line2)}.kpi:hover{box-shadow:none;transform:none}}
+
+/* ===== TARJETAS ===== */
+.grid2{display:grid;grid-template-columns:1.2fr 1fr;gap:18px}@media(max-width:880px){.grid2{grid-template-columns:1fr}}
+.card{background:var(--bg2);border-radius:var(--r);padding:24px;margin-bottom:18px;box-shadow:var(--shadow);border:.5px solid var(--o-card-borde,rgba(0,0,0,.03));transition:box-shadow .22s ease}
+.card:hover{box-shadow:var(--shadow-l)}
+.card h3{font-size:15.5px;font-weight:660;letter-spacing:-.02em;margin-bottom:14px;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.card h3 .mut{font-size:12.5px;color:var(--mut);font-weight:480}
+
+/* ===== TABLAS ===== */
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th,td{text-align:left;padding:11px 12px;border-bottom:.5px solid var(--line)}
+th{font-size:11px;font-weight:620;color:var(--mut);text-transform:uppercase;letter-spacing:.03em;border-bottom:.5px solid var(--line2)}
+th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
+tbody tr.clk{cursor:pointer;transition:.12s}tbody tr.clk:hover{background:var(--acc-soft)}
+
+/* ===== CHIPS ===== */
+.tag{display:inline-block;padding:3px 10px;border-radius:980px;font-size:11px;font-weight:580}
+.tag.acc{background:var(--acc-soft);color:var(--acc-deep)}
+.tag.gray{background:rgba(115,122,134,.16);color:var(--ink2)}
+.tag.green{background:rgba(47,143,78,.14);color:var(--o-tx-verde,#1d6b38)}
+.tag.red{background:rgba(224,71,62,.14);color:var(--o-tx-rojo,#a4271f)}
+
+/* ===== FORMULARIO RÁPIDO ===== */
+.form-rapido{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:18px}
+.form-rapido .campo{display:flex;flex-direction:column;gap:5px}
+.form-rapido label{font-size:11px;font-weight:640;color:var(--mut);text-transform:uppercase;letter-spacing:.03em}
+.btn{font-family:var(--font);display:inline-flex;align-items:center;gap:7px;border:none;border-radius:11px;padding:9px 18px;font-size:13.5px;font-weight:600;cursor:pointer;background:var(--acc);color:var(--acc-txt);transition:.15s;box-shadow:0 1px 2px rgba(197,140,0,.35)}
+.btn:hover{background:var(--acc-d);transform:translateY(-1px);box-shadow:0 6px 18px rgba(197,140,0,.28)}
+.btn:active{transform:none}
+.btn.verde{background:var(--green);color:#fff;box-shadow:0 1px 2px rgba(47,143,78,.35)}
+.btn.verde:hover{background:var(--o-verde-d,#26794a);box-shadow:0 6px 18px rgba(47,143,78,.28)}
+.btn.secundario{background:var(--o-sup,#fff);color:var(--ink2);border:.5px solid var(--line2)}
+.btn.secundario:hover{border-color:var(--acc);color:var(--acc-ink)}
+.btn-icono{border:none;background:rgba(115,122,134,.14);color:var(--ink2);border-radius:8px;width:28px;height:28px;cursor:pointer;font-size:13px}
+.btn-icono:hover{background:rgba(224,71,62,.16);color:var(--o-tx-rojo,#a4271f)}
+
+/* ===== ESTADOS VACÍOS ===== */
+.empty{padding:46px 20px;text-align:center;color:var(--mut)}
+
+/* ===== TOAST ===== */
+.toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--o-toast,rgba(10,25,50,.94));color:#fff;border:.5px solid var(--o-toast-borde,transparent);padding:12px 20px;border-radius:13px;font-size:13.5px;font-weight:520;z-index:200;opacity:0;transition:.3s;box-shadow:0 10px 40px rgba(0,0,0,.3)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+@keyframes ag-rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion: no-preference){
+  main > .wrap > .card{animation:ag-rise .5s cubic-bezier(.22,.7,.25,1) both}
+  .kpi{animation:ag-rise .55s cubic-bezier(.22,.7,.25,1) both}
+  .kpis .kpi:nth-child(2){animation-delay:.045s}
+  .kpis .kpi:nth-child(3){animation-delay:.09s}
+  .kpis .kpi:nth-child(4){animation-delay:.135s}
+  .kpis .kpi:nth-child(5){animation-delay:.18s}
+  .pagina-cab{animation:ag-rise .45s cubic-bezier(.22,.7,.25,1) both}
+}
+
+/* ===== Iconos en línea (sustituyen a los emoji) ===== */
+.aviso svg,.pillbtn.con-ic svg,.nota svg{width:18px;height:18px;flex:none}
+.pillbtn.con-ic{display:inline-flex;align-items:center;gap:7px}
+.ic-dron{width:17px;height:17px;flex:none;color:var(--acc-ink);vertical-align:-3px}
+/* La barra de filtros va bajo el título; al quedar pegada arriba necesita aire propio. */
+.tabsbar{margin-bottom:20px}
+main > .wrap:last-of-type{padding-bottom:0}
+
+/* ===== Tarjetas limpias =====
+   Sin halos, resplandores ni sombras que «salten» detrás de las tarjetas o de los semáforos.
+   Al pasar el ratón por una tarjeta clicable sólo cambia el borde. (Los anillos de foco de los
+   campos de formulario se mantienen: son accesibilidad, no decoración.) */
+.kpi:hover,.card:hover,.pl-avisos li.clic:hover{box-shadow:none!important;transform:none!important}
+/* Tarjetas clicables: al pasar el ratón se levantan un poco con una sombra neutra y el borde se
+   oscurece. Nada de color ni resplandor detrás. */
+.equipo-card,.orden-card,.contacto-card,.ae-kpi,.ae-activo,.cat-modelo,.fc,.co-activo{
+  transition:border-color .16s ease,box-shadow .16s ease,transform .16s ease!important}
+.equipo-card:hover,.orden-card:hover,.contacto-card:hover,.ae-kpi:hover,.ae-activo:hover,.cat-modelo:hover,.fc:hover,.co-activo:hover{
+  border-color:var(--o-linea-hover,#b9bdc6)!important;box-shadow:var(--o-sombra-hover,0 10px 28px rgba(26,29,36,.10),0 2px 6px rgba(26,29,36,.05))!important;
+  transform:translateY(-3px)!important}
+.bl:hover{box-shadow:var(--o-sombra-corta,0 4px 12px rgba(26,29,36,.16))!important;transform:translateY(-1px)!important}
+@media (prefers-reduced-motion:reduce){.equipo-card:hover,.orden-card:hover,.contacto-card:hover,.ae-kpi:hover,.ae-activo:hover,
+  .cat-modelo:hover,.fc:hover,.co-activo:hover,.bl:hover{transform:none!important}}
+.luz,.semaforo i,.semaforo-g i,.sk .luz,.ae-dir .fila .luz,.ae-docs .dias i{box-shadow:none!important;filter:none}
+.ae-kpi .luz{background:var(--c)!important}
+.ae-kpi.sel,.cat-modelo.sel,.equipo-card.sel,.activo-btn.sel{box-shadow:none!important}
+.ficha-hero::after{display:none!important}
+.punto.sel{animation:none!important}
+.punto-vivo{animation:none!important;box-shadow:none!important}
+.kpi,.card{transition:border-color .15s}
+
+/* Sin franjas de color en el borde de las tarjetas: el estado lo dicen el semáforo y el texto. */
+.ae-kpi::before,.co-activo::before,.orden-card::before,.g-act::before{display:none!important}
+.ae-activo{border-top:1px solid var(--line)!important}
+.avd-it{border-left:.5px solid var(--line2)!important}
+.co-activo,.co-activo.no_apto,.co-activo.observaciones,.ae-activo{border-color:var(--line)!important}
+/* (va al final para ganarle al borde neutro de arriba) */
+.co-activo:hover,.co-activo.no_apto:hover,.co-activo.observaciones:hover,.ae-activo:hover{border-color:var(--o-linea-hover,#b9bdc6)!important}
+
+/* ===== Hover unificado (revisión de todas las pantallas) =====
+   · Tarjetas que se abren: se levantan 3 px con sombra neutra (arriba).
+   · Filas de listas clicables (alertas, pendientes, ítems): fondo gris muy suave y borde más
+     oscuro, sin levantarse, para no mover la lista mientras se recorre.
+   · Botones grandes de elección (activo en el chequeo, OK / Falla): borde más oscuro y sombra
+     corta. */
+.activo-btn{transition:border-color .16s ease,box-shadow .16s ease,transform .16s ease}
+.activo-btn:hover{border-color:var(--o-linea-hover,#b9bdc6)!important;box-shadow:var(--o-sombra-hover,0 10px 28px rgba(26,29,36,.10),0 2px 6px rgba(26,29,36,.05));transform:translateY(-3px)}
+.activo-btn.sel:hover{border-color:var(--acc-d)!important}
+.co-alerta,.ae-pend .item,.diagrama-lista .item,.lista .item.clic{transition:background .15s ease,border-color .15s ease}
+.co-alerta:hover,.ae-pend .item:hover{background:var(--o-gris,#f4f5f7)!important;border-color:var(--o-linea-hover,#b9bdc6)!important}
+.b-ok,.b-falla{transition:border-color .15s ease,box-shadow .15s ease,background .15s ease}
+.b-ok:hover,.b-falla:hover{border-color:var(--o-linea-hover,#b9bdc6);box-shadow:var(--o-sombra-corta,0 4px 12px rgba(26,29,36,.08))}

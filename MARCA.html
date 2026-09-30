@@ -1,0 +1,271 @@
+<title>Manual de marca Hangar</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;800&display=swap">
+<style>
+  :root{ --fondo:#ffffff; --papel:#fafafa; --tinta:#1a1d24; --tinta2:#3a3f4a; --mut:#737a86; --linea:#e6e7ea; --acc:#fdb913; --acc-d:#e5a200; --acc-ink:#8a5f00; --acc-deep:#7a5500; --acc-soft:#fff6db; --acc-txt:#1a1d24; }
+  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --fondo:#111318; --papel:#181b21; --tinta:#eef1f5; --tinta2:#c9cfd8; --mut:#9aa1ad; --linea:#2a2f38; --acc-soft:#3a2219; } }
+  :root[data-theme="dark"]{ --fondo:#111318; --papel:#181b21; --tinta:#eef1f5; --tinta2:#c9cfd8; --mut:#9aa1ad; --linea:#2a2f38; --acc-soft:#3a2219; }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--fondo);color:var(--tinta);font:15px/1.6 "Manrope",system-ui,-apple-system,sans-serif}
+  .wrap{max-width:1080px;margin:0 auto;padding:48px 28px 80px}
+  h1{font-size:40px;font-weight:800;letter-spacing:-.03em;margin:0;text-wrap:balance;line-height:1.05}
+  h2{font-size:24px;font-weight:800;letter-spacing:-.02em;margin:0 0 6px}
+  h3{font-size:15px;font-weight:800;margin:0 0 6px}
+  p{max-width:66ch;color:var(--tinta2);margin:6px 0}
+  .mut{color:var(--mut)}
+  .eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--acc-ink);font-weight:800;margin-bottom:10px}
+  section{margin-top:56px;padding-top:32px;border-top:1px solid var(--linea)}
+  section > .n{font-size:12px;font-weight:800;color:var(--mut);letter-spacing:.12em;margin-bottom:6px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+  .tile{border:1px solid var(--linea);border-radius:16px;padding:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;min-height:200px;background:var(--papel)}
+  .tile.blanco{background:#ffffff;color:#1a1d24}
+  .tile.grafito{background:#1a1d24;color:#fff;border-color:#1a1d24}
+  .tile.amarillo{background:#fdb913;color:#1a1d24;border-color:#fdb913}
+  .tile .cap{font-size:11px;letter-spacing:.1em;text-transform:uppercase;opacity:.65;margin:0}
+  .lockup{display:flex;align-items:center;gap:14px}
+  .palabra{font-weight:800;font-size:36px;letter-spacing:-.035em;line-height:1}
+  .palabra small{display:block;font-size:12px;font-weight:500;letter-spacing:.02em;opacity:.7;margin-top:4px}
+  .hero{display:grid;grid-template-columns:1.1fr .9fr;gap:28px;align-items:center;margin-top:28px}
+  .hero .tile{min-height:320px}
+  /* paleta */
+  .sw{border-radius:14px;overflow:hidden;border:1px solid var(--linea)}
+  .sw .c{height:96px}
+  .sw .t{padding:12px 14px;background:var(--papel);font-size:13px}
+  .sw .t b{display:block;font-size:14px}
+  .sw .t code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;color:var(--mut)}
+  .sw .t .rol{color:var(--tinta2);margin-top:4px;line-height:1.45}
+  /* tipografía */
+  .tipo{border:1px solid var(--linea);border-radius:16px;padding:22px;background:var(--papel)}
+  .tipo .muestra{font-weight:800;font-size:44px;letter-spacing:-.035em;line-height:1.05}
+  .tipo .abc{font-size:15px;color:var(--tinta2);margin-top:8px;word-break:break-all}
+  .tipo .sys{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Helvetica,Arial,sans-serif}
+  /* reglas */
+  .regla{border:1px solid var(--linea);border-radius:14px;padding:16px 18px;background:var(--papel)}
+  .regla b{display:block;margin-bottom:4px}
+  .no{position:relative}
+  .no::after{content:"";position:absolute;inset:0;border-radius:16px;box-shadow:inset 0 0 0 2px #e0473e}
+  .no .x{position:absolute;top:10px;right:12px;font-weight:800;color:#e0473e;font-size:13px}
+  .reserva{position:relative;display:inline-block;padding:44px}
+  .reserva::before{content:"";position:absolute;inset:0;border:1px dashed var(--acc);border-radius:10px}
+  .reserva .h{position:absolute;left:8px;top:8px;width:36px;height:36px;border:1px solid var(--acc-d);border-radius:6px;font-size:10px;color:var(--acc-ink);display:grid;place-items:center}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;background:var(--papel);border:1px solid var(--linea);border-radius:14px;overflow:hidden}
+  th{text-align:left;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);padding:10px 14px;border-bottom:1px solid var(--linea)}
+  td{padding:9px 14px;border-top:1px solid var(--linea);vertical-align:top}
+  td i.dot{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:8px;vertical-align:-1px}
+  .sem{display:flex;gap:10px;align-items:center}
+  .sem span{display:inline-flex;align-items:center;gap:6px;font-size:13px}
+  .sem i{width:14px;height:14px;border-radius:50%}
+  .ui{border:1px solid var(--linea);border-radius:16px;overflow:hidden;display:grid;grid-template-columns:200px 1fr;background:#fff;color:#1a1d24}
+  .ui .side{border-right:1px solid #e6e7ea;padding:16px 12px;font-size:13px}
+  .ui .side .b{display:flex;align-items:center;gap:8px;font-weight:800;font-size:15px;margin-bottom:14px}
+  .ui .side div.i{padding:7px 10px;border-radius:8px;margin-bottom:3px;color:#3a3f4a}
+  .ui .side div.i.on{background:#fff6db;color:#7a5500;font-weight:700}
+  .ui .main{padding:18px;background:#fafafa}
+  .ui .main h4{margin:0 0 10px;font-size:18px;font-weight:800;letter-spacing:-.02em}
+  .ui .kp{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .ui .k{background:#fff;border:1px solid #e6e7ea;border-radius:12px;padding:12px 14px;border-left:3px solid #fdb913}
+  .ui .k small{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#737a86}
+  .ui .k b{display:block;font-size:22px;margin-top:2px}
+  .ui .btn{display:inline-block;margin-top:12px;background:#fdb913;color:#1a1d24;border-radius:9px;padding:8px 14px;font-weight:700;font-size:13px}
+  .ui .barras{margin-top:14px;display:grid;gap:8px}
+  .ui .barra{display:flex;align-items:center;gap:10px;font-size:12px}
+  .ui .barra .tr{flex:1;height:7px;border-radius:4px;background:#ededf0;overflow:hidden}
+  .ui .barra .tr i{display:block;height:100%}
+  @media (max-width:860px){.grid2,.grid3,.grid4,.hero{grid-template-columns:1fr}.ui{grid-template-columns:1fr}.ui .side{display:none}}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="logo" viewBox="0 0 120 120">
+      <g transform="skewX(-14)">
+        <rect x="34" y="66" width="16" height="32" rx="4" fill="var(--s2,#1a1d24)"/>
+        <rect x="60" y="44" width="16" height="54" rx="4" fill="var(--s2,#1a1d24)"/>
+        <path d="M86 36 C86 26 94 14 94 14 C94 14 102 26 102 36 V94 A4 4 0 0 1 98 98 H90 A4 4 0 0 1 86 94 Z" fill="var(--s1,#fdb913)"/>
+      </g>
+      <rect x="20" y="104" width="86" height="6" rx="3" fill="var(--s2,#1a1d24)" opacity=".35"/>
+    </symbol>
+    <symbol id="logo-mono" viewBox="0 0 120 120">
+      <g transform="skewX(-14)" fill="currentColor">
+        <rect x="34" y="66" width="16" height="32" rx="4"/>
+        <rect x="60" y="44" width="16" height="54" rx="4"/>
+        <path d="M86 36 C86 26 94 14 94 14 C94 14 102 26 102 36 V94 A4 4 0 0 1 98 98 H90 A4 4 0 0 1 86 94 Z"/>
+      </g>
+      <rect x="20" y="104" width="86" height="6" rx="3" fill="currentColor" opacity=".35"/>
+    </symbol>
+  </defs>
+</svg>
+
+<div class="wrap">
+  <div class="eyebrow">Manual de marca · v1 · septiembre 2026</div>
+  <h1>Hangar</h1>
+  <p style="font-size:17px;margin-top:10px">Control de flota aérea agrícola para empresas de fumigación con drones y avionetas. Esta guía define cómo se ve Hangar en la aplicación, en documentos y en cualquier pieza: el símbolo, la palabra, los colores, la tipografía y las reglas para usarlos sin desgastarlos.</p>
+
+  <div class="hero">
+    <div class="tile blanco"><svg width="200" height="200"><use href="#logo"/></svg></div>
+    <div>
+      <h3>La idea</h3>
+      <p>Tres barras inclinadas que suben: altitud, rendimiento y crecimiento, el lenguaje de un tablero de control. La barra más alta, en amarillo, remata en punta de gota: el líquido que sube por la lanza y se aplica sobre el cultivo. El símbolo dice "control" a primera vista y "fumigación" a la segunda, sin dibujar un dron.</p>
+      <p>Debajo, una línea tenue: la pista, el lote, la base desde la que todo despega.</p>
+    </div>
+  </div>
+
+  <!-- ============ 1 · LOGO ============ -->
+  <section>
+    <div class="n">01</div>
+    <h2>Símbolo y logotipo</h2>
+    <p>Hay dos piezas: el <b>símbolo</b> (las barras) y la <b>palabra</b> "Hangar", siempre con H mayúscula, en Manrope ExtraBold. Juntas forman el logotipo horizontal; el símbolo puede ir solo cuando el espacio es pequeño o la marca ya es conocida (favicon, ícono de app, barra lateral plegada).</p>
+    <div class="grid3" style="margin-top:18px">
+      <div class="tile blanco"><p class="cap">Logotipo horizontal · principal</p><div class="lockup"><svg width="64" height="64"><use href="#logo"/></svg><div class="palabra">Hangar<small>Control de flota aérea agrícola</small></div></div></div>
+      <div class="tile grafito"><p class="cap">Sobre grafito</p><div class="lockup"><svg width="64" height="64" style="--s2:#ffffff"><use href="#logo"/></svg><div class="palabra">Hangar<small>Control de flota aérea agrícola</small></div></div></div>
+      <div class="tile amarillo"><p class="cap">Sobre amarillo · monocromo grafito</p><div class="lockup"><svg width="64" height="64" style="color:#1a1d24"><use href="#logo-mono"/></svg><div class="palabra">Hangar<small>Control de flota aérea agrícola</small></div></div></div>
+    </div>
+    <div class="grid4" style="margin-top:16px">
+      <div class="tile blanco"><p class="cap">Símbolo</p><svg width="96" height="96"><use href="#logo"/></svg></div>
+      <div class="tile blanco"><p class="cap">Monocromo grafito</p><svg width="96" height="96" style="color:#1a1d24"><use href="#logo-mono"/></svg></div>
+      <div class="tile grafito"><p class="cap">Monocromo blanco</p><svg width="96" height="96" style="color:#fff"><use href="#logo-mono"/></svg></div>
+      <div class="tile blanco"><p class="cap">Favicon · ícono de app</p><div style="display:flex;gap:14px;align-items:flex-end"><svg width="16" height="16"><use href="#logo"/></svg><svg width="32" height="32"><use href="#logo"/></svg><div style="width:64px;height:64px;border-radius:14px;background:#1a1d24;display:grid;place-items:center"><svg width="52" height="52" style="--s2:#ffffff"><use href="#logo"/></svg></div></div></div>
+    </div>
+    <p class="mut" style="margin-top:14px;font-size:13px">Cuándo usar cada versión: a color siempre que el fondo sea blanco, gris muy claro o grafito. Monocromo cuando solo hay una tinta (grabado, bordado, sello, PDF en escala de grises) o cuando el fondo es de color. El descriptor "Control de flota aérea agrícola" es opcional y se quita por debajo de 40 px de alto.</p>
+  </section>
+
+  <!-- ============ 2 · REGLAS ============ -->
+  <section>
+    <div class="n">02</div>
+    <h2>Área de reserva, tamaños y usos incorrectos</h2>
+    <div class="grid2" style="margin-top:18px">
+      <div class="tile blanco" style="align-items:flex-start">
+        <p class="cap">Área de reserva</p>
+        <div class="reserva"><span class="h">h</span><div class="lockup"><svg width="64" height="64"><use href="#logo"/></svg><div class="palabra">Hangar</div></div></div>
+        <p style="font-size:13px">Alrededor del logotipo se deja libre al menos la altura de la barra corta (<b>h</b>). Nada de texto, bordes ni otros logos dentro de ese margen.</p>
+      </div>
+      <div class="tile blanco" style="align-items:flex-start">
+        <p class="cap">Tamaños mínimos</p>
+        <div style="display:flex;gap:22px;align-items:flex-end">
+          <div style="text-align:center"><svg width="16" height="16"><use href="#logo"/></svg><div class="mut" style="font-size:11px;margin-top:4px">16 px<br>favicon</div></div>
+          <div style="text-align:center"><svg width="24" height="24"><use href="#logo"/></svg><div class="mut" style="font-size:11px;margin-top:4px">24 px<br>símbolo solo</div></div>
+          <div style="text-align:center"><div class="lockup"><svg width="28" height="28"><use href="#logo"/></svg><div class="palabra" style="font-size:16px">Hangar</div></div><div class="mut" style="font-size:11px;margin-top:4px">28 px · logotipo</div></div>
+          <div style="text-align:center"><div class="lockup"><svg width="40" height="40"><use href="#logo"/></svg><div class="palabra" style="font-size:22px">Hangar<small style="font-size:9px">Control de flota aérea agrícola</small></div></div><div class="mut" style="font-size:11px;margin-top:4px">40 px · con descriptor</div></div>
+        </div>
+        <p style="font-size:13px">Impreso: el símbolo nunca por debajo de 6 mm; el logotipo, de 10 mm de alto.</p>
+      </div>
+    </div>
+    <div class="grid4" style="margin-top:16px">
+      <div class="tile blanco no"><span class="x">NO</span><svg width="72" height="72" style="--s1:#1e6fd9;--s2:#0f3d80"><use href="#logo"/></svg><p class="cap">Cambiar los colores</p></div>
+      <div class="tile blanco no"><span class="x">NO</span><svg width="72" height="72" style="transform:rotate(-20deg)"><use href="#logo"/></svg><p class="cap">Rotar o inclinar más</p></div>
+      <div class="tile blanco no"><span class="x">NO</span><svg width="110" height="60" preserveAspectRatio="none"><use href="#logo"/></svg><p class="cap">Estirar o deformar</p></div>
+      <div class="tile blanco no"><span class="x">NO</span><div class="lockup"><svg width="52" height="52"><use href="#logo"/></svg><div class="palabra" style="font-size:26px">hangar</div></div><p class="cap">Minúscula ni otra fuente</p></div>
+    </div>
+    <div class="grid3" style="margin-top:16px">
+      <div class="regla"><b>Sin efectos</b>Nada de degradados, sombras, brillos ni contornos sobre el símbolo. Es plano y así se reproduce igual en pantalla, en tela y en un sello.</div>
+      <div class="regla"><b>Sin fondos ruidosos</b>Sobre fotografía se usa la versión monocroma blanca sobre una zona oscura, o el logotipo dentro de una losa blanca.</div>
+      <div class="regla"><b>Sin firmas ajenas</b>"Hangar" no lleva "by …" ni el logo de otra empresa pegado. Si hay que acompañar otra marca, va separada por el área de reserva.</div>
+    </div>
+  </section>
+
+  <!-- ============ 3 · COLOR ============ -->
+  <section>
+    <div class="n">03</div>
+    <h2>Color</h2>
+    <p>Blanco dominante, grafito para todo lo que se lee y <b>un solo acento</b>: el amarillo señal. El amarillo es escaso a propósito, así que cuando aparece señala "aquí": el botón principal, el elemento activo, la serie principal de una gráfica.</p>
+    <div class="grid4" style="margin-top:18px">
+      <div class="sw"><div class="c" style="background:#fdb913"></div><div class="t"><b>Amarillo señal</b><code>#FDB913</code><div class="rol">Acento único: botón principal (con texto grafito), ítem activo, foco, gota del símbolo, primera serie de las gráficas. Nunca como color de texto sobre blanco.</div></div></div>
+      <div class="sw"><div class="c" style="background:#1a1d24"></div><div class="t"><b>Grafito</b><code>#1A1D24</code><div class="rol">Texto, barras del símbolo, títulos, ejes. Fondo alternativo para piezas oscuras.</div></div></div>
+      <div class="sw"><div class="c" style="background:#ffffff;border-bottom:1px solid var(--linea)"></div><div class="t"><b>Blanco</b><code>#FFFFFF</code><div class="rol">Fondo de tarjetas, barra lateral, documentos. Es el color que más se ve.</div></div></div>
+      <div class="sw"><div class="c" style="background:#fafafa;border-bottom:1px solid var(--linea)"></div><div class="t"><b>Gris papel</b><code>#FAFAFA</code><div class="rol">Fondo de página bajo las tarjetas; separa sin dibujar líneas.</div></div></div>
+    </div>
+    <h3 style="margin-top:22px">Tonos de apoyo</h3>
+    <div class="grid4">
+      <div class="sw"><div class="c" style="background:#e5a200"></div><div class="t"><b>Amarillo oscuro</b><code>#E5A200</code><div class="rol">Hover del botón principal, bordes de selección. Trazos finos de gráficas: <code>#C08600</code>.</div></div></div>
+      <div class="sw"><div class="c" style="background:#8a5f00"></div><div class="t"><b>Amarillo tinta</b><code>#8A5F00</code><div class="rol">Texto, cifras e íconos de acento sobre blanco (5,6:1, AA). Sobre amarillo suave: <code>#7A5500</code>.</div></div></div>
+      <div class="sw"><div class="c" style="background:#fff6db"></div><div class="t"><b>Amarillo suave</b><code>#FFF6DB</code><div class="rol">Fondo del ítem activo del menú y de filas seleccionadas.</div></div></div>
+      <div class="sw"><div class="c" style="background:#737a86"></div><div class="t"><b>Gris texto</b><code>#737A86</code><div class="rol">Texto secundario, etiquetas, ejes. Líneas: <code>#E6E7EA</code> / <code>#D3D6DC</code>.</div></div></div>
+    </div>
+    <h3 style="margin-top:22px">Semáforo de estado (no es marca)</h3>
+    <p>Los estados de las piezas usan colores propios que nunca se mezclan con el amarillo de marca, para que "urgente" y "botón" no se confundan: un estado siempre va con su etiqueta o ícono, nunca solo como color.</p>
+    <table style="margin-top:10px">
+      <thead><tr><th>Estado</th><th>Color</th><th>Cuándo</th></tr></thead>
+      <tbody>
+        <tr><td><i class="dot" style="background:#2f8f4e"></i><b>OK</b></td><td><code>#2F8F4E</code> verde</td><td>Pieza por debajo del 75 % de su vida útil</td></tr>
+        <tr><td><i class="dot" style="background:#e8a400"></i><b>Próximo</b></td><td><code>#E8A400</code> ámbar</td><td>Entre 75 % y 90 %: preparar el cambio</td></tr>
+        <tr><td><i class="dot" style="background:#e0473e"></i><b>Crítico</b></td><td><code>#E0473E</code> rojo</td><td>Más del 90 %: programar la orden de trabajo</td></tr>
+        <tr><td><i class="dot" style="background:#b3261e"></i><b>Vencido</b></td><td><code>#B3261E</code> rojo profundo</td><td>Superó la vida útil: cambiar antes de volar</td></tr>
+      </tbody>
+    </table>
+    <h3 style="margin-top:22px">Series de gráficas</h3>
+    <div class="sem"><span><i style="background:#fdb913"></i>1 · Amarillo</span><span><i style="background:#1a1d24"></i>2 · Grafito</span><span><i style="background:#0d9488"></i>3 · Verde azulado</span><span><i style="background:#9757c9"></i>4 · Violeta</span><span><i style="background:#3b6fb6"></i>5 · Azul</span><span><i style="background:#2f8f4e"></i>6 · Verde</span><span><i style="background:#737a86"></i>7 · Gris</span></div>
+    <p class="mut" style="font-size:13px">En ese orden: la serie más importante siempre en amarillo (su línea, en <code>#C08600</code>), la de comparación en grafito, y solo después los demás.</p>
+  </section>
+
+  <!-- ============ 4 · TIPOGRAFÍA ============ -->
+  <section>
+    <div class="n">04</div>
+    <h2>Tipografía</h2>
+    <div class="grid2" style="margin-top:18px">
+      <div class="tipo">
+        <p class="cap mut" style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;margin:0 0 10px">Marca y títulos · Manrope ExtraBold (800)</p>
+        <div class="muestra">Hangar<br>Resumen de la operación</div>
+        <div class="abc">ABCDEFGHIJKLMNÑOPQRSTUVWXYZ abcdefghijklmnñopqrstuvwxyz 0123456789</div>
+        <p style="font-size:13px;margin-top:10px">Logotipo, títulos de pantalla, cifras grandes y botones. Interletrado ligeramente cerrado (−2 % a −3 %). Gratuita, en Google Fonts.</p>
+      </div>
+      <div class="tipo">
+        <p class="cap mut" style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;margin:0 0 10px">Texto de interfaz · fuente del sistema</p>
+        <div class="muestra sys" style="font-weight:600;font-size:30px">Alertas de piezas, tablas, formularios</div>
+        <div class="abc sys">ABCDEFGHIJKLMNÑOPQRSTUVWXYZ abcdefghijklmnñopqrstuvwxyz 0123456789</div>
+        <p style="font-size:13px;margin-top:10px">San Francisco en Mac/iOS, Segoe UI en Windows, Roboto en Android. Se usa para todo lo que se lee en la app: es la más legible en cada dispositivo y no hay que descargarla. Etiquetas en mayúsculas pequeñas con interletrado abierto (+6 %).</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 5 · EN LA APP ============ -->
+  <section>
+    <div class="n">05</div>
+    <h2>Cómo se aplica en la aplicación</h2>
+    <p>La interfaz es blanca con una barra lateral blanca. El amarillo aparece una vez por pantalla como acción principal, una vez en el menú como sección activa, y en las gráficas como serie principal. Todo lo demás es grafito y gris.</p>
+    <div class="ui" style="margin-top:18px">
+      <div class="side">
+        <div class="b"><svg width="26" height="26"><use href="#logo"/></svg>Hangar</div>
+        <div class="i on">Resumen</div><div class="i">Inventario</div><div class="i">Operaciones</div><div class="i">Mantenimiento</div><div class="i">Reportes</div>
+      </div>
+      <div class="main">
+        <h4>Resumen de la operación</h4>
+        <div class="kp"><div class="k"><small>Equipos activos</small><b>4</b></div><div class="k"><small>Horas de vuelo</small><b>1.115,8</b></div><div class="k"><small>Alertas</small><b style="color:#b3261e">9</b></div></div>
+        <span class="btn">+ Nueva operación</span>
+        <div class="barras">
+          <div class="barra"><span style="width:110px">Hélices · SMR 1</span><div class="tr"><i style="width:87%;background:#e0473e"></i></div><span>612 / 700 h</span></div>
+          <div class="barra"><span style="width:110px">Motor · SMR 2</span><div class="tr"><i style="width:78%;background:#e8a400"></i></div><span>546 / 700 h</span></div>
+          <div class="barra"><span style="width:110px">Bomba · SMR 5</span><div class="tr"><i style="width:50%;background:#2f8f4e"></i></div><span>251 / 500 h</span></div>
+        </div>
+      </div>
+    </div>
+    <table style="margin-top:18px">
+      <thead><tr><th>Elemento</th><th>Color</th><th>Regla</th></tr></thead>
+      <tbody>
+        <tr><td>Botón principal</td><td><i class="dot" style="background:#fdb913"></i>Amarillo, texto grafito</td><td>Uno por pantalla. Los secundarios van blancos con borde gris.</td></tr>
+        <tr><td>Ítem activo del menú</td><td><i class="dot" style="background:#fff6db"></i>Amarillo suave, texto amarillo tinta</td><td>Con una barra de 3 px amarilla a la izquierda.</td></tr>
+        <tr><td>Campos con foco</td><td><i class="dot" style="background:#fdb913"></i>Borde amarillo + halo al 20 %</td><td>Único uso del amarillo en formularios.</td></tr>
+        <tr><td>Tarjetas KPI</td><td><i class="dot" style="background:#ffffff;border:1px solid #d3d6dc"></i>Blanco, filete amarillo a la izquierda</td><td>La cifra en grafito; en rojo solo si es una alerta.</td></tr>
+        <tr><td>Gráficas</td><td><i class="dot" style="background:#fdb913"></i>Serie 1 amarillo · <i class="dot" style="background:#1a1d24"></i>serie 2 grafito</td><td>Rejilla gris <code>#EDEDF0</code>, ejes en gris texto.</td></tr>
+        <tr><td>Estados de piezas</td><td>Semáforo verde / ámbar / rojo / rojo profundo</td><td>Nunca el amarillo de marca: el acento no significa peligro.</td></tr>
+        <tr><td>Documentos impresos (OT, OS, reporte)</td><td>Blanco, grafito, línea amarillo oscuro (<code>#C08600</code>) bajo la cabecera</td><td>Logotipo arriba a la izquierda, 44 px.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ============ 6 · ARCHIVOS ============ -->
+  <section>
+    <div class="n">06</div>
+    <h2>Archivos de la marca</h2>
+    <p>Todo está en vectores dentro del proyecto, en la carpeta <code>static_shell/</code>. Para cualquier pieza nueva se parte de estos archivos, nunca de una captura.</p>
+    <table style="margin-top:12px">
+      <thead><tr><th>Archivo</th><th>Qué es</th><th>Dónde se usa</th></tr></thead>
+      <tbody>
+        <tr><td><code>static_shell/marca.svg</code></td><td>Símbolo a color sobre fondo transparente</td><td>Barra lateral, login, cabecera de documentos impresos</td></tr>
+        <tr><td><code>static_shell/favicon.svg</code></td><td>Símbolo dentro de una losa blanca redondeada</td><td>Pestaña del navegador, ícono al guardar en el escritorio</td></tr>
+        <tr><td><code>MARCA.html</code></td><td>Este manual</td><td>Referencia para quien haga piezas nuevas</td></tr>
+        <tr><td><code>IDENTIDAD.html</code></td><td>Las finalistas del proceso de diseño</td><td>Historial; no se usan en producción</td></tr>
+      </tbody>
+    </table>
+    <p class="mut" style="font-size:13px;margin-top:12px">Para redes o impresión se exporta desde <code>marca.svg</code> a PNG de 1024 px (símbolo) o a PDF (logotipo). Si hace falta el logotipo horizontal como archivo único, el texto "Hangar" se convierte a trazos en Manrope 800 antes de exportar.</p>
+  </section>
+</div>

@@ -1,0 +1,32 @@
+# Proxy inverso con HTTPS automático. DOMINIO viene de .env (p. ej. hangar.iote.com.co).
+# Si DOMINIO es una IP o "localhost", Caddy usa un certificado interno (aviso en el navegador).
+{
+	email {$CORREO_TLS}
+}
+
+{$DOMINIO} {
+	encode zstd gzip
+
+	# Los estáticos (láminas, modelos 3D de hasta 30 MB, JS/CSS) los sirve Caddy directamente,
+	# con caché larga, sin pasar por Python.
+	handle_path /static_shell/* {
+		root * /srv/static_shell
+		header Cache-Control "public, max-age=604800"
+		file_server
+	}
+
+	handle {
+		reverse_proxy app:8000 {
+			header_up X-Forwarded-Proto {scheme}
+		}
+	}
+
+	header {
+		-Server
+	}
+
+	log {
+		output stdout
+		format console
+	}
+}

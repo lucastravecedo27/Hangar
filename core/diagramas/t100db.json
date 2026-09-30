@@ -1,0 +1,231 @@
+[
+ {
+  "clave": "dl100_elevacion",
+  "nombre": "Sistema de elevación DL100",
+  "nombre_zh": "LIFT",
+  "sistema": "Sistema de elevación",
+  "zona": "Sistema de elevación",
+  "imagen": "dl100_elevacion.jpeg",
+  "piezas_catalogo": [
+   "hoisting_module"
+  ],
+  "partes": [
+   {
+    "n": 1,
+    "codigo": "YC.DZ.MT000058",
+    "nombre_en": "Rope Release Part",
+    "nombre_zh": "弃绳器",
+    "auxiliar": false,
+    "nombre_es": "Pieza de liberación de cuerda"
+   },
+   {
+    "n": 2,
+    "codigo": "YC.JG.QX005406",
+    "nombre_en": "Mount Crossbeam Shaft",
+    "nombre_zh": "挂载横杆轴",
+    "auxiliar": false,
+    "nombre_es": "Eje de travesaño de montura"
+   },
+   {
+    "n": 3,
+    "codigo": "YC.JG.TT000342",
+    "nombre_en": "Positioning Pin",
+    "nombre_zh": "插销",
+    "auxiliar": false,
+    "nombre_es": "Pasador de Positioning"
+   },
+   {
+    "n": 4,
+    "codigo": "YC.JG.QX005407",
+    "nombre_en": "Pin (34 mm)",
+    "nombre_zh": "销钉（34mm）",
+    "auxiliar": false,
+    "nombre_es": "Pasador (34 mm)"
+   },
+   {
+    "n": 5,
+    "codigo": "YC.JG.TT000342",
+    "nombre_en": "Positioning Pin",
+    "nombre_zh": "插销",
+    "auxiliar": false,
+    "nombre_es": "Pasador de Positioning"
+   },
+   {
+    "n": 6,
+    "codigo": "BC.AG.SS001216",
+    "nombre_en": "Winch System Payload Control Board",
+    "nombre_zh": "空吊负载控制板",
+    "auxiliar": false,
+    "nombre_es": "Placa de control de carga útil de sistema de Winch"
+   },
+   {
+    "n": 7,
+    "codigo": "YC.WJ.L01234",
+    "nombre_en": "Screw M40-HC080080-68-85",
+    "nombre_zh": "M40-HC00800080-068040-5103-Y",
+    "auxiliar": false,
+    "nombre_es": "Tornillo M40-HC080080-68-85"
+   },
+   {
+    "n": 8,
+    "codigo": "YC.JG.QX005432",
+    "nombre_en": "Pin (57.5 mm)",
+    "nombre_zh": "销钉（57.5mm）",
+    "auxiliar": false,
+    "nombre_es": "Pasador (57.5 mm)"
+   },
+   {
+    "n": 9,
+    "codigo": "YC.JG.MY001832",
+    "nombre_en": "Socket Rubber Stopper",
+    "nombre_zh": "负载母头胶塞",
+    "auxiliar": false,
+    "nombre_es": "Tapón de goma de la toma"
+   },
+   {
+    "n": 10,
+    "codigo": "YC.JG.ZS008732",
+    "nombre_en": "Lift System Control Board Bracket",
+    "nombre_zh": "吊运控制板支架",
+    "auxiliar": false,
+    "nombre_es": "Soporte de placa de control de sistema de elevación"
+   },
+   {
+    "n": 11,
+    "codigo": "YC.ST.LL000705",
+    "nombre_en": "M40-HC01200120-072040-4103-Y",
+    "nombre_zh": "M40-HC01200120-072040-4103-Y",
+    "auxiliar": false,
+    "nombre_es": "M40-HC01200120-072040-4103-Y"
+   },
+   {
+    "n": 12,
+    "codigo": "YC.JG.BJ004208",
+    "nombre_en": "T-shaped Crossbeam",
+    "nombre_zh": "T型横杆",
+    "auxiliar": false,
+    "nombre_es": "Travesaño en T"
+   },
+   {
+    "n": 13,
+    "codigo": "YC.JG.ZS008656",
+    "nombre_en": "Knob",
+    "nombre_zh": "旋钮",
+    "auxiliar": false,
+    "nombre_es": "Perilla"
+   },
+   {
+    "n": 14,
+    "codigo": "YC.JG.MY002206",
+    "nombre_en": "Knob Rubber Stopper",
+    "nombre_zh": "旋钮胶塞",
+    "auxiliar": false,
+    "nombre_es": "Tapón de goma de perilla"
+   },
+   {
+    "n": 15,
+    "codigo": "YC.JG.ZS008368",
+    "nombre_en": "Cable Clamp",
+    "nombre_zh": "线卡",
+    "auxiliar": false,
+    "nombre_es": "Abrazadera de cable"
+   },
+   {
+    "n": 16,
+    "codigo": "YC.JG.BJ003651",
+    "nombre_en": "E-Type Circlip (OD=7.6 mm)",
+    "nombre_zh": "E形卡簧（外径7.6mm）",
+    "auxiliar": false,
+    "nombre_es": "Anillo de retención tipo E (OD=7.6 mm)"
+   },
+   {
+    "n": 17,
+    "codigo": "YC.JG.QX005405",
+    "nombre_en": "Sleeve Bracket Adapter",
+    "nombre_zh": "套筒挂架转接座",
+    "auxiliar": false,
+    "nombre_es": "Adaptador de soporte de manguito"
+   },
+   {
+    "n": 18,
+    "codigo": "YC.JG.QX005404",
+    "nombre_en": "Sleeve Bracket",
+    "nombre_zh": "套筒挂架",
+    "auxiliar": false,
+    "nombre_es": "Soporte de manguito"
+   },
+   {
+    "n": 19,
+    "codigo": "YC.ST.LL000696",
+    "nombre_en": "Screw (M60-HC02000180-100080-4203-Y)",
+    "nombre_zh": "螺丝 M60-HC02000180-100080-4203-Y",
+    "auxiliar": false,
+    "nombre_es": "Tornillo (M60-HC02000180-100080-4203-Y)"
+   },
+   {
+    "n": 20,
+    "codigo": "YC.ST.LL000696",
+    "nombre_en": "Screw (M60-HC02000180-100080-4203-Y)",
+    "nombre_zh": "螺丝 M60-HC02000180-100080-4203-Y",
+    "auxiliar": false,
+    "nombre_es": "Tornillo (M60-HC02000180-100080-4203-Y)"
+   },
+   {
+    "n": 21,
+    "codigo": "BC.AG.SS001196",
+    "nombre_en": "Three-Axis Force Sensor Module",
+    "nombre_zh": "简易吊运三向力传感器模组",
+    "auxiliar": false,
+    "nombre_es": "Módulo de sensor de fuerza de tres ejes"
+   },
+   {
+    "n": 22,
+    "codigo": "YC.ST.LL000696",
+    "nombre_en": "Screw (M60-HC02000180-100080-4203-Y)",
+    "nombre_zh": "螺丝 M60-HC02000180-100080-4203-Y",
+    "auxiliar": false,
+    "nombre_es": "Tornillo (M60-HC02000180-100080-4203-Y)"
+   },
+   {
+    "n": 23,
+    "codigo": "YC.JG.MY002467",
+    "nombre_en": "Plug Rubber",
+    "nombre_zh": "堵孔橡胶",
+    "auxiliar": false,
+    "nombre_es": "Tapón de goma"
+   },
+   {
+    "n": 24,
+    "codigo": "YC.JG.ZS008796",
+    "nombre_en": "Screw Alignment Bracket",
+    "nombre_zh": "螺丝导向支架",
+    "auxiliar": false,
+    "nombre_es": "Soporte de Alignment de tornillo"
+   },
+   {
+    "n": 25,
+    "codigo": "YC.ST.AS000051",
+    "nombre_en": "Damper Hook",
+    "nombre_zh": "减震器连接挂钩",
+    "auxiliar": false,
+    "nombre_es": "Gancho amortiguado"
+   },
+   {
+    "n": 26,
+    "codigo": "YC.ST.AS000071",
+    "nombre_en": "Lifting Rope",
+    "nombre_zh": "吊运绳",
+    "auxiliar": false,
+    "nombre_es": "Cuerda de elevación"
+   },
+   {
+    "n": 27,
+    "codigo": "YC.ST.AS000061",
+    "nombre_en": "Lifting Hook",
+    "nombre_zh": "吊运挂钩",
+    "auxiliar": false,
+    "nombre_es": "Gancho de elevación"
+   }
+  ]
+ }
+]

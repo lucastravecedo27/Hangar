@@ -1,0 +1,506 @@
+{% extends "_layout.html" %}
+{% block titulo %}Rentabilidad{% endblock %}
+{% block encabezado %}Rentabilidad{% endblock %}
+{% block subtitulo %}Ingreso, costos y margen de la operación por hectárea, por activo y por cliente{% endblock %}
+
+{% block head %}
+<style>
+.rt-barra{display:flex;align-items:center;gap:10px 14px;flex-wrap:wrap;width:100%}
+.rt-barra .der{margin-left:auto;font-size:12px;color:var(--mut)}
+
+/* KPIs grandes */
+.kpis.rt{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+.kpis.rt .kpi{padding:20px 22px 17px}
+.kpis.rt .kpi{display:flex;flex-direction:column;align-items:flex-start;text-align:left}
+.grid2>*,.panel-graficas>.card{min-width:0}
+.kpis.rt .kpi .val{font-size:32px;white-space:nowrap}
+.kpis.rt .kpi .note{flex:1;margin-bottom:8px}
+.kpis.rt .kpi .val small{font-size:14px;font-weight:700;color:var(--mut);letter-spacing:0;margin-left:3px}
+.kpis.rt .kpi.destacado{background:var(--o-grafito,#1a1d24);border-color:var(--o-grafito,#1a1d24)}
+.kpis.rt .kpi.destacado .lbl{color:#a3a8b1}
+.kpis.rt .kpi.destacado .val{color:var(--acc)}
+.kpis.rt .kpi.destacado .note{color:#c9ccd2}
+.var{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;padding:2px 8px;border-radius:980px;margin-top:2px}
+.var.bien{background:rgba(47,143,78,.14);color:var(--o-tx-verde,#1d6b38)}
+.var.mal{background:rgba(224,71,62,.14);color:var(--o-tx-rojo,#a4271f)}
+.var.neutro{background:rgba(115,122,134,.14);color:var(--ink2)}
+.kpi.destacado .var.bien{background:rgba(62,207,110,.18);color:#6fe39a}
+.kpi.destacado .var.mal{background:rgba(255,90,79,.2);color:#ff8a82}
+.kpi.destacado .var.neutro{background:rgba(255,255,255,.1);color:#c9ccd2}
+.kpi .na{font-size:13px;color:var(--mut);font-weight:560;margin:14px 0 6px}
+
+/* Cascada */
+.cascada svg text{font-family:var(--font)}
+.cascada .v{font-family:var(--font-marca);font-weight:800;font-size:15px;fill:var(--ink)}
+.cascada .e{font-size:12px;fill:var(--mut);font-weight:600}
+.cascada .p{font-size:11px;fill:var(--mut)}
+
+/* Comparativo dron vs avión */
+.vs-cab{display:grid;grid-template-columns:1fr 150px 1fr;align-items:center;margin-bottom:10px}
+.vs-cab .lado{display:flex;align-items:center;gap:10px;font-weight:750;font-size:15px}
+.vs-cab .lado.der{justify-content:flex-end}
+.vs-cab .lado .av{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:var(--o-grafito,#1a1d24);color:var(--acc)}
+.vs-cab .lado .av svg{width:20px;height:20px}
+.vs-cab .lado small{display:block;font-size:11.5px;font-weight:560;color:var(--mut)}
+.vs-cab .mid{text-align:center;font-family:var(--font-marca);font-weight:800;color:var(--mut);font-size:13px;letter-spacing:.1em}
+.vs-fila{display:grid;grid-template-columns:1fr 150px 1fr;align-items:center;gap:0;padding:7px 0;border-top:.5px solid var(--line)}
+.vs-fila .met{text-align:center;font-size:12px;font-weight:650;color:var(--ink2);line-height:1.25;padding:0 8px}
+.vs-fila .met small{display:block;color:var(--mut);font-weight:500;font-size:10.5px}
+.vs-lado{display:flex;align-items:center;gap:10px}
+.vs-lado.izq{flex-direction:row-reverse}
+.vs-lado .trk{flex:1;height:14px;border-radius:7px;background:var(--o-gris,#f1f2f4);display:flex;overflow:hidden}
+.vs-lado.izq .trk{justify-content:flex-end}
+.vs-lado .trk i{display:block;height:100%;border-radius:7px;background:#b9bec7}
+.vs-lado.gana .trk i{background:var(--acc)}
+.vs-lado .num{min-width:92px;font-variant-numeric:tabular-nums;font-weight:700;font-size:13.5px;color:var(--ink2)}
+.vs-lado.izq .num{text-align:right}
+.vs-lado.gana .num{color:var(--acc-ink)}
+.vs-lado .num .ok{display:inline-block;margin:0 4px;font-size:11px;color:var(--green)}
+
+/* Tablas */
+.orden th[data-k]{cursor:pointer;user-select:none;white-space:nowrap}
+.orden th[data-k]:hover{color:var(--acc-ink)}
+.orden th .fl{opacity:.35;margin-left:3px}
+.orden th.act{color:var(--acc-deep)}.orden th.act .fl{opacity:1}
+.orden td{font-variant-numeric:tabular-nums}
+.tabla-envoltura.rt table{min-width:1000px}
+.tabla-envoltura.rt td.num{white-space:nowrap}
+.margen-cel{display:flex;align-items:center;gap:8px;justify-content:flex-end}
+.margen-cel b{white-space:nowrap}
+.margen-cel .mb{width:60px;height:6px;border-radius:3px;background:var(--o-gris,#f1f2f4);overflow:hidden;flex:none}
+.margen-cel .mb i{display:block;height:100%;background:var(--green)}
+.margen-cel.neg .mb i{background:var(--red)}
+.margen-cel.neg b{color:var(--o-tx-rojo,#a4271f)}
+.tipo-ic{display:inline-flex;align-items:center;gap:6px}
+.tipo-ic svg{width:15px;height:15px;color:var(--mut)}
+
+/* Configuración y tarifas */
+.cfg-sec{font-size:11px;font-weight:750;color:var(--mut);text-transform:uppercase;letter-spacing:.07em;margin:4px 0 8px;display:flex;align-items:center;gap:8px}
+.cfg-sec::after{content:"";flex:1;height:.5px;background:var(--line)}
+.form-grid .campo .un{font-size:11px;color:var(--mut);text-transform:none;letter-spacing:0;font-weight:500}
+.form-grid .campo.falta input,.form-grid .campo.falta select{border-color:rgba(232,164,0,.8);background:var(--o-suave-ambar,#fffbef)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 0}
+.chip-add{font-family:var(--font);font-size:12px;font-weight:600;border:1px dashed var(--acc-d);background:var(--acc-soft);color:var(--acc-deep);border-radius:980px;padding:4px 11px;cursor:pointer}
+.chip-add:hover{background:var(--acc);color:var(--acc-txt)}
+.aviso ul{margin:6px 0 0 18px;padding:0}
+.aviso li{margin:2px 0}
+@media(max-width:720px){
+  .vs-cab,.vs-fila{grid-template-columns:minmax(0,1fr) 92px minmax(0,1fr)}
+  .vs-cab .lado .av{display:none}
+  .vs-lado .num{min-width:64px;font-size:12px}
+  .vs-lado .trk{display:none}
+  .kpis.rt{grid-template-columns:1fr 1fr;gap:10px}
+  .kpis.rt .kpi{padding:14px}.kpis.rt .kpi .val{font-size:22px}
+}
+</style>
+{% endblock %}
+
+{% block barra %}
+<div class="tabsbar"><div class="wrap">
+  <div class="rt-barra">
+    <div class="segmento" id="segPeriodo">
+      <button data-p="30d">30 días</button>
+      <button data-p="90d" class="activo">90 días</button>
+      <button data-p="anio">Este año</button>
+      <button data-p="todo">Todo</button>
+    </div>
+    <div class="segmento" id="segTipo">
+      <button data-t="" class="activo">Toda la flota</button>
+      <button data-t="dron">Drones</button>
+      <button data-t="avion">Aviones</button>
+    </div>
+    <div class="der" id="rangoTxt"></div>
+  </div>
+</div></div>
+{% endblock %}
+
+{% block contenido %}
+<div id="faltantes"></div>
+
+<div class="kpis rt" id="kpis"></div>
+
+<div class="panel-graficas" style="margin-bottom:18px">
+  <div class="card">
+    <div class="card-cab"><h3>De ingreso a margen</h3><div class="der" id="cascadaNota"></div></div>
+    <div class="cascada" id="cascada"></div>
+  </div>
+  <div class="card">
+    <div class="card-cab"><h3>Dron vs. avión</h3><div class="der">en el período elegido</div></div>
+    <div id="comparativo"></div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-cab"><h3>Rentabilidad por activo</h3><div class="der">clic en el encabezado para ordenar</div></div>
+  <div class="tabla-envoltura rt"><table class="orden" id="tActivos"></table></div>
+</div>
+
+<div class="card">
+  <div class="card-cab"><h3>Rentabilidad por cliente y finca</h3><div class="der" id="clientesNota"></div></div>
+  <div class="tabla-envoltura rt"><table class="orden" id="tClientes"></table></div>
+</div>
+
+<div class="grid2">
+  <div class="card">
+    <div class="card-cab"><h3>Configuración de costos y operación</h3></div>
+    <form id="fConfig" autocomplete="off">
+      <div class="cfg-sec">Costos</div>
+      <div class="form-grid">
+        <div class="campo" data-c="precio_combustible_gal"><label>Precio galón AvGas <span class="un">($/gal)</span></label><input type="number" min="0" step="any" name="precio_combustible_gal"></div>
+        <div class="campo" data-c="costo_hora_mano_obra"><label>Costo hora mano de obra <span class="un">($/h)</span></label><input type="number" min="0" step="any" name="costo_hora_mano_obra"></div>
+        <div class="campo" data-c="moneda"><label>Moneda</label>
+          <select name="moneda"><option value="COP">COP · peso colombiano</option><option value="USD">USD · dólar</option><option value="MXN">MXN · peso mexicano</option><option value="PEN">PEN · sol</option><option value="BRL">BRL · real</option></select></div>
+      </div>
+      <div class="cfg-sec">Ventana de aplicación</div>
+      <div class="form-grid">
+        <div class="campo" data-c="ventana_viento_max"><label>Viento máx. <span class="un">(km/h)</span></label><input type="number" min="0" step="any" name="ventana_viento_max"></div>
+        <div class="campo" data-c="ventana_temp_max"><label>Temperatura máx. <span class="un">(°C)</span></label><input type="number" step="any" name="ventana_temp_max"></div>
+        <div class="campo" data-c="ventana_humedad_min"><label>Humedad mín. <span class="un">(%)</span></label><input type="number" min="0" max="100" step="any" name="ventana_humedad_min"></div>
+      </div>
+      <div class="cfg-sec">Planeación</div>
+      <div class="form-grid">
+        <div class="campo" data-c="horas_max_piloto_dia"><label>Horas máx. por piloto/día</label><input type="number" min="0" step="any" name="horas_max_piloto_dia" placeholder="8"></div>
+        <div class="campo" data-c="meta_ha_mes"><label>Meta de hectáreas/mes</label><input type="number" min="0" step="any" name="meta_ha_mes"></div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:10px;align-items:center">
+        <span class="mut" id="cfgEstado" style="font-size:12px"></span>
+        <button class="btn" type="submit">Guardar configuración</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="card">
+    <div class="card-cab"><h3>Tarifas por cliente</h3>
+      <div class="der"><button class="btn peq" id="btnTarifa" type="button">＋ Nueva tarifa</button></div></div>
+    <p class="mut" style="font-size:12.5px;margin:-4px 0 12px">Valor por hectárea que se cobra al cliente. Una tarifa por tipo de activo gana a la de «todos»; la más reciente vigente se aplica a cada operación.</p>
+    <div class="tabla-envoltura"><table id="tTarifas" style="min-width:520px"></table></div>
+    <div id="sinTarifa"></div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const IC_DRON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="5.5" r="2.8"/><circle cx="18.5" cy="5.5" r="2.8"/><circle cx="5.5" cy="18.5" r="2.8"/><circle cx="18.5" cy="18.5" r="2.8"/><path d="M7.6 7.6l2.4 2.4M16.4 7.6 14 10M7.6 16.4 10 14M16.4 16.4 14 14"/><rect x="9.6" y="9.6" width="4.8" height="4.8" rx="1.2"/></svg>`;
+const IC_AVION = `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.4c.8 0 1.3.9 1.3 2.1v3.3l5.5 3.1v1.7l-5.5-1.6v3.3l1.8 1.4v1.4L10 16.4l-3.1.7v-1.4l1.8-1.4v-3.3l-5.5 1.6v-1.7l5.5-3.1V4.5c0-1.2.5-2.1 1.3-2.1z"/></svg>`;
+const TIPO_TXT = {todos:'Todos', dron:'Dron', avion:'Avión'};
+const EST = {periodo:'90d', tipo:''};
+let R = null, PT = null, TAR = null;
+let MONEDA = 'COP';
+
+const val = (ind, k) => ind && ind[k] ? ind[k].valor : null;
+function dinero(v, compacto=false){
+  if(v===null || v===undefined || isNaN(v)) return '—';
+  const n = Number(v);
+  if(compacto && Math.abs(n) >= 1e6){
+    const m = Math.abs(n) >= 1e9 ? [n/1e9, ' mil M'] : [n/1e6, ' M'];
+    return '$ ' + m[0].toLocaleString('es-CO', {maximumFractionDigits:1}) + m[1];
+  }
+  return '$ ' + n.toLocaleString('es-CO', {maximumFractionDigits:0});
+}
+function variacion(ind){
+  if(!ind || ind.variacion===null || ind.variacion===undefined){
+    return `<span class="var neutro">${EST.periodo==='todo'?'histórico completo':'sin dato previo'}</span>`;
+  }
+  const v = ind.variacion;
+  let cls = 'neutro';
+  if(ind.mejor && Math.abs(v) >= 0.05) cls = ((ind.mejor==='alto') === (v>0)) ? 'bien' : 'mal';
+  const flecha = v > 0 ? '▲' : (v < 0 ? '▼' : '■');
+  return `<span class="var ${cls}" title="Antes: ${escapar(fmt(ind.anterior,0))}">${flecha} ${fmt(Math.abs(v),1)} % vs. período anterior</span>`;
+}
+
+async function cargar(){
+  document.querySelectorAll('#segPeriodo button').forEach(b=>b.classList.toggle('activo', b.dataset.p===EST.periodo));
+  document.querySelectorAll('#segTipo button').forEach(b=>b.classList.toggle('activo', b.dataset.t===EST.tipo));
+  const q = new URLSearchParams({periodo:EST.periodo}); if(EST.tipo) q.set('tipo', EST.tipo);
+  const qt = new URLSearchParams({periodo:EST.periodo, agrupar:'tipo'});
+  try{
+    [R, PT, TAR] = await Promise.all([api('/api/rentabilidad?'+q), api('/api/indicadores?'+qt), api('/api/tarifas')]);
+  }catch(e){ toast(e.message); return; }
+  MONEDA = (R.config && R.config.moneda) || 'COP';
+  const f = R.filtros || {};
+  document.getElementById('rangoTxt').textContent = f.desde ? `${fmtFecha(f.desde)} → ${fmtFecha(f.hasta)}` : 'Histórico completo';
+  pintarFaltantes(); pintarKpis(); pintarCascada(); pintarComparativo();
+  pintarActivos(); pintarClientes(); pintarConfig(); pintarTarifas();
+}
+
+// ---------- Configuración incompleta ----------
+function pintarFaltantes(){
+  const c = R.config || {};
+  const faltan = [], opc = [];
+  if(!c.precio_combustible_gal) faltan.push('<b>Precio del galón de AvGas</b>: sin él, el costo de combustible del avión queda en cero y el margen sale inflado.');
+  if(!c.costo_hora_mano_obra) faltan.push('<b>Costo hora de mano de obra</b>: las OT sin costo de mano de obra no suman al costo de mantenimiento.');
+  if(!(R.tarifas||[]).length) faltan.push('<b>Tarifas por cliente</b>: sin tarifas no hay ingreso ni margen.');
+  const conTarifa = new Set((R.tarifas||[]).map(t=>t.cliente.toLowerCase()));
+  const sin = (TAR.clientes||[]).filter(n=>!conTarifa.has(n.toLowerCase()));
+  if(sin.length && (R.tarifas||[]).length) faltan.push(`<b>${sin.length} ${sin.length===1?'cliente sin tarifa':'clientes sin tarifa'}</b> (${sin.slice(0,4).map(escapar).join(', ')}${sin.length>4?'…':''}): sus hectáreas no generan ingreso.`);
+  if(!c.ventana_viento_max || !c.ventana_temp_max || !c.ventana_humedad_min) opc.push('ventana de aplicación (viento, temperatura, humedad)');
+  if(!c.horas_max_piloto_dia) opc.push('horas máximas por piloto y día (se usa 8 h)');
+  if(!c.meta_ha_mes) opc.push('meta de hectáreas por mes');
+  const cont = document.getElementById('faltantes');
+  let html = '';
+  if(faltan.length) html += `<div class="aviso ambar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>
+    <div><b>Falta configuración para que las cifras sean completas.</b><ul>${faltan.map(x=>`<li>${x}</li>`).join('')}</ul>
+    <button class="pillbtn" style="margin-top:8px" onclick="document.getElementById('fConfig').scrollIntoView({behavior:'smooth'})">Ir a configuración ↓</button></div></div>`;
+  if(opc.length) html += `<div class="aviso gris"><div><b>Opcional:</b> aún no se ha definido ${opc.join(', ')}.</div></div>`;
+  cont.innerHTML = html;
+}
+
+// ---------- KPIs ----------
+function pintarKpis(){
+  const t = R.total;
+  const ingreso = totales().ingreso;
+  const margen = val(t,'margen');
+  const pctMargen = ingreso ? margen/ingreso*100 : null;
+  const av = PT.por_tipo && PT.por_tipo.avion;
+  const combAvion = EST.tipo==='dron' ? null : (av && av.costo_combustible_hora);
+  const k = (lbl, ind, cuerpo, nota, extra='') => `<div class="kpi ${extra}"><div class="lbl">${lbl}</div>${cuerpo}<div class="note">${nota}</div>${ind!==undefined?`<div>${variacion(ind)}</div>`:''}</div>`;
+  document.getElementById('kpis').innerHTML = [
+    k('Ingreso por hectárea', t.ingreso_ha, `<div class="val acc">${dinero(val(t,'ingreso_ha'))}</div>`, `${fmt(val(t,'hectareas'),0)} ha · ${dinero(ingreso,true)} facturables`),
+    k('Costo por hectárea', t.costo_ha, `<div class="val">${dinero(val(t,'costo_ha'))}</div>`, 'mantenimiento + combustible'),
+    k('Margen de la operación', t.margen, `<div class="val">${dinero(margen,true)}</div>`, pctMargen!==null?`${fmt(pctMargen,1)} % del ingreso · ${val(t,'hectareas')?dinero(margen/val(t,'hectareas'))+'/ha':''}`:'sin ingreso registrado', 'destacado'),
+    k('Mantenimiento por hora', t.costo_mant_hora, `<div class="val">${dinero(val(t,'costo_mant_hora'))}<small>/h</small></div>`, `${dinero(val(t,'costo_mant'),true)} en ${fmt(val(t,'horas'))} h de vuelo`),
+    combAvion
+      ? k('Combustible por hora · avión', combAvion, `<div class="val">${dinero(combAvion.valor)}<small>/h</small></div>`, av.consumo&&av.consumo.valor?`${fmt(av.consumo.valor,1)} gal/h de consumo`:'consumo sin datos')
+      : `<div class="kpi"><div class="lbl">Combustible por hora · avión</div><div class="na">No aplica a drones</div><div class="note">los drones funcionan con baterías</div></div>`,
+  ].join('');
+}
+
+function totales(){
+  const t = R.total;
+  const ha = val(t,'hectareas') || 0, horas = val(t,'horas') || 0;
+  const mant = val(t,'costo_mant') || 0;
+  const margen = val(t,'margen');
+  const ingreso = (val(t,'ingreso_ha') || 0) * ha;
+  let comb = (val(t,'costo_combustible_hora') || 0) * horas;
+  // margen = ingreso − mantenimiento − combustible; se deduce el combustible para que la cascada cuadre.
+  if(margen !== null && ingreso) comb = Math.max(0, ingreso - mant - margen);
+  return {ingreso, comb, mant, margen: margen!==null ? margen : ingreso - comb - mant};
+}
+
+// ---------- Cascada ----------
+function pintarCascada(){
+  const nodo = document.getElementById('cascada');
+  const {ingreso, comb, mant, margen} = totales();
+  if(!ingreso){
+    nodo.innerHTML = `<div class="empty" style="padding:40px 12px">Sin ingreso en el período.<br><span style="font-size:12px">Registra tarifas por cliente para ver la cascada.</span></div>`;
+    document.getElementById('cascadaNota').textContent = '';
+    return;
+  }
+  const W = Math.max(nodo.clientWidth || 520, 280), H = 300;
+  const m = {t:34, b:46, l:12, r:12};
+  const pasos = [
+    {e:'Ingreso', v:ingreso, base:0, top:ingreso, color:'#1a1d24', signo:''},
+    {e:W<460?'Comb.':'Combustible', v:-comb, base:ingreso-comb, top:ingreso, color:'#e0473e', signo:'−'},
+    {e:W<460?'Mant.':'Mantenimiento', v:-mant, base:ingreso-comb-mant, top:ingreso-comb, color:'#f08a4b', signo:'−'},
+    {e:'Margen', v:margen, base:Math.min(0,margen), top:Math.max(0,margen), color: margen>=0 ? '#fdb913' : '#b3261e', signo:''},
+  ];
+  const minV = Math.min(0, margen), maxV = ingreso;
+  const y = v => m.t + (maxV - v) / (maxV - minV) * (H - m.t - m.b);
+  const paso = (W - m.l - m.r) / pasos.length;
+  const bw = Math.min(90, paso * .56);
+  let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" role="img" aria-label="Cascada de ingreso a margen">`;
+  s += `<line x1="${m.l}" x2="${W-m.r}" y1="${y(0)}" y2="${y(0)}" stroke="#d3d6dc"/>`;
+  pasos.forEach((p, i)=>{
+    const cx = m.l + paso*i + paso/2, x = cx - bw/2;
+    const y1 = y(p.top), y2 = y(p.base), h = Math.max(2, y2 - y1);
+    s += `<rect x="${x}" y="${y1}" width="${bw}" height="${h}" rx="6" fill="${p.color}" style="fill:${window.colorTema ? colorTema(p.color) : p.color}"><title>${p.e}: ${dinero(p.v)}</title></rect>`;
+    if(i < pasos.length-1){
+      const nivel = i===0 ? ingreso : (i===1 ? ingreso-comb : ingreso-comb-mant);
+      s += `<line x1="${x+bw}" x2="${cx+paso-bw/2}" y1="${y(nivel)}" y2="${y(nivel)}" stroke="#9aa0aa" stroke-dasharray="3 3"/>`;
+    }
+    const pct = ingreso ? Math.abs(p.v)/ingreso*100 : 0;
+    s += `<text class="v" style="font-size:${W<460?11:15}px" x="${cx}" y="${y1-10}" text-anchor="middle">${p.signo}${dinero(Math.abs(p.v),true)}</text>`;
+    s += `<text class="e" x="${cx}" y="${H-24}" text-anchor="middle">${p.e}</text>`;
+    s += `<text class="p" x="${cx}" y="${H-9}" text-anchor="middle">${i===0?'100 %':fmt(pct,1)+' %'}</text>`;
+  });
+  s += `</svg>`;
+  nodo.innerHTML = s;
+  document.getElementById('cascadaNota').textContent = `margen ${fmt(margen/ingreso*100,1)} %`;
+}
+
+// ---------- Comparativo ----------
+function pintarComparativo(){
+  const nodo = document.getElementById('comparativo');
+  const d = PT.por_tipo && PT.por_tipo.dron, a = PT.por_tipo && PT.por_tipo.avion;
+  if(!d && !a){ nodo.innerHTML = '<div class="empty">Sin datos.</div>'; return; }
+  const filas = [
+    {k:'rendimiento', t:'Rendimiento', u:'ha/h', f:v=>fmt(v,1)+' ha/h'},
+    {k:'costo_ha', t:'Costo', u:'por hectárea', f:v=>dinero(v)},
+    {k:'ingreso_ha', t:'Ingreso', u:'por hectárea', f:v=>dinero(v)},
+    {k:'dosis', t:'Dosis', u:'L/ha aplicados', f:v=>fmt(v,1)+' L/ha', neutro:true},
+    {k:'cumplimiento', t:'Cumplimiento', u:'ha hechas ÷ programadas', f:v=>fmt(v,1)+' %'},
+    {k:'hectareas', t:'Hectáreas', u:'aplicadas', f:v=>fmt(v,0)+' ha'},
+    {k:'margen', t:'Margen', u:'del período', f:v=>dinero(v,true)},
+  ];
+  const nAct = t => { const x = PT.por_tipo[t] && PT.por_tipo[t].activos; return x && x.valor ? `${fmt(x.valor,0)} ${x.valor==1?'activo':'activos'}` : ''; };
+  let html = `<div class="vs-cab">
+    <div class="lado"><div class="av">${IC_DRON}</div><div>Drones<small>${nAct('dron')}</small></div></div>
+    <div class="mid">VS</div>
+    <div class="lado der"><div style="text-align:right">Aviones<small>${nAct('avion')}</small></div><div class="av">${IC_AVION}</div></div></div>`;
+  for(const f of filas){
+    const iv = d && d[f.k], ia = a && a[f.k];
+    const vd = iv ? iv.valor : null, va = ia ? ia.valor : null;
+    const mejor = (iv||ia||{}).mejor;
+    const max = Math.max(Math.abs(vd||0), Math.abs(va||0)) || 1;
+    let gana = null;
+    if(!f.neutro && mejor && vd!==null && va!==null && vd!==va) gana = (mejor==='alto') === (vd>va) ? 'd' : 'a';
+    const lado = (v, cls, es) => `<div class="vs-lado ${cls} ${es?'gana':''}">
+      <div class="num">${v===null?'<span class="mut">—</span>':f.f(v)}${es?'<span class="ok">✓</span>':''}</div>
+      <div class="trk"><i style="width:${v===null?0:Math.max(3,Math.abs(v)/max*100)}%"></i></div></div>`;
+    html += `<div class="vs-fila">${lado(vd,'izq',gana==='d')}<div class="met">${f.t}<small>${f.u}</small></div>${lado(va,'',gana==='a')}</div>`;
+  }
+  html += `<div class="mut" style="font-size:11.5px;margin-top:10px">✓ marca el mejor valor de cada fila (según si conviene alto o bajo). La dosis depende del producto y no se compara.</div>`;
+  nodo.innerHTML = html;
+}
+
+// ---------- Tablas ordenables ----------
+const ORDEN = {activos:{k:'margen', d:-1}, clientes:{k:'margen', d:-1}};
+function tablaOrdenable(id, clave, columnas, filas, fila){
+  const o = ORDEN[clave];
+  const ordenadas = [...filas].sort((x,y)=>{
+    const a = x[o.k], b = y[o.k];
+    if(a===null||a===undefined) return 1; if(b===null||b===undefined) return -1;
+    return (typeof a === 'string' ? a.localeCompare(b, 'es') : a - b) * o.d;
+  });
+  const t = document.getElementById(id);
+  t.innerHTML = `<thead><tr>${columnas.map(c=>`<th data-k="${c.k}" class="${c.num?'num':''} ${o.k===c.k?'act':''}">${c.t}<span class="fl">${o.k===c.k?(o.d>0?'▲':'▼'):'↕'}</span></th>`).join('')}</tr></thead>
+    <tbody>${ordenadas.length ? ordenadas.map(fila).join('') : `<tr><td colspan="${columnas.length}"><div class="empty" style="padding:24px">Sin datos en el período.</div></td></tr>`}</tbody>`;
+  t.querySelectorAll('th[data-k]').forEach(th=>th.onclick = ()=>{
+    if(o.k===th.dataset.k) o.d *= -1; else { o.k = th.dataset.k; o.d = columnas.find(c=>c.k===o.k).num ? -1 : 1; }
+    tablaOrdenable(id, clave, columnas, filas, fila);
+  });
+}
+function celdaMargen(v, max){
+  if(v===null||v===undefined) return '<span class="mut">—</span>';
+  const w = max ? Math.min(100, Math.abs(v)/max*100) : 0;
+  return `<div class="margen-cel ${v<0?'neg':''}"><b>${dinero(v,true)}</b><span class="mb"><i style="width:${w}%"></i></span></div>`;
+}
+const tipoIc = t => `<span class="tipo-ic">${t==='avion'?IC_AVION:IC_DRON}${t==='avion'?'Avión':'Dron'}</span>`;
+
+function pintarActivos(){
+  const filas = (R.activos||[]).map(a=>{
+    const I = a.indicadores || {};
+    const ha = val(I,'hectareas'), margen = val(I,'margen');
+    return {id:a.id, nombre:a.nombre, matricula:a.matricula, tipo:a.tipo_activo, modelo:a.modelo, ha, horas:val(I,'horas'),
+            mant:val(I,'costo_mant'), costo_ha:val(I,'costo_ha'), ingreso_ha:val(I,'ingreso_ha'), margen,
+            margen_ha: margen!==null && ha ? margen/ha : null};
+  }).filter(f=>f.ha || f.horas || f.mant);
+  const max = Math.max(0, ...filas.map(f=>Math.abs(f.margen||0)));
+  tablaOrdenable('tActivos', 'activos', [
+    {k:'nombre', t:'Activo'}, {k:'tipo', t:'Tipo'}, {k:'ha', t:'Hectáreas', num:1}, {k:'horas', t:'Horas', num:1},
+    {k:'mant', t:'Mantenimiento', num:1}, {k:'costo_ha', t:'Costo/ha', num:1}, {k:'ingreso_ha', t:'Ingreso/ha', num:1},
+    {k:'margen', t:'Margen', num:1}, {k:'margen_ha', t:'Margen/ha', num:1}], filas, f=>`<tr>
+      <td><a href="/flota/${f.id}" style="color:inherit;font-weight:650;text-decoration:none">${escapar(f.nombre)}</a>${f.matricula?` <span class="tag acc">${escapar(f.matricula)}</span>`:''}<div class="mut" style="font-size:11.5px">${escapar(f.modelo||'')}</div></td>
+      <td>${tipoIc(f.tipo)}</td><td class="num">${fmt(f.ha,0)}</td><td class="num">${fmt(f.horas,1)}</td>
+      <td class="num">${dinero(f.mant,true)}</td><td class="num">${dinero(f.costo_ha)}</td><td class="num">${dinero(f.ingreso_ha)}</td>
+      <td class="num">${celdaMargen(f.margen, max)}</td><td class="num"><b>${dinero(f.margen_ha)}</b></td></tr>`);
+}
+
+function pintarClientes(){
+  const filas = (R.clientes||[]).map(c=>({...c, costo: (c.combustible||0)+(c.mantenimiento||0)}));
+  const max = Math.max(0, ...filas.map(f=>Math.abs(f.margen||0)));
+  const sinIngreso = filas.filter(f=>!f.ingreso).length;
+  document.getElementById('clientesNota').innerHTML = sinIngreso ? `<span class="tag proximo">${sinIngreso} sin tarifa aplicable</span>` : `${filas.length} combinaciones`;
+  tablaOrdenable('tClientes', 'clientes', [
+    {k:'cliente', t:'Cliente'}, {k:'finca', t:'Finca'}, {k:'tipo_activo', t:'Tipo'}, {k:'ha', t:'Hectáreas', num:1},
+    {k:'horas', t:'Horas', num:1}, {k:'ingreso', t:'Ingreso', num:1}, {k:'combustible', t:'Combustible', num:1},
+    {k:'mantenimiento', t:'Mantenimiento', num:1}, {k:'margen', t:'Margen', num:1}, {k:'margen_ha', t:'Margen/ha', num:1}], filas, f=>`<tr>
+      <td style="font-weight:650">${escapar(f.cliente)}</td><td>${escapar(f.finca||'—')}</td><td>${tipoIc(f.tipo_activo)}</td>
+      <td class="num">${fmt(f.ha,0)}</td><td class="num">${fmt(f.horas,1)}</td>
+      <td class="num">${f.ingreso?dinero(f.ingreso,true):'<span class="tag proximo">sin tarifa</span>'}</td>
+      <td class="num">${f.combustible?dinero(f.combustible,true):'<span class="mut">—</span>'}</td><td class="num">${f.mantenimiento?dinero(f.mantenimiento,true):'<span class="mut">—</span>'}</td>
+      <td class="num">${celdaMargen(f.margen, max)}</td><td class="num"><b>${dinero(f.margen_ha)}</b></td></tr>`);
+}
+
+// ---------- Configuración ----------
+function pintarConfig(){
+  const c = R.config || {};
+  const form = document.getElementById('fConfig');
+  for(const campo of form.querySelectorAll('[name]')){
+    const v = c[campo.name];
+    campo.value = v===null || v===undefined ? (campo.name==='moneda' ? 'COP' : '') : v;
+    campo.closest('.campo').classList.toggle('falta', campo.name!=='moneda' && (v===null || v===undefined || v===''));
+  }
+}
+document.getElementById('fConfig').onsubmit = async e=>{
+  e.preventDefault();
+  const datos = {};
+  for(const campo of e.target.querySelectorAll('[name]')) datos[campo.name] = campo.value.trim();
+  const estado = document.getElementById('cfgEstado');
+  estado.textContent = 'Guardando…';
+  try{
+    await api('/api/costos/config', {method:'PUT', body:datos});
+    estado.textContent = 'Guardado ✓';
+    toast('Configuración guardada');
+    cargar();
+  }catch(err){ estado.textContent = ''; toast(err.message); }
+};
+
+// ---------- Tarifas ----------
+function pintarTarifas(){
+  const t = document.getElementById('tTarifas');
+  const lista = TAR.tarifas || [];
+  t.innerHTML = `<thead><tr><th>Cliente</th><th>Aplica a</th><th class="num">Valor/ha</th><th>Desde</th><th>Nota</th><th></th></tr></thead><tbody>` +
+    (lista.length ? lista.map(x=>`<tr>
+      <td style="font-weight:650">${escapar(x.cliente)}</td>
+      <td>${x.tipo_activo==='todos'?'<span class="tag gray">Todos</span>':tipoIc(x.tipo_activo)}</td>
+      <td class="num"><b style="color:var(--acc-ink)">${dinero(x.valor_ha)}</b></td>
+      <td>${x.desde?fmtFecha(x.desde):'<span class="mut">siempre</span>'}</td>
+      <td class="mut" style="font-size:12px">${escapar(x.nota||'')}</td>
+      <td style="white-space:nowrap;text-align:right">
+        <button class="btn secundario peq" data-ed="${x.id}" type="button">Editar</button>
+        <button class="btn-icono" data-del="${x.id}" type="button" title="Borrar tarifa" aria-label="Borrar tarifa">✕</button></td></tr>`).join('')
+      : `<tr><td colspan="6"><div class="empty" style="padding:24px">Aún no hay tarifas. Crea la primera para calcular ingreso y margen.</div></td></tr>`) + '</tbody>';
+  t.querySelectorAll('[data-ed]').forEach(b=>b.onclick = ()=>formTarifa(lista.find(x=>x.id==b.dataset.ed)));
+  t.querySelectorAll('[data-del]').forEach(b=>b.onclick = async ()=>{
+    const x = lista.find(y=>y.id==b.dataset.del);
+    if(!await confirmar({titulo:'Borrar tarifa', mensaje:`Se borrará la tarifa de <b>${escapar(x.cliente)}</b> (${TIPO_TXT[x.tipo_activo]}, ${dinero(x.valor_ha)}/ha). El ingreso de sus operaciones se recalculará.`, aceptar:'Borrar', peligro:true})) return;
+    try{ await api('/api/tarifas/'+x.id, {method:'DELETE'}); toast('Tarifa borrada'); cargar(); }catch(e){ toast(e.message); }
+  });
+  const con = new Set(lista.map(x=>x.cliente.toLowerCase()));
+  const sin = (TAR.clientes||[]).filter(n=>!con.has(n.toLowerCase()));
+  document.getElementById('sinTarifa').innerHTML = sin.length
+    ? `<div class="mut" style="font-size:12px;margin-top:14px">Clientes con operaciones y sin tarifa:</div><div class="chips">${sin.map(n=>`<button class="chip-add" type="button" data-cli="${escapar(n)}">＋ ${escapar(n)}</button>`).join('')}</div>` : '';
+  document.querySelectorAll('#sinTarifa [data-cli]').forEach(b=>b.onclick = ()=>formTarifa(null, b.dataset.cli));
+}
+
+function formTarifa(x, cliente){
+  const nuevo = !x;
+  const clientes = TAR.clientes || [];
+  const v = ventana({
+    titulo: nuevo ? 'Nueva tarifa' : 'Editar tarifa', subtitulo: 'Valor por hectárea que se cobra al cliente', ancho:'angosta',
+    cuerpo: `<form id="fTar" class="form-grid" style="grid-template-columns:1fr 1fr">
+      <div class="campo ancho"><label>Cliente</label><input name="cliente" list="dlClientes" required value="${escapar(x?x.cliente:(cliente||''))}">
+        <datalist id="dlClientes">${clientes.map(n=>`<option value="${escapar(n)}">`).join('')}</datalist></div>
+      <div class="campo"><label>Tipo de activo</label><select name="tipo_activo">
+        ${['todos','dron','avion'].map(t=>`<option value="${t}" ${(x?x.tipo_activo:'todos')===t?'selected':''}>${TIPO_TXT[t]}</option>`).join('')}</select></div>
+      <div class="campo"><label>Valor por hectárea</label><input name="valor_ha" type="number" min="0" step="any" required value="${x?x.valor_ha:''}"></div>
+      <div class="campo"><label>Vigente desde</label><input name="desde" type="date" value="${x&&x.desde?x.desde:''}"></div>
+      <div class="campo"><label>Nota</label><input name="nota" value="${escapar(x&&x.nota||'')}"></div>
+    </form>`,
+    pie: `<div class="der"><button class="btn secundario" data-no type="button">Cancelar</button><button class="btn" data-si type="button">${nuevo?'Crear tarifa':'Guardar cambios'}</button></div>`,
+  });
+  v.$('[data-no]').onclick = ()=>v.cerrar();
+  const guardar = async ()=>{
+    const f = v.$('#fTar');
+    if(!f.reportValidity()) return;
+    const d = Object.fromEntries(new FormData(f).entries());
+    try{
+      if(nuevo) await api('/api/tarifas', {method:'POST', body:d});
+      else await api('/api/tarifas/'+x.id, {method:'PUT', body:d});
+      toast(nuevo ? 'Tarifa creada' : 'Tarifa actualizada');
+      await v.cerrar(); cargar();
+    }catch(e){ toast(e.message); }
+  };
+  v.$('[data-si]').onclick = guardar;
+  v.$('#fTar').onsubmit = e=>{ e.preventDefault(); guardar(); };
+}
+
+document.getElementById('btnTarifa').onclick = ()=>formTarifa(null);
+document.querySelectorAll('#segPeriodo button').forEach(b=>b.onclick = ()=>{ EST.periodo = b.dataset.p; cargar(); });
+document.querySelectorAll('#segTipo button').forEach(b=>b.onclick = ()=>{ EST.tipo = b.dataset.t; cargar(); });
+redibujarGraficas(()=>{ if(R) pintarCascada(); });
+cargar();
+</script>
+{% endblock %}

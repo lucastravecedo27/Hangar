@@ -1,0 +1,7 @@
+# Escritorio (SQLite). El servidor añade requirements-servidor.txt.
+Flask>=3.0,<4
+Werkzeug>=3.0,<4
+openpyxl>=3.1
+cryptography>=42
+# PDF de los informes (core/informes_salida.py). Puro Python: se instala igual en el Mac y en Docker.
+reportlab>=4.0

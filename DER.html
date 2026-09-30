@@ -1,0 +1,283 @@
+<title>Modelo de datos Hangar</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root{
+    --fondo:#f5f7fb; --papel:#ffffff; --tinta:#13213a; --tinta2:#4b5b78; --linea:#d9dfeb;
+    --acento:#0f3d80; --acento-suave:#e4ecfa;
+    --sistema:#5b6b86; --sistema-suave:#e9edf3;
+    --catalogo:#a8681a; --catalogo-suave:#fbefdc;
+    --empresa:#0f3d80; --empresa-suave:#e4ecfa;
+    --ok:#1f7a4d; --sombra:0 1px 2px rgba(19,33,58,.06);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --fondo:#0f1521; --papel:#171f2e; --tinta:#e8edf6; --tinta2:#a3b0c6; --linea:#2a3547;
+      --acento:#7fb0ff; --acento-suave:#1a2a45;
+      --sistema:#9fb0c8; --sistema-suave:#1e2735;
+      --catalogo:#e0a85a; --catalogo-suave:#2e2517;
+      --empresa:#7fb0ff; --empresa-suave:#1a2a45;
+      --ok:#5cc48d; --sombra:none;
+    }
+  }
+  :root[data-theme="dark"]{
+    --fondo:#0f1521; --papel:#171f2e; --tinta:#e8edf6; --tinta2:#a3b0c6; --linea:#2a3547;
+    --acento:#7fb0ff; --acento-suave:#1a2a45;
+    --sistema:#9fb0c8; --sistema-suave:#1e2735;
+    --catalogo:#e0a85a; --catalogo-suave:#2e2517;
+    --empresa:#7fb0ff; --empresa-suave:#1a2a45;
+    --ok:#5cc48d; --sombra:none;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--fondo);color:var(--tinta);font:15px/1.55 "IBM Plex Sans",system-ui,-apple-system,Segoe UI,sans-serif}
+  .wrap{max-width:1180px;margin:0 auto;padding:36px 28px 64px}
+  h1,h2,h3{font-family:"IBM Plex Sans Condensed","IBM Plex Sans",system-ui,sans-serif;text-wrap:balance;margin:0}
+  h1{font-size:34px;font-weight:700;letter-spacing:-.01em}
+  h2{font-size:21px;font-weight:700;margin:44px 0 12px}
+  h3{font-size:15px;font-weight:600}
+  p{max-width:68ch;margin:8px 0;color:var(--tinta2)}
+  .eyebrow{font-size:11.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--acento);font-weight:600}
+  code,.mono{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.92em}
+
+  .capas{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:22px}
+  .capa{background:var(--papel);border:1px solid var(--linea);border-radius:10px;padding:16px 18px;box-shadow:var(--sombra);border-top:4px solid var(--c)}
+  .capa h3{color:var(--c);display:flex;align-items:center;gap:8px}
+  .capa .n{font-family:"IBM Plex Mono",monospace;font-size:12px;background:var(--cs);color:var(--c);border-radius:5px;padding:1px 7px}
+  .capa p{font-size:13.5px;margin:6px 0 0}
+  .capa ul{margin:8px 0 0;padding:0;list-style:none;display:flex;flex-wrap:wrap;gap:5px}
+  .capa li{font-family:"IBM Plex Mono",monospace;font-size:12px;background:var(--cs);color:var(--c);border-radius:5px;padding:2px 7px}
+
+  .diagrama{background:#ffffff;border:1px solid var(--linea);border-radius:10px;padding:14px;overflow-x:auto;box-shadow:var(--sombra)}
+  .diagrama pre.mermaid{margin:0;min-width:1100px;color:#13213a}
+  .leyenda{display:flex;gap:18px;flex-wrap:wrap;font-size:13px;color:var(--tinta2);margin:10px 2px 0}
+  .leyenda span b{font-family:"IBM Plex Mono",monospace;font-weight:500;color:var(--tinta)}
+
+  .tablas{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px}
+  .tabla{background:var(--papel);border:1px solid var(--linea);border-radius:10px;overflow:hidden;box-shadow:var(--sombra)}
+  .tabla header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--linea);background:var(--cs)}
+  .tabla header .nombre{font-family:"IBM Plex Mono",monospace;font-weight:500;font-size:14px;color:var(--c)}
+  .tabla header .rls{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--tinta2)}
+  .tabla header .rls.si{color:var(--ok)}
+  .tabla .desc{padding:10px 14px 4px;font-size:13px;color:var(--tinta2)}
+  .tabla table{width:100%;border-collapse:collapse;font-size:13px}
+  .tabla td{padding:4px 14px;vertical-align:top;border-top:1px solid var(--linea)}
+  .tabla td:first-child{font-family:"IBM Plex Mono",monospace;white-space:nowrap;width:44%}
+  .tabla td:last-child{color:var(--tinta2)}
+  .k{display:inline-block;font-family:"IBM Plex Mono",monospace;font-size:10.5px;padding:0 5px;border-radius:4px;margin-left:6px;vertical-align:1px;background:var(--acento-suave);color:var(--acento)}
+  .k.pk{background:var(--catalogo-suave);color:var(--catalogo)}
+
+  table.rel{width:100%;border-collapse:collapse;background:var(--papel);border:1px solid var(--linea);border-radius:10px;overflow:hidden;font-size:13.5px}
+  table.rel th{font-size:11.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--tinta2);text-align:left;padding:10px 14px;border-bottom:1px solid var(--linea);font-weight:600}
+  table.rel td{padding:8px 14px;border-top:1px solid var(--linea);vertical-align:top}
+  table.rel td.mono{white-space:nowrap}
+  .scroll{overflow-x:auto}
+  .aviso{border-left:3px solid var(--acento);background:var(--acento-suave);padding:12px 16px;border-radius:0 8px 8px 0;margin-top:14px}
+  .aviso p{margin:0;color:var(--tinta)}
+  @media (max-width:820px){.capas{grid-template-columns:1fr}}
+</style>
+
+<div class="wrap">
+  <div class="eyebrow">Hangar · PostgreSQL 16 · multi-empresa</div>
+  <h1>Modelo de datos</h1>
+  <p>19 tablas en tres capas. Cada empresa que use Hangar ve exclusivamente sus drones, operaciones, órdenes y contactos; el catálogo de piezas de DJI es común a todas.</p>
+
+  <div class="capas">
+    <div class="capa" style="--c:var(--sistema);--cs:var(--sistema-suave)">
+      <h3>Sistema <span class="n">3</span></h3>
+      <p>Quién entra y a qué empresa pertenece. Sin RLS: la app filtra <code>usuarios</code> por <code>empresa_id</code>.</p>
+      <ul><li>empresas</li><li>usuarios</li><li>login_intentos</li></ul>
+    </div>
+    <div class="capa" style="--c:var(--catalogo);--cs:var(--catalogo-suave)">
+      <h3>Catálogo DJI <span class="n">2</span></h3>
+      <p>Datos del fabricante para T50, T70P, T100, T55 y T100DB. Compartido; lo siembra la app, nadie lo edita en pantalla.</p>
+      <ul><li>catalogo_piezas</li><li>catalogo_despiece</li></ul>
+    </div>
+    <div class="capa" style="--c:var(--empresa);--cs:var(--empresa-suave)">
+      <h3>Datos de cada empresa <span class="n">14</span></h3>
+      <p>Todas llevan <code>empresa_id</code> con <code>DEFAULT empresa_actual()</code> y política Row-Level Security. Las claves foráneas entre ellas son compuestas <code>(empresa_id, id)</code>.</p>
+      <ul><li>equipos</li><li>componentes</li><li>operaciones</li><li>mantenimientos</li><li>ordenes_trabajo</li><li>ot_tareas</li><li>ordenes_servicio</li><li>os_productos</li><li>os_eventos</li><li>registros</li><li>personal</li><li>meta</li><li>correo_cola</li></ul>
+    </div>
+  </div>
+
+  <h2>Diagrama entidad-relación</h2>
+  <div class="diagrama">
+<pre class="mermaid">
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'IBM Plex Sans, system-ui, sans-serif','fontSize':'13px','primaryColor':'#e4ecfa','primaryBorderColor':'#0f3d80','primaryTextColor':'#13213a','lineColor':'#4b5b78','tertiaryColor':'#ffffff'}}}%%
+erDiagram
+    empresas ||--o{ usuarios : "cuentas"
+    empresas ||--o{ equipos : "flota"
+    empresas ||--o{ personal : "directorio"
+    empresas ||--o{ meta : "configuracion"
+    empresas ||--o{ correo_cola : "bandeja"
+
+    catalogo_piezas ||--o{ componentes : "se instancia en cada dron"
+
+    equipos ||--o{ componentes : "piezas con horas"
+    equipos ||--o{ operaciones : "jornadas de vuelo"
+    equipos ||--o{ mantenimientos : "bitacora"
+    equipos ||--o{ ordenes_trabajo : "OT"
+    equipos o|--o{ ordenes_servicio : "OS"
+    equipos o|--o{ registros : "actividades"
+
+    componentes o|--o{ mantenimientos : "pieza cambiada"
+    componentes o|--o{ ot_tareas : "pieza a revisar"
+
+    ordenes_trabajo ||--o{ ot_tareas : "trabajos"
+    ordenes_servicio ||--o{ os_productos : "productos"
+    ordenes_servicio ||--o{ os_eventos : "historial"
+
+    empresas { int id PK  text nombre  text nit  int activa }
+    usuarios { int id PK  int empresa_id FK  text usuario UK  text rol  int activo }
+    equipos { int id PK  int empresa_id FK  text nombre  text modelo  text numero_serie  float horas_totales  text estado }
+    catalogo_piezas { int id PK  text modelo  text clave  text nombre  float vida_util_horas  float vida_util_meses }
+    catalogo_despiece { int id PK  text modelo  text codigo  text nombre  text modulo_clave  int n }
+    componentes { int id PK  int empresa_id FK  int equipo_id FK  int pieza_id FK  float horas_uso  text fecha_ultimo_cambio }
+    operaciones { int id PK  int empresa_id FK  int equipo_id FK  text fecha  float horas_vuelo  float hectareas  float litros  text piloto  text cliente  text lote }
+    mantenimientos { int id PK  int empresa_id FK  int equipo_id FK  int componente_id FK  text fecha  text motivo  float horas_pieza  float costo }
+    ordenes_trabajo { int id PK  int empresa_id FK  text codigo  int equipo_id FK  text estado  text asignado_a  text fecha_programada }
+    ot_tareas { int id PK  int empresa_id FK  int orden_id FK  int componente_id FK  text descripcion  text estado }
+    ordenes_servicio { int id PK  int empresa_id FK  text codigo  int equipo_id FK  text piloto  text cliente  text finca  text fecha  text estado }
+    os_productos { int id PK  int empresa_id FK  int orden_id FK  text nombre  text dosis }
+    os_eventos { int id PK  int empresa_id FK  int orden_id FK  text estado  text usuario }
+    registros { int id PK  int empresa_id FK  int equipo_id FK  text titulo  text estado  text vence }
+    personal { int id PK  int empresa_id FK  text nombre  text rol  text email }
+    meta { int empresa_id PK  text clave PK  text valor }
+    correo_cola { int id PK  int empresa_id FK  text para  text asunto  text estado }
+</pre>
+  </div>
+  <div class="leyenda">
+    <span><b>||--o{</b> uno a muchos, obligatorio</span>
+    <span><b>o|--o{</b> uno a muchos, opcional (la FK admite NULL)</span>
+    <span><b>PK</b> clave primaria · <b>FK</b> clave foránea · <b>UK</b> única</span>
+  </div>
+  <div class="aviso"><p><b>Por qué las FK son compuestas.</b> PostgreSQL no aplica Row-Level Security a las comprobaciones de clave foránea. Si <code>operaciones.equipo_id</code> apuntara solo a <code>equipos.id</code>, una operación de la empresa A podría registrarse sobre un dron de la empresa B. Con <code>FOREIGN KEY (empresa_id, equipo_id) REFERENCES equipos (empresa_id, id)</code> la base lo rechaza aunque la app tuviera un error.</p></div>
+
+  <h2>Diccionario de tablas</h2>
+  <div class="tablas">
+
+    <div class="tabla" style="--c:var(--sistema);--cs:var(--sistema-suave)"><header><span class="nombre">empresas</span><span class="rls">sin RLS</span></header>
+      <div class="desc">Cada cliente de Hangar. Desactivarla impide entrar a todos sus usuarios.</div>
+      <table><tr><td>id<span class="k pk">PK</span></td><td>autonumérico</td></tr><tr><td>nombre, nit</td><td>razón social e identificación</td></tr><tr><td>contacto, email, telefono</td><td>persona de contacto</td></tr><tr><td>activa</td><td>0/1</td></tr></table></div>
+
+    <div class="tabla" style="--c:var(--sistema);--cs:var(--sistema-suave)"><header><span class="nombre">usuarios</span><span class="rls">filtra la app</span></header>
+      <div class="desc">Cuentas de acceso. El nombre de usuario es único en todo el sistema.</div>
+      <table><tr><td>id<span class="k pk">PK</span></td><td></td></tr><tr><td>empresa_id<span class="k">FK</span></td><td>→ empresas · NULL solo en superadmin sin empresa</td></tr><tr><td>usuario<span class="k">UK</span>, password_hash</td><td>scrypt</td></tr><tr><td>rol</td><td>superadmin · admin · tecnico · piloto</td></tr><tr><td>activo, ultimo_acceso</td><td></td></tr></table></div>
+
+    <div class="tabla" style="--c:var(--sistema);--cs:var(--sistema-suave)"><header><span class="nombre">login_intentos</span><span class="rls">temporal</span></header>
+      <div class="desc">Intentos fallidos de entrada, para frenar la fuerza bruta. Se purga sola (1 día).</div>
+      <table><tr><td>usuario, ip</td><td></td></tr><tr><td>creado</td><td>timestamptz</td></tr></table></div>
+
+    <div class="tabla" style="--c:var(--catalogo);--cs:var(--catalogo-suave)"><header><span class="nombre">catalogo_piezas</span><span class="rls">global</span></header>
+      <div class="desc">Piezas con vida útil publicada por DJI: las que generan alertas. 207 filas.</div>
+      <table><tr><td>id<span class="k pk">PK</span></td><td></td></tr><tr><td>modelo, clave<span class="k">UK</span></td><td>la misma clave existe en varios modelos</td></tr><tr><td>modulo, nombre, zona, mesh</td><td>familia, nombre y malla 3D</td></tr><tr><td>vida_util_horas, vida_util_meses</td><td>manda el plazo que venza antes</td></tr></table></div>
+
+    <div class="tabla" style="--c:var(--catalogo);--cs:var(--catalogo-suave)"><header><span class="nombre">catalogo_despiece</span><span class="rls">global</span></header>
+      <div class="desc">Despiece completo de las láminas oficiales: el recambio que se pide. 2.385 filas.</div>
+      <table><tr><td>id<span class="k pk">PK</span></td><td></td></tr><tr><td>modelo, modulo_clave, n, codigo<span class="k">UK</span></td><td>número en la lámina y código DJI</td></tr><tr><td>nombre, nombre_en, nombre_zh</td><td></td></tr><tr><td>auxiliar, zona</td><td>tornillería = auxiliar</td></tr></table></div>
+
+    <div class="tabla" style="--c:var(--empresa);--cs:var(--empresa-suave)"><header><span class="nombre">equipos</span><span class="rls si">RLS</span></header>
+      <div class="desc">Los drones de la flota. Al crearlo se le instancian los componentes de su modelo.</div>
+      <table><tr><td>id<span class="k pk">PK</span></td><td>UNIQUE(empresa_id, id) para las FK compuestas</td></tr><tr><td>empresa_id<span class="k">FK</span></td><td>→ empresas</td></tr><tr><td>nombre, modelo, numero_serie</td><td>T50 · T70P · T100 · T55 · T100DB</td></tr><tr><td>horas_totales</td><td>acumulado de operaciones</td></tr><tr><td>estado, fecha_alta, nota</td><td>activo · baja</td></tr></table></div>
+
+    <div class="tabla" style="--c:var(--empresa);--cs:var(--empresa-suave)"><header><span class="nombre">componentes</span><span class="rls si">RLS</span></header>
+      <div class="desc">Una fila por pieza con vida útil instalada en cada dron: aquí se acumulan las horas.</div>
+      <table><tr><td>id<span class="k pk">PK</span></td><td></td></tr><tr><td>(empresa_id, equipo_id)<span class="k">FK</span></td><td>→ equipos · CASCADE</td></tr><tr><td>pieza_id<span class="k">FK</span></td><td>→ catalogo_piezas</td></tr><tr><td>horas_uso</td><td>se pone a 0 al cambiar la pieza</td></tr><tr><td>fecha_instalado, fecha_ultimo_cambio</td><td>para los plazos en meses</td></tr></table></div>
+
+    <div class="tabla" style="--c:var(--empresa);--cs:var(--empresa-suave)"><header><span class="nombre">operaciones</span><span class="rls si">RLS</span></header>
+      <div class="desc">Cada jornada de vuelo. Al insertarla suma horas al dron y a todos sus componentes.</div>
+      <table><tr><td>id<span class="k pk">PK</span></td><td></td></tr><tr><td>(empresa_id, equipo_id)<span class="k">FK</span></td><td>→ equipos · CASCADE</td></tr><tr><td>fecha, horas_vuelo, tiempo_total, despegues</td><td></td></tr><tr><td>hectareas, litros, producto</td><td></td></tr><tr><td>piloto, cliente, zona, lote, nota</td><td>texto libre (indexados piloto, cliente, fecha)</td></tr></table></div>
+
+    <div class="tabla" style="--c:var(--empresa);--cs:var(--empresa-suave)"><header><span class="nombre">mantenimientos</span><span class="rls si">RLS</span></header>
+      <div class="desc">Bitácora de reparaciones. Guarda pieza y horas aparte por si el componente se borra.</div>
+      <table><tr><td>id<span class="k pk">PK</span></td><td></td></tr><tr><td>(empresa_id, equipo_id)<span class="k">FK</span></td><td>→ equipos · CASCADE</td></tr><tr><td>(empresa_id, componente_id)<span class="k">FK</span></td><td>→ componentes · SET NULL</td></tr><tr><td>pieza_id, horas_pieza, motivo</td><td>desgaste · daño · preventivo · inspección</td></tr><tr><td>tipo, fecha, costo, realizado_por</td><td></td></tr><tr><td>orden_id, orden_codigo</td><td>OT que lo originó (sin FK, histórico)</td></tr></table></div>
+
+    <div class="tabla" style="--c:var(--empresa);--cs:var(--empresa-suave)"><header><span class="nombre">ordenes_trabajo</span><span class="rls si">RLS</span></header>
+      <div class="desc">OT de mantenimiento programada por el administrador y enviada al técnico.</div>
+      <table><tr><td>id<span class="k pk">PK</span></td><td></td></tr><tr><td>(empresa_id, codigo)<span class="k">UK</span></td><td>OT-2026-001, numeración por empresa</td></tr><tr><td>(empresa_id, equipo_id)<span class="k">FK</span></td><td>→ equipos · CASCADE</td></tr><tr><td>estado, prioridad, tipo</td><td>borrador → programada → enviada → en_proceso → completada</td></tr><tr><td>asignado_a, asignado_email, fecha_programada</td><td></td></tr></table></div>
+
+    <div class="tabla" style="--c:var(--empresa);--cs:var(--empresa-suave)"><header><span class="nombre">ot_tareas</span><span class="rls si">RLS</span></header>
+      <div class="desc">Trabajos de una OT: del cronograma automático o añadidos a mano.</div>
+      <table><tr><td>id<span class="k pk">PK</span></td><td></td></tr><tr><td>(empresa_id, orden_id)<span class="k">FK</span></td><td>→ ordenes_trabajo · CASCADE</td></tr><tr><td>(empresa_id, componente_id)<span class="k">FK</span></td><td>→ componentes · SET NULL</td></tr><tr><td>descripcion, origen, nivel, estado</td><td>cronograma · manual</td></tr></table></div>
+
+    <div class="tabla" style="--c:var(--empresa);--cs:var(--empresa-suave)"><header><span class="nombre">ordenes_servicio</span><span class="rls si">RLS</span></header>
+      <div class="desc">OS de aplicación: piloto, cliente, finca, dron y productos, con seguimiento de estado.</div>
+      <table><tr><td>id<span class="k pk">PK</span></td><td></td></tr><tr><td>(empresa_id, codigo)<span class="k">UK</span></td><td>OS-2026-001</td></tr><tr><td>(empresa_id, equipo_id)<span class="k">FK</span></td><td>→ equipos · SET NULL</td></tr><tr><td>piloto, cliente, finca, zona, fecha, hora</td><td></td></tr><tr><td>estado</td><td>programada → enviada → en_ruta → en_ejecucion → finalizada</td></tr></table></div>
+
+    <div class="tabla" style="--c:var(--empresa);--cs:var(--empresa-suave)"><header><span class="nombre">os_productos · os_eventos</span><span class="rls si">RLS</span></header>
+      <div class="desc">Productos con dosis de cada OS, y el historial de cambios de estado con usuario y fecha.</div>
+      <table><tr><td>id<span class="k pk">PK</span></td><td></td></tr><tr><td>(empresa_id, orden_id)<span class="k">FK</span></td><td>→ ordenes_servicio · CASCADE</td></tr><tr><td>nombre, dosis, cantidad, unidad</td><td>os_productos</td></tr><tr><td>estado, nota, usuario, creado</td><td>os_eventos</td></tr></table></div>
+
+    <div class="tabla" style="--c:var(--empresa);--cs:var(--empresa-suave)"><header><span class="nombre">registros</span><span class="rls si">RLS</span></header>
+      <div class="desc">Actividades y pendientes generales, opcionalmente ligadas a un dron.</div>
+      <table><tr><td>id<span class="k pk">PK</span></td><td></td></tr><tr><td>(empresa_id, equipo_id)<span class="k">FK</span></td><td>→ equipos · SET NULL</td></tr><tr><td>titulo, categoria, estado, vence</td><td></td></tr></table></div>
+
+    <div class="tabla" style="--c:var(--empresa);--cs:var(--empresa-suave)"><header><span class="nombre">personal</span><span class="rls si">RLS</span></header>
+      <div class="desc">Directorio de contactos: pilotos, técnicos, clientes, proveedores. Las órdenes los enlazan por nombre.</div>
+      <table><tr><td>id<span class="k pk">PK</span></td><td></td></tr><tr><td>empresa_id<span class="k">FK</span></td><td>→ empresas</td></tr><tr><td>nombre, rol, cargo, empresa</td><td>rol: piloto · tecnico · cliente · proveedor…</td></tr><tr><td>email, telefono, licencia, licencia_vence</td><td></td></tr></table></div>
+
+    <div class="tabla" style="--c:var(--empresa);--cs:var(--empresa-suave)"><header><span class="nombre">meta · correo_cola</span><span class="rls si">RLS</span></header>
+      <div class="desc">Configuración por empresa (SMTP cifrado, hotspots de láminas) y bandeja de correos con reintentos.</div>
+      <table><tr><td>(empresa_id, clave)<span class="k pk">PK</span></td><td>meta · valor TEXT/JSON</td></tr><tr><td>id<span class="k pk">PK</span>, para, asunto, cuerpo</td><td>correo_cola</td></tr><tr><td>estado, error, intentos, enviado</td><td>pendiente · enviado · error</td></tr></table></div>
+  </div>
+
+
+  <h2>Flota mixta: drones y aviones</h2>
+  <p class="desc">Tablas de empresa (RLS y FK compuestas). Requieren <b>PostgreSQL 15 o superior</b> por los <code>ON DELETE SET NULL (columna)</code>. Las operaciones guardan además Hobbs/Tach, aterrizajes, arranques, combustible, ha programadas, dosis y clima, validados por rango en el servidor; los usuarios guardan su tema (claro · oscuro · sistema) y el rol admite <i>certificador</i>.</p>
+  <div class="tablas">
+    <div class="tabla" style="--c:var(--empresa);--cs:var(--empresa-suave)"><header><span class="nombre">modelos_activo</span><span class="rls">RLS</span></header>
+      <div class="desc">Modelos de dron o avión de la empresa (Cessna 188A como plantilla).</div>
+      <table><tr><td>id<span class="k pk">PK</span></td><td></td></tr><tr><td>empresa_id<span class="k">FK</span></td><td>→ empresas</td></tr><tr><td>clave, tipo_activo</td><td>dron · avion</td></tr></table></div>
+    <div class="tabla" style="--c:var(--empresa);--cs:var(--empresa-suave)"><header><span class="nombre">contadores_equipo</span><span class="rls">RLS</span></header>
+      <div class="desc">Contadores de cada activo y su valor inicial.</div>
+      <table><tr><td>id<span class="k pk">PK</span></td><td></td></tr><tr><td>empresa_id<span class="k">FK</span></td><td>→ empresas</td></tr><tr><td>contador</td><td>horas_vuelo · despegues · hobbs · tach · aterrizajes · arranques</td></tr></table></div>
+    <div class="tabla" style="--c:var(--empresa);--cs:var(--empresa-suave)"><header><span class="nombre">piezas_serie</span><span class="rls">RLS</span></header>
+      <div class="desc">Piezas con número de serie que viajan con su TSO/TSN (motor, hélice, magnetos, baterías).</div>
+      <table><tr><td>id<span class="k pk">PK</span></td><td></td></tr><tr><td>empresa_id<span class="k">FK</span></td><td>→ empresas</td></tr><tr><td>serial, uso_acumulado</td><td>equipo_id y componente_id donde está montada</td></tr></table></div>
+    <div class="tabla" style="--c:var(--empresa);--cs:var(--empresa-suave)"><header><span class="nombre">instalaciones</span><span class="rls">RLS</span></header>
+      <div class="desc">Historial de montajes y desmontajes de cada pieza con serie.</div>
+      <table><tr><td>id<span class="k pk">PK</span></td><td></td></tr><tr><td>empresa_id<span class="k">FK</span></td><td>→ empresas</td></tr><tr><td>desde, hasta</td><td>uso al montar y al desmontar</td></tr></table></div>
+    <div class="tabla" style="--c:var(--empresa);--cs:var(--empresa-suave)"><header><span class="nombre">directivas</span><span class="rls">RLS</span></header>
+      <div class="desc">Directivas AD y boletines SB, únicos o recurrentes.</div>
+      <table><tr><td>id<span class="k pk">PK</span></td><td></td></tr><tr><td>empresa_id<span class="k">FK</span></td><td>→ empresas</td></tr><tr><td>numero, tipo</td><td>intervalo por contador o días, límite por fecha o valor</td></tr></table></div>
+    <div class="tabla" style="--c:var(--empresa);--cs:var(--empresa-suave)"><header><span class="nombre">cumplimiento_directiva</span><span class="rls">RLS</span></header>
+      <div class="desc">Cumplimiento por activo, firmado por el mecánico certificador.</div>
+      <table><tr><td>id<span class="k pk">PK</span></td><td></td></tr><tr><td>empresa_id<span class="k">FK</span></td><td>→ empresas</td></tr><tr><td>estado, firmado_por</td><td>licencia, orden_id</td></tr></table></div>
+    <div class="tabla" style="--c:var(--empresa);--cs:var(--empresa-suave)"><header><span class="nombre">documentos</span><span class="rls">RLS</span></header>
+      <div class="desc">Certificados, seguros y licencias con vencimiento.</div>
+      <table><tr><td>id<span class="k pk">PK</span></td><td></td></tr><tr><td>empresa_id<span class="k">FK</span></td><td>→ empresas</td></tr><tr><td>tipo, vence</td><td>de un activo o de una persona</td></tr></table></div>
+    <div class="tabla" style="--c:var(--empresa);--cs:var(--empresa-suave)"><header><span class="nombre">tarifas</span><span class="rls">RLS</span></header>
+      <div class="desc">Valor por hectárea por cliente y tipo de activo.</div>
+      <table><tr><td>id<span class="k pk">PK</span></td><td></td></tr><tr><td>empresa_id<span class="k">FK</span></td><td>→ empresas</td></tr><tr><td>cliente, valor_ha</td><td>vigente desde</td></tr></table></div>
+    <div class="tabla" style="--c:var(--empresa);--cs:var(--empresa-suave)"><header><span class="nombre">auditoria</span><span class="rls">RLS</span></header>
+      <div class="desc">Quién cambió qué: contadores, estado, bajas, usos de piezas.</div>
+      <table><tr><td>id<span class="k pk">PK</span></td><td></td></tr><tr><td>empresa_id<span class="k">FK</span></td><td>→ empresas</td></tr><tr><td>tabla, campo</td><td>antes → después, usuario</td></tr></table></div>
+    <div class="tabla" style="--c:var(--empresa);--cs:var(--empresa-suave)"><header><span class="nombre">checklists</span><span class="rls">RLS</span></header>
+      <div class="desc">Chequeo pre-vuelo.</div>
+      <table><tr><td>id<span class="k pk">PK</span></td><td></td></tr><tr><td>empresa_id<span class="k">FK</span></td><td>→ empresas</td></tr><tr><td>resultado</td><td>apto · observaciones · no recomendado volar</td></tr></table></div>
+    <div class="tabla" style="--c:var(--empresa);--cs:var(--empresa-suave)"><header><span class="nombre">estado_diario</span><span class="rls">RLS</span></header>
+      <div class="desc">Foto diaria del estado de cada activo: disponibilidad histórica y MTTR.</div>
+      <table><tr><td>id<span class="k pk">PK</span></td><td></td></tr><tr><td>empresa_id<span class="k">FK</span></td><td>→ empresas</td></tr><tr><td>equipo_id, fecha<span class="k">UK</span></td><td>apto · observaciones · no_apto · taller · baja</td></tr></table></div>
+  </div>
+
+  <h2>Relaciones y reglas de borrado</h2>
+  <div class="scroll">
+  <table class="rel">
+    <thead><tr><th>Tabla hija</th><th>Columna(s)</th><th>Padre</th><th>Al borrar el padre</th><th>Nota</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">usuarios</td><td class="mono">empresa_id</td><td class="mono">empresas</td><td>CASCADE</td><td>usuario único en todo el sistema</td></tr>
+      <tr><td class="mono">todas las tablas de datos</td><td class="mono">empresa_id</td><td class="mono">empresas</td><td>CASCADE</td><td>borrar una empresa borra todos sus datos</td></tr>
+      <tr><td class="mono">componentes</td><td class="mono">(empresa_id, equipo_id)</td><td class="mono">equipos</td><td>CASCADE</td><td>uno por pieza del catálogo del modelo</td></tr>
+      <tr><td class="mono">componentes</td><td class="mono">pieza_id</td><td class="mono">catalogo_piezas</td><td>CASCADE</td><td>catálogo global</td></tr>
+      <tr><td class="mono">operaciones</td><td class="mono">(empresa_id, equipo_id)</td><td class="mono">equipos</td><td>CASCADE</td><td>suma horas a equipo y componentes</td></tr>
+      <tr><td class="mono">mantenimientos</td><td class="mono">(empresa_id, equipo_id)</td><td class="mono">equipos</td><td>CASCADE</td><td></td></tr>
+      <tr><td class="mono">mantenimientos</td><td class="mono">(empresa_id, componente_id)</td><td class="mono">componentes</td><td>SET NULL</td><td>pieza_id y horas_pieza se conservan</td></tr>
+      <tr><td class="mono">ordenes_trabajo</td><td class="mono">(empresa_id, equipo_id)</td><td class="mono">equipos</td><td>CASCADE</td><td>codigo único por empresa</td></tr>
+      <tr><td class="mono">ot_tareas</td><td class="mono">(empresa_id, orden_id)</td><td class="mono">ordenes_trabajo</td><td>CASCADE</td><td></td></tr>
+      <tr><td class="mono">ot_tareas</td><td class="mono">(empresa_id, componente_id)</td><td class="mono">componentes</td><td>SET NULL</td><td></td></tr>
+      <tr><td class="mono">ordenes_servicio</td><td class="mono">(empresa_id, equipo_id)</td><td class="mono">equipos</td><td>SET NULL</td><td>codigo único por empresa</td></tr>
+      <tr><td class="mono">os_productos · os_eventos</td><td class="mono">(empresa_id, orden_id)</td><td class="mono">ordenes_servicio</td><td>CASCADE</td><td></td></tr>
+      <tr><td class="mono">registros</td><td class="mono">(empresa_id, equipo_id)</td><td class="mono">equipos</td><td>SET NULL</td><td></td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p style="margin-top:14px">Convenciones: fechas como texto ISO (<code>YYYY-MM-DD</code>), booleanos como <code>INTEGER 0/1</code>, <code>id</code> autonumérico en todas las tablas salvo <code>meta</code> (clave compuesta) y <code>login_intentos</code> (registro temporal). Índices en <code>empresa_id</code> de cada tabla y en <code>operaciones(fecha)</code>, <code>(piloto)</code>, <code>(cliente)</code>, <code>(equipo_id, fecha)</code>.</p>
+</div>

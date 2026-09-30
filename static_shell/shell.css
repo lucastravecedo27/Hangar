@@ -1,0 +1,89 @@
+/* Barra lateral y cabecera de página — complementa a estilos.css, cárgalo después.
+   La navegación vive sólo aquí: no hay barras apiladas sobre el contenido. */
+:root{
+  --side-w:232px;
+  --side-1:#ffffff; --side-2:#ffffff;
+  --side-txt:#2a2f38; --side-mut:#7a8290;
+}
+body.with-side{padding-left:var(--side-w)}
+
+.side{
+  position:fixed;left:0;top:0;bottom:0;width:var(--side-w);z-index:60;
+  display:flex;flex-direction:column;padding:18px 12px 14px;
+  background:var(--side-1);
+  color:var(--side-txt);
+  border-right:1px solid var(--line);
+}
+.side > *{position:relative;z-index:1}
+
+.side-brand{display:flex;align-items:center;gap:11px;padding:2px 8px 18px;text-decoration:none;color:inherit}
+.side-brand .logo{width:38px;height:38px;flex:none}
+.side-brand .marca{display:block;min-width:0}
+.side-brand .marca b{display:block;font-family:var(--font-marca);font-size:19px;font-weight:800;letter-spacing:-.03em;color:var(--ink)}
+.side-brand .marca .sub{display:block;font-size:10.5px;color:var(--side-mut);margin-top:1px;letter-spacing:.02em}
+.side-brand:hover .logo{transform:translateY(-1px)}
+.side-brand .logo{transition:transform .18s ease}
+
+.side-nav{display:flex;flex-direction:column;gap:2px;overflow-y:auto;min-height:0}
+.side-lbl{font-size:9.5px;font-weight:700;color:var(--side-mut);text-transform:uppercase;
+  letter-spacing:.11em;padding:14px 10px 5px}
+
+.side-item{
+  position:relative;display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:10px;
+  color:var(--side-txt);text-decoration:none;font-size:13.5px;font-weight:520;
+  transition:background .16s ease,color .16s ease;
+}
+.side-item .ic{width:20px;height:20px;flex:none;display:grid;place-items:center;color:var(--side-mut);transition:color .16s ease}
+.side-item .ic svg{width:20px;height:20px;display:block}
+.side-item .txt{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.side-item:hover{background:var(--o-gris,#f3f4f6);color:var(--ink)}
+.side-item:hover .ic{color:var(--ink)}
+.side-item.active{background:var(--acc-soft);color:var(--acc-deep);font-weight:640}
+.side-item.active .ic{color:var(--acc-ink)}
+.side-item.active::before{content:"";position:absolute;left:-12px;top:50%;transform:translateY(-50%);
+  width:3px;height:20px;border-radius:0 3px 3px 0;background:var(--acc)}
+
+.side-badge{margin-left:auto;flex:none;min-width:19px;height:19px;padding:0 6px;border-radius:980px;
+  display:grid;place-items:center;font-size:10.5px;font-weight:700;color:var(--acc-txt);background:var(--amber)}
+.side-badge.rojo{background:var(--red);color:#fff}
+.side-badge.ambar{background:var(--amber);color:#3a2600}
+
+.side-foot{margin-top:auto;padding-top:12px;display:flex;flex-direction:column;gap:6px;
+  border-top:1px solid var(--line)}
+.side-estado{display:flex;align-items:center;gap:9px;padding:6px 11px;font-size:10.5px;
+  color:var(--side-mut);line-height:1.45}
+.side-estado b{color:var(--side-txt);font-weight:640;font-variant-numeric:tabular-nums}
+.punto-vivo{width:7px;height:7px;border-radius:50%;background:#3ddc84;flex:none;
+  box-shadow:0 0 0 0 rgba(61,220,132,.6);animation:latido 2.6s infinite}
+@keyframes latido{0%{box-shadow:0 0 0 0 rgba(61,220,132,.5)}70%{box-shadow:0 0 0 7px rgba(61,220,132,0)}100%{box-shadow:0 0 0 0 rgba(61,220,132,0)}}
+
+button.side-accion{width:100%;border:0;background:transparent;font-family:inherit;text-align:left;cursor:pointer}
+button.side-accion:hover{background:var(--o-gris,#f3f4f6);color:var(--ink)}
+.side-accion{display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:10px;
+  color:var(--side-mut);text-decoration:none;font-size:12.5px;font-weight:540;transition:.16s}
+.side-accion .ic{width:20px;height:20px;flex:none;display:grid;place-items:center}
+.side-accion .ic svg{width:18px;height:18px;display:block}
+.side-accion .txt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.side-accion:hover{background:var(--o-suave-rojo,#fdecea);color:var(--red)}
+
+/* ===== Cabecera de página (sustituye a la barra superior fija) ===== */
+.pagina-cab{display:flex;align-items:flex-end;gap:20px;padding:34px 0 22px;flex-wrap:wrap}
+.pagina-tit{min-width:0}
+.pagina-tit h1{font-family:var(--font-marca);font-size:29px;font-weight:800;letter-spacing:-.032em;line-height:1.12}
+.pagina-tit p{font-size:13.5px;color:var(--mut);margin-top:5px;max-width:70ch}
+.pagina-acciones{margin-left:auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+
+@media(max-width:1040px){
+  :root{--side-w:64px}
+  .side{padding:16px 10px}
+  .side-brand{justify-content:center;padding:2px 0 16px}
+  .side-brand .marca{display:none}
+  .side-item{justify-content:center;padding:10px 0}
+  .side-item .txt,.side-lbl,.side-accion .txt,.side-estado .txt{display:none}
+  .side-item.active::before{left:-10px}
+  .side-badge{position:absolute;top:3px;right:3px;margin:0}
+  .side-accion{justify-content:center}
+  .side-estado{justify-content:center;padding:6px 0}
+  .pagina-cab{padding:24px 0 18px}
+  .pagina-tit h1{font-size:24px}
+}

@@ -1,0 +1,76 @@
+{% extends "_layout.html" %}
+{% block titulo %}Modelo 3D{% endblock %}
+{% block clase_body %}pantalla-3d{% endblock %}
+{% block encabezado %}<span id="encabezado3d">Modelo 3D</span>{% endblock %}
+{% block subtitulo %}Pasa el puntero por cualquier pieza para ver su desgaste frente a lo recomendado, o haz clic para inspeccionarla. Sólo aparecen aquí los modelos con archivo 3D entregado; el resto se trabaja desde <a href="/diagramas">Diagramas</a>.{% endblock %}
+{% block acciones %}<select id="selModelo3d" autocomplete="off" style="min-width:190px;display:none"></select><select id="selEquipo" autocomplete="off" style="min-width:180px"></select>{% endblock %}
+
+{% block contenido %}
+<div class="despiece-grid">
+  <div>
+    <div class="visor" id="visor">
+      <canvas id="canvas3d"></canvas>
+      <div class="etiqueta" id="etiqueta"></div>
+      <div class="cargando" id="cargando">Cargando despiece 3D…</div>
+      <div class="drawer" id="drawer3d"></div>
+      <div class="controles">
+        <label>Despiece <input type="range" id="explode" min="0" max="100" value="0"></label>
+        <button class="btn peq secundario" id="btnAnimar"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><path d="M6.6 4.2 15 10l-8.4 5.8z"/></svg> Animar despiece</button>
+        <button class="btn peq secundario" id="btnVuelo" aria-pressed="false" title="El dron despega y queda en vuelo estacionario; el despiece se cierra y las hélices arrancan solas"></button>
+        <button class="btn peq secundario" id="btnRotar" aria-pressed="false" title="Gira el modelo automáticamente"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><path d="M16.4 10a6.4 6.4 0 1 1-1.9-4.5"/><path d="M16.6 3.4v3.4h-3.4"/></svg> Rotar</button>
+        <button class="btn peq secundario" id="btnHelices" aria-pressed="false" title="Hace girar las hélices"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><circle cx="10" cy="10" r="1.5"/><path d="M10 8.5V3.4M11.3 10.8l4.4 2.6M8.7 10.8l-4.4 2.6"/></svg> Hélices</button>
+        <button class="btn peq secundario" id="btnNiebla" aria-pressed="false" title="Simula la aspersión (requiere hélices girando)"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><path d="M10 3.2s4.2 4.7 4.2 7.4a4.2 4.2 0 1 1-8.4 0C5.8 7.9 10 3.2 10 3.2z"/></svg> Aspersión</button>
+        <button class="btn peq secundario" id="btnTapas" aria-pressed="false" title="Oculta todas las tapas: tapas de inspección, cubiertas, capó, carenados, paneles y guardabarros"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><path d="M3.4 8.2h13.2"/><path d="M5 8.2V5.6a1.6 1.6 0 0 1 1.6-1.6h6.8A1.6 1.6 0 0 1 15 5.6v2.6"/><path d="M4.4 11.4h11.2v3.4a1.6 1.6 0 0 1-1.6 1.6H6a1.6 1.6 0 0 1-1.6-1.6z" stroke-dasharray="2.2 1.8"/></svg> Quitar tapas</button>
+        <button class="btn peq secundario" id="btnInterior" aria-pressed="false" style="display:none" title="Desprende toda la cubierta (revestimiento pintado, capó del motor, paneles y ventanas) y deja la estructura, el motor y los sistemas"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><rect x="3.2" y="3.2" width="13.6" height="13.6" rx="2" stroke-dasharray="2.4 2"/><path d="M7 10h6M10 7v6"/></svg> Ver interior</button>
+        <button class="btn peq secundario" id="btnAislar" aria-pressed="false" title="Deja sólo la pieza seleccionada: el resto del modelo se vuelve casi invisible"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><path d="M1.8 10S4.9 4.6 10 4.6 18.2 10 18.2 10 15.1 15.4 10 15.4 1.8 10 1.8 10z"/><circle cx="10" cy="10" r="2.2"/></svg> Sólo la pieza</button>
+        <button class="btn peq secundario" id="btnCambio3d" title="Resalta las piezas para cambio: amarillo próximo, naranja crítico, rojo vencido"><span class="semaforo"><i class="p"></i><i class="c"></i><i class="v"></i></span> Piezas para cambio</button>
+        <button class="btn peq secundario" id="btnVolver" style="display:none"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><path d="M7.4 5.4 3.6 9.2l3.8 3.8"/><path d="M3.6 9.2h8.2a4.6 4.6 0 0 1 0 9.2H9"/></svg> Volver</button>
+        <button class="btn peq secundario" id="btnReset">Centrar</button>
+        <button class="btn peq" id="btnAmpliar"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px"><path d="M7.4 3.4H3.4v4M12.6 3.4h4v4M16.6 12.6v4h-4M7.4 16.6h-4v-4"/></svg> Ampliar</button>
+      </div>
+    </div>
+    <div class="leyenda">
+      <span><i style="background:#8f9d8a"></i> OK</span>
+      <span><i style="background:#e8a400"></i> Próximo (&gt;75 %)</span>
+      <span><i style="background:#e0473e"></i> Crítico (&gt;90 %)</span>
+      <span><i style="background:#e0473e"></i> Vencido</span>
+      <span style="margin-left:auto;color:var(--mut)">Arrastra para rotar (sigue girando al soltar) · rueda o dos dedos para acercar · clic en una pieza · doble clic para enfocarla · flechas del teclado para girar · Esc sale de la ampliación</span>
+    </div>
+  </div>
+
+  <div class="panel-pieza">
+    <div class="card detalle-pieza" id="detalle">
+      <div class="empty" style="padding:26px 10px">Selecciona una pieza en el modelo 3D o en la lista.</div>
+    </div>
+    <div class="card">
+      <h3>Piezas <span class="mut" id="piezasConteo"></span></h3>
+      <div class="acciones" style="margin-bottom:8px">
+        <button class="pillbtn active" data-f="todas">Todas</button>
+        <button class="pillbtn" data-f="alerta">Con alerta</button>
+        <button class="pillbtn" data-f="3d">Visibles en 3D</button>
+        <button class="pillbtn" data-f="modelo">Piezas del modelo 3D</button>
+      </div>
+      <input id="buscaPieza" type="search" placeholder="Buscar pieza del modelo (p. ej. rodete, radomo, muelle)…" style="display:none;width:100%;margin-bottom:8px">
+      <div class="pieza-lista" id="lista"></div>
+    </div>
+  </div>
+</div>
+<div class="lightbox" id="lightbox"><div class="escenario" id="lbEscenario"></div><button class="btn cerrar" id="lbCerrar">✕ Cerrar</button><div class="info" id="lbInfo">Rueda para acercar · arrastra para mover · clic en un número para identificar la pieza</div></div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/environments/RoomEnvironment.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/objects/Reflector.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/geometries/RoundedBoxGeometry.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/BufferGeometryUtils.js"></script>
+<script src="{{ url_for('static_shell', archivo='traduccion.js') }}"></script>
+<script src="{{ url_for('static_shell', archivo='despiece.js') }}"></script>
+{% endblock %}

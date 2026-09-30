@@ -1,0 +1,69 @@
+{# Hoja de impresión de un informe (core/informes.py). La usa el botón «Imprimir» y es el respaldo
+   de «Descargar PDF» cuando la instalación no tiene ReportLab: el navegador la guarda como PDF. #}
+{% extends "_hoja_impresa.html" %}
+{% block titulo %}{{ r.titulo }}{% endblock %}
+{% block encabezado %}{{ r.titulo }}{% endblock %}
+{% block codigo %}{{ r.norma or r.categoria_txt }}{% if r.conservar %} · Conservar: {{ r.conservar }}{% endif %}{% endblock %}
+{% block contenido %}
+<style>
+  {% if r.apaisado %}.hoja{max-width:1180px}{% endif %}
+  @page{size:A4 {{ 'landscape' if r.apaisado else 'portrait' }};margin:12mm}
+  .ip-sub{font-size:13px;color:var(--ink2);margin:-8px 0 4px;line-height:1.45}
+  .ip-meta{font-size:11.5px;color:var(--mut);font-style:italic;margin-bottom:12px}
+  .ip-caja{border:.5px solid var(--line2);border-left:3px solid var(--ink2);border-radius:8px;padding:9px 12px;margin:0 0 10px;
+    font-size:12px;line-height:1.5;color:var(--ink2);break-inside:avoid}
+  .ip-caja.proximo{border-left-color:var(--amber);background:#fdf3dc}
+  .ip-caja.critico,.ip-caja.vencido{border-left-color:var(--red);background:#fbe4e2}
+  .ip-kv{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px 16px;margin:0 0 12px;
+    border:.5px solid var(--line);border-radius:8px;padding:9px 12px;background:#f6f7f8}
+  .ip-kv .l{font-size:9.5px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.05em}
+  .ip-kv .v{font-size:12.5px;font-weight:650}
+  .ip-kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin:0 0 14px}
+  .ip-kpis div.k{border:.5px solid var(--line);border-radius:8px;padding:8px 10px;break-inside:avoid}
+  .ip-kpis .l{font-size:9.5px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.05em}
+  .ip-kpis .v{font-size:18px;font-weight:800;margin:3px 0 2px;letter-spacing:-.02em}
+  .ip-kpis .n{font-size:9.5px;color:var(--mut);line-height:1.35}
+  .ip-kpis .v.proximo{color:#a86f00}.ip-kpis .v.critico,.ip-kpis .v.vencido{color:var(--red)}
+  h2.ip-h{font-size:14px;font-weight:720;margin:16px 0 4px;break-after:avoid}
+  .ip-desc{font-size:11.5px;color:var(--mut);margin-bottom:6px}
+  table.ip{width:100%;border-collapse:collapse;font-size:10px;margin-bottom:8px}
+  table.ip th{background:#1a1d24;color:#fff;font-size:9.5px;text-transform:none;letter-spacing:0;padding:5px 6px;text-align:left;vertical-align:bottom}
+  table.ip td{padding:4px 6px;border-bottom:.5px solid #e6e7ea;vertical-align:top}
+  table.ip tr:nth-child(even) td{background:#f6f7f8}
+  table.ip .num{text-align:right;font-variant-numeric:tabular-nums}
+  table.ip td.falta{background:#fdf0d5 !important}
+  table.ip tfoot td{font-weight:750;border-top:1px solid #3a3f4a;background:#fff6db}
+  table.ip thead{display:table-header-group}
+  table.ip tr{break-inside:avoid}
+  .ip-est.ok{color:#2f8f4e;font-weight:700}.ip-est.proximo{color:#a86f00;font-weight:700}
+  .ip-est.critico{color:#e0473e;font-weight:700}.ip-est.vencido{color:#b3261e;font-weight:700}.ip-est.gris{color:#737a86;font-weight:700}
+  .ip-firmas{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:30px 40px;margin:34px 0 10px;break-inside:avoid}
+  .ip-firmas div{border-top:1px solid #3a3f4a;padding-top:5px;font-size:11px;color:var(--mut)}
+  .ip-firma-celda{min-width:120px;height:26px}
+</style>
+{% if r.subtitulo %}<p class="ip-sub">{{ r.subtitulo }}</p>{% endif %}
+<p class="ip-meta">{{ r.filtros_txt }}{% if r.empresa %} · {{ r.empresa }}{% endif %} · Generado el {{ r.generado[8:10] }}/{{ r.generado[5:7] }}/{{ r.generado[0:4] }} {{ r.generado[11:] }}{% if r.usuario %} por {{ r.usuario }}{% endif %}</p>
+{% if r.para %}<div class="ip-caja"><b>Para qué sirve:</b> {{ r.para }}</div>{% endif %}
+{% if r.exige %}<div class="ip-caja"><b>{{ r.norma }} · Qué exige:</b> {{ r.exige }}{% if r.nota_rac %}<br><i>{{ r.nota_rac }}</i>{% endif %}</div>{% endif %}
+{% for a in r.avisos %}<div class="ip-caja {{ a.nivel }}">{% if a.nivel != 'info' %}<b>Atención:</b> {% endif %}{{ a.texto }}</div>{% endfor %}
+{% if r.encabezado %}<div class="ip-kv">{% for l, v in r.encabezado %}<div><div class="l">{{ l }}</div><div class="v">{{ v if v not in (None, '') else '—' }}</div></div>{% endfor %}</div>{% endif %}
+{% if r.kpis_txt %}<div class="ip-kpis">{% for k in r.kpis_txt %}<div class="k"><div class="l">{{ k.etiqueta }}</div>
+  <div class="v {{ k.clase if k.estado and k.estado != 'ok' else '' }}">{{ k.texto }}</div>
+  <div class="n">{% if k.variacion is not none %}{{ '%+.1f'|format(k.variacion) }} % frente al período anterior. {% endif %}{{ k.nota or '' }}</div></div>{% endfor %}</div>{% endif %}
+
+{% for s in r.secciones_txt %}
+  <h2 class="ip-h">{{ s.titulo }}</h2>
+  {% if s.descripcion %}<div class="ip-desc">{{ s.descripcion }}</div>{% endif %}
+  {% if s.encabezado %}<div class="ip-kv">{% for l, v in s.encabezado %}<div><div class="l">{{ l }}</div><div class="v">{{ v if v not in (None, '') else '—' }}</div></div>{% endfor %}</div>{% endif %}
+  {% if s.filas_txt %}
+  <table class="ip">
+    <thead><tr>{% for c in s.cols %}<th class="{{ 'num' if c.tipo in ('entero','numero','horas','dinero','pct') else '' }}">{{ c.titulo }}</th>{% endfor %}</tr></thead>
+    <tbody>{% for fila in s.filas_txt %}<tr>{% for c in fila %}<td class="{{ 'num' if c.num else '' }} {{ 'falta' if c.falta else '' }}">{% if c.clase %}<span class="ip-est {{ c.clase }}">{{ c.t }}</span>{% elif s.cols[loop.index0].tipo == 'firma' %}<div class="ip-firma-celda"></div>{% else %}{{ c.t }}{% endif %}</td>{% endfor %}</tr>{% endfor %}</tbody>
+    {% if s.total_txt %}<tfoot><tr>{% for c in s.total_txt %}<td class="{{ 'num' if c.num else '' }}">{{ c.t }}</td>{% endfor %}</tr></tfoot>{% endif %}
+  </table>
+  {% else %}<div class="ip-desc"><i>{{ s.vacio }}</i></div>{% endif %}
+  {% if s.firmas %}<div class="ip-firmas">{% for f in s.firmas %}<div>{{ f }}</div>{% endfor %}</div>{% endif %}
+{% endfor %}
+{% if r.firmas %}<div class="ip-firmas">{% for f in r.firmas %}<div>{{ f }}</div>{% endfor %}</div>{% endif %}
+{% if auto %}<script>window.addEventListener('load', ()=>setTimeout(()=>window.print(), 350));</script>{% endif %}
+{% endblock %}

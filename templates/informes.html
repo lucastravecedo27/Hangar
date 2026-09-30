@@ -1,0 +1,676 @@
+{% extends "_layout.html" %}
+{% block titulo %}Informes{% endblock %}
+{% block encabezado %}Informes{% endblock %}
+{% block subtitulo %}Todo lo que vive en la app, listo para ver, imprimir o descargar en PDF y Excel. Siempre con los datos de este momento.{% endblock %}
+
+{% block head %}
+<style>
+/* ---------- Catálogo ---------- */
+.inf-busca{display:flex;align-items:center;gap:10px 14px;flex-wrap:wrap;margin-bottom:18px}
+.inf-busca .caja{position:relative;flex:1 1 320px;max-width:520px}
+.inf-busca .caja svg{position:absolute;left:12px;top:50%;width:16px;height:16px;transform:translateY(-50%);color:var(--mut)}
+.inf-busca .caja input{width:100%;padding:11px 14px 11px 36px;font-size:14px;border-radius:12px}
+.inf-chips{display:flex;gap:6px;flex-wrap:wrap}
+.inf-chip{font-family:var(--font);font-size:12.5px;font-weight:600;border:.5px solid var(--line2);background:var(--bg2);
+  color:var(--ink2);border-radius:980px;padding:6px 13px;cursor:pointer;transition:.15s}
+.inf-chip:hover{border-color:var(--acc);color:var(--acc-ink)}
+.inf-chip.activo{background:var(--o-grafito,#1a1d24);border-color:var(--o-grafito,#1a1d24);color:#fff}
+.inf-cat{margin:0 0 26px}
+.inf-cat-cab{display:flex;align-items:center;gap:11px;margin:0 0 12px}
+.inf-cat-cab .ic{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;flex:none;
+  background:var(--o-grafito,#1a1d24);color:#fff}
+.inf-cat-cab .ic svg{width:18px;height:18px}
+.inf-cat-cab h2{font-size:16px;font-weight:720;letter-spacing:-.02em}
+.inf-cat-cab p{font-size:12.5px;color:var(--mut);margin-top:1px}
+.inf-cat.rac .inf-cat-cab .ic{background:var(--acc);color:var(--acc-txt)}
+.inf-normativo{display:flex;gap:12px;align-items:flex-start;border:.5px solid var(--line2);border-left:3px solid var(--o-grafito,#1a1d24);
+  background:var(--bg2);border-radius:12px;padding:12px 14px;margin:0 0 14px;font-size:12.8px;color:var(--ink2);line-height:1.5}
+.inf-normativo svg{width:18px;height:18px;flex:none;margin-top:1px;color:var(--ink2)}
+.inf-normativo b{color:var(--ink)}
+.inf-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:14px}
+.inf-tarjeta{position:relative;text-align:left;font-family:var(--font);background:var(--bg2);border:.5px solid var(--line);
+  border-radius:16px;padding:16px 16px 14px;cursor:pointer;display:flex;flex-direction:column;gap:7px;color:var(--ink);
+  box-shadow:var(--shadow);transition:box-shadow .2s,transform .2s,border-color .2s;min-height:170px}
+.inf-tarjeta:hover{box-shadow:var(--o-sombra-hover,0 12px 30px rgba(0,0,0,.1));transform:translateY(-2px);border-color:var(--line2)}
+.inf-tarjeta:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.inf-tarjeta h3{font-size:14.5px;font-weight:700;letter-spacing:-.015em;padding-right:34px;line-height:1.3}
+.inf-tarjeta .d{font-size:12.4px;color:var(--ink2);line-height:1.45}
+.inf-tarjeta .para{font-size:11.8px;color:var(--mut);line-height:1.4;margin-top:auto;padding-top:6px;border-top:.5px solid var(--line)}
+.inf-tarjeta .etq{display:flex;gap:6px;flex-wrap:wrap}
+.inf-tarjeta.rac{border-top:3px solid var(--o-grafito,#1a1d24)}
+.fijar{position:absolute;top:10px;right:10px;width:30px;height:30px;border-radius:9px;border:none;background:transparent;
+  color:var(--mut);cursor:pointer;display:grid;place-items:center;transition:.15s}
+.fijar:hover{background:rgba(115,122,134,.12);color:var(--ink)}
+.fijar svg{width:17px;height:17px}
+.fijar.si{color:var(--acc-deep)}
+.fijar.si svg path{fill:currentColor}
+.tag.norma{background:rgba(26,29,36,.07);color:var(--ink2);font-weight:650}
+.inf-nada{padding:40px 10px;text-align:center;color:var(--mut);font-size:13.5px}
+
+/* ---------- Informe abierto ---------- */
+.inf-barra{display:flex;align-items:center;gap:10px 12px;flex-wrap:wrap;width:100%}
+.inf-barra .grupo{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.inf-barra label{font-size:11px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.06em}
+.inf-barra select{min-width:150px}
+.inf-barra input[type=date]{width:150px}
+.inf-barra .limpiar{font-family:var(--font);border:none;background:none;color:var(--mut);font-size:12.5px;cursor:pointer;text-decoration:underline}
+.inf-cab{display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap;margin:0 0 14px}
+.inf-cab .volver{font-family:var(--font);display:inline-flex;align-items:center;gap:6px;border:.5px solid var(--line2);background:var(--bg2);
+  border-radius:10px;padding:7px 12px 7px 9px;font-size:12.5px;font-weight:600;color:var(--ink2);cursor:pointer}
+.inf-cab .volver:hover{border-color:var(--acc);color:var(--acc-ink)}
+.inf-cab .volver svg{width:15px;height:15px}
+.inf-cab .tit{flex:1 1 380px;min-width:0}
+.inf-cab .tit h2{font-size:22px;font-weight:760;letter-spacing:-.03em;line-height:1.2}
+.inf-cab .tit .sub{font-size:13px;color:var(--ink2);margin-top:4px;line-height:1.45}
+.inf-cab .tit .etq{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.inf-cab .acciones{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.inf-cab .acciones .btn svg{width:16px;height:16px}
+.inf-cab .fijar{position:static}
+.inf-vivo{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--mut);margin:-4px 0 14px}
+.inf-vivo .vivo-punto{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 0 3px rgba(47,143,78,.16)}
+.inf-vivo button{font-family:var(--font);border:none;background:none;color:var(--ink2);font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:4px}
+.inf-vivo button:hover{color:var(--acc-ink)}
+.inf-vivo button svg{width:13px;height:13px}
+.inf-vivo.cargando .vivo-punto{background:var(--amber);box-shadow:0 0 0 3px rgba(232,164,0,.18)}
+.inf-para{display:flex;gap:10px;align-items:flex-start;background:var(--bg2);border:.5px solid var(--line);border-radius:12px;
+  padding:11px 14px;margin:0 0 14px;font-size:13px;line-height:1.5;color:var(--ink2)}
+.inf-para svg{width:17px;height:17px;flex:none;margin-top:1px;color:var(--mut)}
+.inf-norma{border:.5px solid var(--line2);border-left:3px solid var(--o-grafito,#1a1d24);background:var(--bg2);border-radius:12px;
+  padding:13px 16px;margin:0 0 14px;font-size:13px;line-height:1.55;color:var(--ink2)}
+.inf-norma .n{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px}
+.inf-norma .n b{font-size:13.5px;color:var(--ink)}
+.inf-norma .formato{margin-top:8px;padding-top:8px;border-top:.5px dashed var(--line2);font-size:12.3px;color:var(--mut)}
+.inf-aviso a,.inf-aviso button.ir{margin-left:auto;flex:none;font-weight:650;color:inherit;white-space:nowrap}
+.inf-aviso button.ir{font-family:var(--font);font-size:12.5px;border:.5px solid currentColor;background:transparent;border-radius:9px;padding:4px 10px;cursor:pointer}
+.inf-kv{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px 18px;background:var(--bg2);
+  border:.5px solid var(--line);border-radius:12px;padding:12px 16px;margin:0 0 14px}
+.inf-kv .l{font-size:10.5px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.06em}
+.inf-kv .v{font-size:13.5px;font-weight:650;margin-top:2px}
+.kpis.inf{grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px;margin-bottom:18px}
+.kpis.inf .kpi{padding:14px 16px 12px;cursor:pointer}
+.kpis.inf .kpi .val{font-size:26px;margin:8px 0 5px;white-space:nowrap}
+.kpis.inf .kpi .val small{font-size:13px;font-weight:700;color:var(--mut);letter-spacing:0;margin-left:3px}
+.kpis.inf .kpi .ayuda{position:absolute;top:10px;right:10px;width:20px;height:20px;border-radius:50%;border:.5px solid var(--line2);
+  background:var(--bg2);color:var(--mut);font-size:11.5px;font-weight:700;display:grid;place-items:center;cursor:pointer;font-family:var(--font)}
+.kpis.inf .kpi .ayuda:hover{border-color:var(--acc);color:var(--acc-ink)}
+.kpis.inf .kpi .lbl{padding-right:22px}
+.var{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:980px}
+.var.bien{background:rgba(47,143,78,.14);color:var(--o-tx-verde,#1d6b38)}
+.var.mal{background:rgba(224,71,62,.14);color:var(--o-tx-rojo,#a4271f)}
+.var.neutro{background:rgba(115,122,134,.14);color:var(--ink2)}
+.inf-graficas{margin-bottom:18px}
+.inf-sec .card-cab .buscar{margin-left:auto;display:flex;align-items:center;gap:8px}
+.inf-sec .card-cab .buscar input{width:210px;padding:6px 10px;font-size:12.5px}
+.inf-sec .card-cab .n{font-size:12px;color:var(--mut);font-weight:560}
+.inf-sec .desc{font-size:12.5px;color:var(--mut);margin:-4px 0 10px;line-height:1.45}
+.inf-sec .tabla-envoltura{max-height:620px;overflow:auto}
+.inf-sec .tabla-envoltura table{min-width:0;font-size:12.8px}
+.inf-sec th{position:sticky;top:0;background:var(--bg2);z-index:1;cursor:pointer;user-select:none;white-space:nowrap;padding:9px 10px}
+.inf-sec th:hover{color:var(--acc-ink)}
+.inf-sec th .fl{opacity:.35;margin-left:3px;font-size:10px}
+.inf-sec th.act{color:var(--acc-deep)}.inf-sec th.act .fl{opacity:1}
+.inf-sec td{padding:8px 10px;vertical-align:top;font-variant-numeric:tabular-nums}
+.inf-sec td.largo{min-width:180px;max-width:360px}
+.inf-sec tbody tr{cursor:pointer;transition:background .12s}
+.inf-sec tbody tr:hover{background:rgba(115,122,134,.07)}
+.inf-sec tbody tr.incompleta td:first-child{box-shadow:inset 3px 0 0 var(--amber)}
+.inf-sec td.falta{background:var(--o-suave-ambar,#fff3d1)}
+.inf-sec td.falta::after{content:"falta";font-size:10.5px;font-weight:700;color:var(--o-tx-ambar,#7a5400);text-transform:uppercase;letter-spacing:.05em}
+.inf-sec tfoot td{font-weight:750;border-top:1px solid var(--line2);position:sticky;bottom:0;background:var(--bg2)}
+.inf-sec .mas{display:flex;justify-content:center;margin-top:10px}
+.inf-firmas{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:26px 40px;margin:26px 0 10px}
+.inf-firmas div{border-top:1px solid var(--ink2);padding-top:6px;font-size:12px;color:var(--mut)}
+.det-kv{display:grid;grid-template-columns:minmax(120px,40%) 1fr;gap:0;border:.5px solid var(--line);border-radius:12px;overflow:hidden}
+.det-kv div{padding:9px 12px;border-bottom:.5px solid var(--line);font-size:13px}
+.det-kv div:nth-last-child(-n+2){border-bottom:none}
+.det-kv .l{color:var(--mut);font-weight:600;font-size:12px;background:rgba(115,122,134,.05)}
+.det-kv .v.falta{background:var(--o-suave-ambar,#fff3d1);color:var(--o-tx-ambar,#7a5400);font-weight:650}
+.det-lista table{font-size:12.5px}
+.det-lista td,.det-lista th{padding:7px 8px}
+.det-lista tbody tr{cursor:pointer}
+.det-lista tbody tr:hover{background:rgba(115,122,134,.07)}
+.inf-cargando{padding:60px 10px;text-align:center;color:var(--mut);font-size:13.5px}
+@media(max-width:720px){
+  .inf-sec .card-cab .buscar{margin-left:0;width:100%}.inf-sec .card-cab .buscar input{width:100%}
+  .kpis.inf{grid-template-columns:1fr 1fr}.kpis.inf .kpi .val{font-size:20px}
+  .panel-graficas .card{grid-column:span 12}
+}
+</style>
+{% endblock %}
+
+{% block barra %}
+<div class="tabsbar" id="barraFiltros" hidden><div class="wrap"><div class="inf-barra" id="filtros"></div></div></div>
+{% endblock %}
+
+{% block contenido %}
+<section id="vistaCatalogo">
+  <div class="inf-busca">
+    <div class="caja">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="8.8" cy="8.8" r="5.6"/><path d="m13 13 4 4"/></svg>
+      <input type="search" id="busca" placeholder="Buscar un informe: libro de a bordo, combustible, piloto, costos…" autocomplete="off">
+    </div>
+    <div class="inf-chips" id="chips"></div>
+  </div>
+  <div id="catalogo"><div class="inf-cargando">Cargando el catálogo…</div></div>
+</section>
+
+<section id="vistaInforme" hidden>
+  <div class="inf-cab" id="cabInforme"></div>
+  <div class="inf-vivo" id="vivo"></div>
+  <div id="cuerpoInforme"></div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ===================== Iconos (SVG en línea, sin emoji) =====================
+const IC = {
+  rac: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.6 3.8 5v4.6c0 3.9 2.6 6.6 6.2 7.8 3.6-1.2 6.2-3.9 6.2-7.8V5z"/><path d="m7.2 10 2 2 3.8-4"/></svg>',
+  operacion: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 16.5h14"/><path d="M5 13V9.5M8.5 13V6.5M12 13V8M15.5 13V4"/></svg>',
+  mantenimiento: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12.6 3.2a3.8 3.8 0 0 0-4.4 5.2l-5 5a1.6 1.6 0 0 0 2.3 2.3l5-5a3.8 3.8 0 0 0 5.2-4.4l-2.3 2.3-2.2-.6-.6-2.2z"/></svg>',
+  combustible: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.8s-4.6 5.1-4.6 8.4a4.6 4.6 0 0 0 9.2 0C14.6 7.9 10 2.8 10 2.8z"/><path d="M8 12.2a2 2 0 0 0 2 2"/></svg>',
+  bodega: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6.4 10 3l7 3.4v7.2L10 17l-7-3.4z"/><path d="M3 6.4 10 10l7-3.6M10 10v7"/></svg>',
+  costos: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="7"/><path d="M12.3 7.4c-.4-.8-1.3-1.2-2.3-1.2-1.3 0-2.3.7-2.3 1.8 0 2.4 4.8 1.2 4.8 3.8 0 1.1-1.1 1.9-2.5 1.9-1.1 0-2.1-.5-2.5-1.3M10 5v1.2M10 13.7V15"/></svg>',
+  normativa: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3v14M5 17h10M4 6h12"/><path d="m4 6-2 5a2.2 2.2 0 0 0 4 0zM16 6l-2 5a2.2 2.2 0 0 0 4 0z"/></svg>',
+  personal: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="7" r="3.2"/><path d="M3.8 17c.6-3.2 3.1-5 6.2-5s5.6 1.8 6.2 5"/></svg>',
+  fijado: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="m10 2.8 2.2 4.6 5 .6-3.7 3.4 1 5-4.5-2.5-4.5 2.5 1-5L2.8 8l5-.6z"/></svg>',
+  volver: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12.5 4.5 7 10l5.5 5.5"/></svg>',
+  pdf: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11.6 2.8H5.6A1.6 1.6 0 0 0 4 4.4v11.2a1.6 1.6 0 0 0 1.6 1.6h8.8a1.6 1.6 0 0 0 1.6-1.6V7.2z"/><path d="M11.6 2.8v4.4H16M10 10v4.6M8 12.8l2 2 2-2"/></svg>',
+  excel: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.2" y="3.2" width="13.6" height="13.6" rx="2"/><path d="M3.2 8h13.6M3.2 12.4h13.6M8.2 3.2v13.6"/></svg>',
+  imprimir: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7V3h8v4M6 14H4.4A1.4 1.4 0 0 1 3 12.6V8.4A1.4 1.4 0 0 1 4.4 7h11.2A1.4 1.4 0 0 1 17 8.4v4.2a1.4 1.4 0 0 1-1.4 1.4H14"/><path d="M6 11.5h8V17H6z"/></svg>',
+  refrescar: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M16 10a6 6 0 1 1-1.8-4.3M16 3.5v3.3h-3.3"/></svg>',
+  info: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="10" cy="10" r="7.2"/><path d="M10 9v4.6M10 6.4v.1"/></svg>',
+  aviso: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3.2 2.6 16h14.8z"/><path d="M10 8.2v3.6M10 14v.1"/></svg>',
+  ir: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 4.5 13 10l-5.5 5.5"/></svg>',
+};
+
+// ===================== Estado =====================
+let CAT = null;             // catálogo, categorías, opciones de filtros y fijados
+let R = null;               // informe abierto (tal como lo devuelve el servidor)
+let DEF = null;             // definición del informe abierto
+let F = {};                 // filtros elegidos
+let CATEGORIA = '';         // chip activo en el catálogo
+const ORDEN = {};           // orden de cada tabla: {indiceSeccion: {k, d}}
+const BUSQ = {};            // texto buscado en cada tabla
+const VISIBLES = {};        // filas mostradas en cada tabla (se amplía con «Mostrar más»)
+let ULTIMA = null, peticion = 0, temporizador = null;
+
+const FILTROS_URL = ['periodo','desde','hasta','tipo','equipo_id','cliente','piloto'];
+const TIPO_TXT = {dron:'Drones', avion:'Aviones'};
+
+// ===================== Formato =====================
+function estadoTxt(v){ const e = R && R.estados && R.estados[v]; return e ? e.texto : (v ?? ''); }
+function tagEstado(v){
+  if(v===null || v===undefined || v==='') return '';
+  const e = (R && R.estados && R.estados[v]) || {texto:String(v), clase:'gris'};
+  return `<span class="tag ${e.clase==='gris'?'gray':e.clase}">${escapar(e.texto)}</span>`;
+}
+function num(v, dec){ return Number(v).toLocaleString('es-CO', {minimumFractionDigits:0, maximumFractionDigits:dec}); }
+function valorTxt(v, c){
+  if(v===null || v===undefined || v==='') return '';
+  switch(c.tipo){
+    case 'fecha': return fmtFecha(String(v).slice(0,10));
+    case 'entero': return num(v, 0);
+    case 'numero': case 'horas': return num(v, c.dec ?? 1);
+    case 'dinero': return '$ ' + num(v, 0);
+    case 'pct': return num(v, c.dec ?? 1) + ' %';
+    case 'estado': return estadoTxt(v);
+    case 'firma': return '';
+    default: return String(v);
+  }
+}
+function valorHtml(v, c){ return c.tipo === 'estado' ? tagEstado(v) : escapar(valorTxt(v, c)); }
+const esNum = c => ['entero','numero','horas','dinero','pct'].includes(c.tipo);
+function kpiValor(k){
+  if(k.valor===null || k.valor===undefined) return '—';
+  const t = valorTxt(k.valor, {tipo:k.tipo, dec:k.dec});
+  return escapar(t) + (k.unidad ? `<small>${escapar(k.unidad)}</small>` : '');
+}
+function qs(extra={}){
+  const p = new URLSearchParams();
+  for(const k of FILTROS_URL){ if(F[k]!==undefined && F[k]!==null && F[k]!=='') p.set(k, F[k]); }
+  for(const k in extra) p.set(k, extra[k]);
+  return p.toString();
+}
+
+// ===================== Catálogo =====================
+async function cargarCatalogo(){
+  CAT = await api('/api/informes');
+  pintarChips(); pintarCatalogo();
+  const clave = paramURL('informe');
+  if(clave){
+    const d = CAT.informes.find(i=>i.clave===clave);
+    if(d) abrirInforme(clave, true);
+    else toast('Ese informe no existe o tu rol no lo puede ver.');
+  }
+}
+
+function pintarChips(){
+  const usadas = new Set(CAT.informes.map(i=>i.categoria));
+  const cats = CAT.categorias.filter(c=>usadas.has(c.clave));
+  document.getElementById('chips').innerHTML =
+    `<button class="inf-chip ${!CATEGORIA?'activo':''}" data-c="">Todos</button>` +
+    cats.map(c=>`<button class="inf-chip ${CATEGORIA===c.clave?'activo':''}" data-c="${c.clave}">${escapar(c.nombre)}</button>`).join('');
+  document.querySelectorAll('#chips .inf-chip').forEach(b=>b.onclick = ()=>{ CATEGORIA = b.dataset.c; pintarChips(); pintarCatalogo(); });
+}
+
+function sinTildes(s){ return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase(); }
+
+function tarjeta(d){
+  const fijado = CAT.fijados.includes(d.clave);
+  return `<div class="inf-tarjeta ${d.categoria==='rac'?'rac':''}" tabindex="0" role="button" data-clave="${d.clave}">
+    <button class="fijar ${fijado?'si':''}" data-fijar="${d.clave}" title="${fijado?'Quitar de fijados':'Fijar arriba'}" aria-label="Fijar">${IC.fijado}</button>
+    <h3>${escapar(d.titulo)}</h3>
+    <div class="etq">${d.norma?`<span class="tag norma">${escapar(d.norma)}</span>`:''}
+      ${d.conservar?`<span class="tag gray">Conservar: ${escapar(d.conservar)}</span>`:''}
+      ${d.tipo_fijo?`<span class="tag gray">Sólo ${d.tipo_fijo==='avion'?'aviones':'drones'}</span>`:''}</div>
+    <div class="d">${escapar(d.descripcion)}</div>
+    ${d.para?`<div class="para">${escapar(d.para)}</div>`:''}
+  </div>`;
+}
+
+function pintarCatalogo(){
+  const q = sinTildes(document.getElementById('busca').value.trim());
+  const coincide = d => !q || q.split(/\s+/).every(t=>sinTildes([d.titulo, d.descripcion, d.para, d.norma, d.palabras, d.categoria_txt].join(' ')).includes(t));
+  const lista = CAT.informes.filter(d=>(!CATEGORIA || d.categoria===CATEGORIA) && coincide(d));
+  let html = '';
+  const fij = CAT.fijados.map(c=>lista.find(d=>d.clave===c)).filter(Boolean);
+  if(fij.length && !CATEGORIA && !q){
+    html += `<div class="inf-cat"><div class="inf-cat-cab"><span class="ic">${IC.fijado}</span>
+      <div><h2>Fijados</h2><p>Tus informes de siempre, a un clic.</p></div></div>
+      <div class="inf-grid">${fij.map(tarjeta).join('')}</div></div>`;
+  }
+  for(const c of CAT.categorias){
+    const de = lista.filter(d=>d.categoria===c.clave);
+    if(!de.length) continue;
+    html += `<div class="inf-cat ${c.clave}">
+      <div class="inf-cat-cab"><span class="ic">${IC[c.clave]||IC.operacion}</span>
+        <div><h2>${escapar(c.nombre)}</h2><p>${escapar(c.descripcion)}</p></div></div>
+      ${c.clave==='rac' ? `<div class="inf-normativo">${IC.info}<div><b>Formatos normativos.</b> Cada entregable lleva los campos que exige el
+        numeral vigente de la RAC y avisa qué registros están incompletos antes de entregar. ${escapar(CAT.nota_rac)}</div></div>` : ''}
+      <div class="inf-grid">${de.map(tarjeta).join('')}</div></div>`;
+  }
+  document.getElementById('catalogo').innerHTML = html ||
+    `<div class="inf-nada">Ningún informe coincide con «${escapar(document.getElementById('busca').value)}».</div>`;
+  document.querySelectorAll('#catalogo .inf-tarjeta').forEach(t=>{
+    t.onclick = e=>{ if(e.target.closest('[data-fijar]')) return; abrirInforme(t.dataset.clave); };
+    t.onkeydown = e=>{ if(e.key==='Enter' || e.key===' '){ e.preventDefault(); abrirInforme(t.dataset.clave); } };
+  });
+  document.querySelectorAll('#catalogo [data-fijar]').forEach(b=>b.onclick = e=>{ e.stopPropagation(); fijar(b.dataset.fijar); });
+}
+
+async function fijar(clave){
+  const fijado = !CAT.fijados.includes(clave);
+  try{
+    const r = await api('/api/cuenta/informes-fijados', {method:'PUT', body:{clave, fijado}});
+    CAT.fijados = r.fijados;
+    toast(fijado ? 'Informe fijado arriba del catálogo.' : 'Informe quitado de fijados.');
+    pintarCatalogo();
+    if(R && R.clave===clave) pintarCabecera();
+  }catch(err){ toast(err.message); }
+}
+
+// ===================== Informe abierto =====================
+function abrirInforme(clave, desdeURL=false){
+  DEF = CAT.informes.find(d=>d.clave===clave);
+  if(!DEF) return;
+  F = {};
+  if(desdeURL){
+    const u = new URLSearchParams(location.search);
+    for(const k of FILTROS_URL) if(u.get(k)) F[k] = u.get(k);
+  }
+  if(!F.periodo && !F.desde && !F.hasta && DEF.periodo) F.periodo = DEF.periodo;
+  for(const k in ORDEN) delete ORDEN[k];
+  for(const k in BUSQ) delete BUSQ[k];
+  for(const k in VISIBLES) delete VISIBLES[k];
+  R = null;
+  document.getElementById('vistaCatalogo').hidden = true;
+  document.getElementById('vistaInforme').hidden = false;
+  document.getElementById('barraFiltros').hidden = !DEF.filtros.length;
+  document.title = DEF.titulo + ' · Informes · {{ nombre_app }}';
+  pintarCabecera(); pintarFiltros();
+  document.getElementById('cuerpoInforme').innerHTML = '<div class="inf-cargando">Consultando los datos…</div>';
+  if(!desdeURL) history.pushState({informe:clave}, '', '/informes?' + qs({informe:clave}));
+  window.scrollTo({top:0});
+  cargarInforme();
+}
+
+function cerrarInforme(){
+  DEF = null; R = null;
+  document.getElementById('vistaInforme').hidden = true;
+  document.getElementById('barraFiltros').hidden = true;
+  document.getElementById('vistaCatalogo').hidden = false;
+  document.title = 'Informes · {{ nombre_app }}';
+  pintarCatalogo();
+}
+
+window.addEventListener('popstate', ()=>{
+  const clave = paramURL('informe');
+  if(clave && CAT) abrirInforme(clave, true); else cerrarInforme();
+});
+
+function pintarCabecera(){
+  const fijado = CAT.fijados.includes(DEF.clave);
+  document.getElementById('cabInforme').innerHTML = `
+    <button class="volver" id="btnVolver">${IC.volver} Informes</button>
+    <div class="tit">
+      <h2>${escapar(DEF.titulo)}</h2>
+      <div class="sub">${escapar(DEF.descripcion)}</div>
+      <div class="etq"><span class="tag gray">${escapar(DEF.categoria_txt)}</span>
+        ${DEF.norma?`<span class="tag norma">${escapar(DEF.norma)}</span>`:''}
+        ${DEF.conservar?`<span class="tag gray">Conservar: ${escapar(DEF.conservar)}</span>`:''}</div>
+    </div>
+    <div class="acciones">
+      <button class="fijar ${fijado?'si':''}" id="btnFijar" title="${fijado?'Quitar de fijados':'Fijar arriba del catálogo'}">${IC.fijado}</button>
+      <button class="btn secundario" id="btnImprimir" title="Hoja lista para imprimir">${IC.imprimir} Imprimir</button>
+      <button class="btn secundario" id="btnExcel">${IC.excel} Descargar Excel</button>
+      <button class="btn" id="btnPdf">${IC.pdf} Descargar PDF</button>
+    </div>`;
+  document.getElementById('btnVolver').onclick = ()=>{ history.pushState({}, '', '/informes'); cerrarInforme(); };
+  document.getElementById('btnFijar').onclick = ()=>fijar(DEF.clave);
+  document.getElementById('btnPdf').onclick = ()=>{ toast('Preparando el PDF con los datos de este momento…'); descargar(`/informes/${DEF.clave}/pdf?${qs()}`); };
+  document.getElementById('btnExcel').onclick = ()=>{ toast('Preparando el Excel con los datos de este momento…'); descargar(`/informes/${DEF.clave}/excel?${qs()}`); };
+  document.getElementById('btnImprimir').onclick = ()=>window.open(`/informes/${DEF.clave}/imprimir?${qs({auto:1})}`, '_blank', 'noopener');
+}
+
+// ---------- Filtros ----------
+function pintarFiltros(){
+  const f = DEF.filtros, o = CAT.opciones, cont = document.getElementById('filtros');
+  const tipo = DEF.tipo_fijo || F.tipo || '';
+  const equipos = o.equipos.filter(e=>!tipo || e.tipo_activo===tipo);
+  let h = '';
+  if(f.includes('periodo')){
+    const personal = F.desde || F.hasta;
+    h += `<div class="grupo"><label for="fPeriodo">Período</label>
+      <select id="fPeriodo">${CAT.periodos.map(p=>`<option value="${p.clave}" ${!personal && F.periodo===p.clave?'selected':''}>${escapar(p.nombre)}</option>`).join('')}
+        <option value="personalizado" ${personal?'selected':''}>Entre fechas…</option></select>
+      <span id="fFechas" ${personal?'':'hidden'}><input type="date" id="fDesde" value="${escapar(F.desde||'')}" aria-label="Desde">
+        <input type="date" id="fHasta" value="${escapar(F.hasta||'')}" aria-label="Hasta"></span></div>`;
+  }
+  if(f.includes('tipo') && !DEF.tipo_fijo){
+    h += `<div class="segmento" id="fTipo">${[['','Toda la flota'],['dron','Drones'],['avion','Aviones']].map(([v,t])=>
+      `<button data-t="${v}" class="${(F.tipo||'')===v?'activo':''}">${t}</button>`).join('')}</div>`;
+  }
+  if(DEF.tipo_fijo) h += `<span class="tag gray">Sólo ${DEF.tipo_fijo==='avion'?'aviones':'drones'}</span>`;
+  if(f.includes('equipo')){
+    h += `<div class="grupo"><label for="fEquipo">Activo</label><select id="fEquipo">
+      <option value="">${DEF.tipo_fijo==='avion'?'Todos los aviones':DEF.tipo_fijo==='dron'?'Todos los drones':'Todos los activos'}</option>
+      ${equipos.map(e=>`<option value="${e.id}" ${String(F.equipo_id)===String(e.id)?'selected':''}>${escapar(e.nombre)}${e.matricula&&e.matricula!==e.nombre?' · '+escapar(e.matricula):''} · ${escapar(e.modelo)}</option>`).join('')}
+      </select></div>`;
+  }
+  if(f.includes('cliente')){
+    h += `<div class="grupo"><label for="fCliente">Cliente</label><select id="fCliente"><option value="">Todos</option>
+      ${o.clientes.map(c=>`<option ${F.cliente===c?'selected':''}>${escapar(c)}</option>`).join('')}</select></div>`;
+  }
+  if(f.includes('piloto')){
+    h += `<div class="grupo"><label for="fPiloto">Piloto</label><select id="fPiloto"><option value="">Todos</option>
+      ${o.pilotos.map(c=>`<option ${F.piloto===c?'selected':''}>${escapar(c)}</option>`).join('')}</select></div>`;
+  }
+  h += `<button class="limpiar" id="fLimpiar">Restablecer filtros</button>`;
+  cont.innerHTML = h;
+
+  const cambio = ()=>{ history.replaceState({informe:DEF.clave}, '', '/informes?' + qs({informe:DEF.clave})); cargarInforme(); };
+  const per = document.getElementById('fPeriodo');
+  if(per) per.onchange = ()=>{
+    const fechas = document.getElementById('fFechas');
+    if(per.value === 'personalizado'){
+      fechas.hidden = false;
+      const hoy = hoyISO();
+      document.getElementById('fDesde').value = F.desde || (R && R.filtros.desde) || hoy.slice(0,8) + '01';
+      document.getElementById('fHasta').value = F.hasta || (R && R.filtros.hasta) || hoy;
+      F.desde = document.getElementById('fDesde').value; F.hasta = document.getElementById('fHasta').value; delete F.periodo;
+    } else { fechas.hidden = true; F.periodo = per.value; delete F.desde; delete F.hasta; }
+    cambio();
+  };
+  ['fDesde','fHasta'].forEach(id=>{ const el = document.getElementById(id); if(el) el.onchange = ()=>{
+    F.desde = document.getElementById('fDesde').value || undefined; F.hasta = document.getElementById('fHasta').value || undefined;
+    delete F.periodo; cambio(); }; });
+  document.querySelectorAll('#fTipo button').forEach(b=>b.onclick = ()=>{
+    F.tipo = b.dataset.t || undefined;
+    const eq = CAT.opciones.equipos.find(e=>String(e.id)===String(F.equipo_id));
+    if(eq && F.tipo && eq.tipo_activo !== F.tipo) delete F.equipo_id;
+    pintarFiltros(); cambio(); });
+  const sel = (id, k)=>{ const el = document.getElementById(id); if(el) el.onchange = ()=>{ F[k] = el.value || undefined; cambio(); }; };
+  sel('fEquipo','equipo_id'); sel('fCliente','cliente'); sel('fPiloto','piloto');
+  document.getElementById('fLimpiar').onclick = ()=>{ F = DEF.periodo ? {periodo: DEF.periodo} : {}; pintarFiltros(); cambio(); };
+}
+
+// ---------- Carga (siempre en vivo) ----------
+async function cargarInforme(silencioso=false){
+  if(!DEF) return;
+  const mio = ++peticion;
+  const vivo = document.getElementById('vivo');
+  vivo.classList.add('cargando');
+  try{
+    const r = await api(`/api/informes/${DEF.clave}?${qs()}`);
+    if(mio !== peticion || !DEF || r.clave !== DEF.clave) return;
+    R = r; ULTIMA = new Date();
+    pintarInforme();
+  }catch(err){
+    if(!silencioso) document.getElementById('cuerpoInforme').innerHTML = `<div class="aviso rojo">${IC.aviso}<div>No se pudo generar el informe: ${escapar(err.message)}</div></div>`;
+  }finally{
+    if(mio === peticion) vivo.classList.remove('cargando');
+    pintarVivo();
+  }
+}
+function pintarVivo(){
+  const v = document.getElementById('vivo');
+  if(!ULTIMA){ v.innerHTML = ''; return; }
+  v.innerHTML = `<span class="vivo-punto"></span><span>Datos al día · consultados a las ${ULTIMA.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'})}${R?` · ${escapar(R.filtros_txt)}`:''}</span>
+    <button id="btnRefrescar" title="Volver a consultar">${IC.refrescar} Actualizar</button>`;
+  document.getElementById('btnRefrescar').onclick = ()=>cargarInforme();
+}
+// Mientras el informe está abierto se vuelve a consultar solo cada 2 minutos y al volver a la ventana.
+clearInterval(temporizador);
+temporizador = setInterval(()=>{ if(DEF && !document.hidden) cargarInforme(true); }, 120000);
+document.addEventListener('visibilitychange', ()=>{ if(!document.hidden && DEF && ULTIMA && Date.now() - ULTIMA > 30000) cargarInforme(true); });
+
+// ---------- Pintado ----------
+function pintarInforme(){
+  const r = R;
+  let h = '';
+  if(r.para) h += `<div class="inf-para">${IC.info}<div><b>Para qué sirve.</b> ${escapar(r.para)}</div></div>`;
+  if(r.norma || r.exige){
+    h += `<div class="inf-norma"><div class="n"><b>${escapar(r.norma||'')}</b>${r.conservar?`<span class="tag gray">Conservar: ${escapar(r.conservar)}</span>`:''}</div>
+      ${r.exige?`<div><b>Qué exige la norma:</b> ${escapar(r.exige)}</div>`:''}
+      ${r.nota_rac?`<div class="formato">${escapar(r.nota_rac)}</div>`:''}</div>`;
+  }
+  (r.avisos||[]).forEach((a,i)=>{
+    const clase = {vencido:'rojo', critico:'rojo', proximo:'ambar', ok:'verde'}[a.nivel] || 'gris';
+    h += `<div class="aviso ${clase} inf-aviso">${a.nivel==='info'?IC.info:IC.aviso}<div>${escapar(a.texto)}</div>
+      ${a.enlace?`<a href="${escapar(a.enlace)}">${a.nivel==='info'?'Ir':'Completar'} ›</a>`:''}
+      ${a.nivel==='proximo' && /incompletos/.test(a.texto) ? `<button class="ir" data-incompletos>Ver cuáles</button>` : ''}</div>`;
+  });
+  if(r.encabezado && r.encabezado.length){
+    h += `<div class="inf-kv">${r.encabezado.map(([l,v])=>`<div><div class="l">${escapar(l)}</div><div class="v">${escapar(v ?? '—')}</div></div>`).join('')}</div>`;
+  }
+  if(r.kpis && r.kpis.length){
+    h += `<div class="kpis inf">${r.kpis.map((k,i)=>{
+      const cl = k.estado && k.estado!=='ok' ? ({vencido:'rojo', critico:'rojo', proximo:'ambar'}[(r.estados[k.estado]||{}).clase] || '') : '';
+      let v = '';
+      if(k.variacion!==null && k.variacion!==undefined){
+        const bueno = k.mejor==='alto' ? k.variacion>0 : k.mejor==='bajo' ? k.variacion<0 : null;
+        v = `<span class="var ${bueno===null||k.variacion===0?'neutro':bueno?'bien':'mal'}">${k.variacion>0?'+':''}${num(k.variacion,1)} %</span>`;
+      }
+      return `<div class="kpi" data-kpi="${i}" tabindex="0" role="button">
+        <button class="ayuda" data-ayuda="${i}" title="¿Cómo se calcula?" aria-label="Cómo se calcula">?</button>
+        <div class="lbl">${escapar(k.etiqueta)}</div><div class="val ${cl}">${kpiValor(k)}</div>
+        <div class="note">${v}${v&&k.nota?' ':''}${!v && k.nota ? escapar(k.nota.length>70?k.nota.slice(0,68)+'…':k.nota) : ''}</div></div>`;
+    }).join('')}</div>`;
+  }
+  if(r.graficas && r.graficas.length){
+    h += `<div class="panel-graficas inf-graficas">${r.graficas.map((g,i)=>`<div class="card ${r.graficas.length===1?'ancho':''}">
+      <div class="card-cab"><h3>${escapar(g.titulo)}</h3><div class="der">clic para ver el detalle</div></div>
+      <div id="g${i}" style="min-height:${g.tipo==='ranking'?60:240}px"></div><div id="gl${i}"></div></div>`).join('')}</div>`;
+  }
+  r.secciones.forEach((s,i)=>{ h += `<div class="card inf-sec" id="sec${i}"></div>`; });
+  if(r.firmas && r.firmas.length) h += `<div class="inf-firmas">${r.firmas.map(f=>`<div>${escapar(f)}</div>`).join('')}</div>`;
+  document.getElementById('cuerpoInforme').innerHTML = h;
+
+  document.querySelectorAll('[data-ayuda]').forEach(b=>b.onclick = e=>{ e.stopPropagation(); ayudaKpi(r.kpis[b.dataset.ayuda]); });
+  document.querySelectorAll('.kpis.inf .kpi').forEach(k=>{
+    const abrir = ()=>ayudaKpi(r.kpis[k.dataset.kpi]);
+    k.onclick = abrir; k.onkeydown = e=>{ if(e.key==='Enter'){ e.preventDefault(); abrir(); } };
+  });
+  document.querySelectorAll('[data-incompletos]').forEach(b=>b.onclick = verIncompletos);
+  pintarGraficas();
+  r.secciones.forEach((s,i)=>pintarSeccion(i));
+}
+
+function ayudaKpi(k){
+  const variacion = k.variacion!==null && k.variacion!==undefined
+    ? `<p style="margin-top:10px;font-size:13px;color:var(--ink2)">Frente al período anterior de la misma duración: <b>${k.variacion>0?'+':''}${num(k.variacion,1)} %</b>
+       ${k.mejor==='alto'?'(más es mejor)':k.mejor==='bajo'?'(menos es mejor)':''}.</p>` : '';
+  ventana({titulo: escapar(k.etiqueta), subtitulo: 'Cómo se calcula este indicador', ancho:'angosta',
+    cuerpo: `<div style="font-family:var(--font-marca);font-size:30px;font-weight:800;letter-spacing:-.04em">${kpiValor(k)}</div>
+      <p style="margin-top:10px;font-size:13.5px;line-height:1.55;color:var(--ink2)">${escapar(k.nota || 'Valor calculado con los registros del período y los filtros elegidos.')}</p>
+      ${variacion}
+      <p style="margin-top:10px;font-size:12px;color:var(--mut)">${escapar(R.filtros_txt)}</p>`});
+}
+
+// ---------- Gráficas (todas abren el detalle) ----------
+function colorSerie(s, i){ return s.nivel ? COLOR_NIVEL[s.nivel] : PALETA_G[i % PALETA_G.length]; }
+function pintarGraficas(){
+  (R.graficas||[]).forEach((g,i)=>{
+    const id = 'g'+i;
+    const clic = etiqueta=>detalleGrafica(g, etiqueta);
+    if(g.tipo === 'barras'){
+      const series = g.series.map((s,j)=>({nombre:s.nombre, datos:s.datos, unidad:s.unidad, color:colorSerie(s,j)}));
+      graficoBarras(id, g.etiquetas, series, {alto:240, alClic:e=>clic(e.etiqueta)});
+      if(series.length>1) leyendaGrafica('gl'+i, series);
+    } else if(g.tipo === 'linea'){
+      const series = g.series.map((s,j)=>({nombre:s.nombre, unidad:s.unidad, eje:s.eje, color:colorSerie(s,j),
+        datos:g.etiquetas.map((x,k)=>({x, y:s.datos[k]}))}));
+      graficoLinea(id, series, {alto:240, alClic:e=>clic(e.etiqueta)});
+      leyendaGrafica('gl'+i, series);
+    } else if(g.tipo === 'ranking'){
+      graficoRanking(id, g.etiquetas.map((e,k)=>({etiqueta:e, valor:g.series[0].datos[k]})),
+                     {unidad:g.unidad, color:'#1a1d24', alClic:f=>clic(f.etiqueta)});
+    } else if(g.tipo === 'dona'){
+      const partes = g.etiquetas.map((e,k)=>({etiqueta:e, valor:g.series[0].datos[k],
+        color: g.colores ? (COLOR_NIVEL[g.colores[k]] || '#9aa0a8') : PALETA_G[k % PALETA_G.length]}));
+      graficoDona(id, partes, {alto:220, centro:g.series[0].nombre.toLowerCase(), alClic:p=>clic(p.etiqueta)});
+      leyendaGrafica('gl'+i, partes.map(p=>({nombre:p.etiqueta, color:p.color})));
+    }
+  });
+}
+redibujarGraficas(()=>{ if(R) pintarGraficas(); });
+
+function detalleGrafica(g, etiqueta){
+  const s = R.secciones[g.seccion];
+  if(!s || !g.campo){ return; }
+  const filas = s.filas.filter(f=>{
+    const v = f[g.campo];
+    return String(v ?? '') === String(etiqueta) || estadoTxt(v) === etiqueta;
+  });
+  listaEnPanel(`${g.titulo}: ${etiqueta}`, s, filas);
+}
+
+function listaEnPanel(titulo, s, filas){
+  const cols = s.columnas.filter(c=>c.tipo!=='firma').slice(0, 6);
+  const totales = s.columnas.filter(c=>c.total).map(c=>{
+    const t = filas.reduce((a,f)=>a + (Number(f[c.clave])||0), 0);
+    return `<div><div class="l">${escapar(c.titulo)}</div><div class="v">${escapar(valorTxt(t, c))}</div></div>`;
+  }).join('');
+  const p = panelLateral({titulo: escapar(titulo), subtitulo: `${num(filas.length,0)} registro(s) de «${escapar(s.titulo)}» · ${escapar(R.filtros_txt)}`,
+    cuerpo: `${totales?`<div class="inf-kv">${totales}</div>`:''}
+      <div class="det-lista tabla-envoltura"><table><thead><tr>${cols.map(c=>`<th class="${esNum(c)?'num':''}">${escapar(c.titulo)}</th>`).join('')}</tr></thead>
+      <tbody>${filas.slice(0,300).map((f,i)=>`<tr data-i="${i}">${cols.map(c=>`<td class="${esNum(c)?'num':''}">${valorHtml(f[c.clave], c)}</td>`).join('')}</tr>`).join('')
+        || `<tr><td colspan="${cols.length}"><div class="empty" style="padding:20px">Sin registros.</div></td></tr>`}</tbody></table></div>
+      ${filas.length>300?`<p class="mut" style="font-size:12px;margin-top:8px">Se muestran 300 de ${num(filas.length,0)}. El Excel lleva todos.</p>`:''}`});
+  p.$$('tbody tr[data-i]').forEach(tr=>tr.onclick = ()=>detalleFila(s, filas[tr.dataset.i]));
+}
+
+// ---------- Tablas ----------
+function pintarSeccion(i){
+  const s = R.secciones[i];
+  const cols = s.columnas.filter(c=>c.tipo!=='firma');
+  const o = ORDEN[i];
+  const q = sinTildes(BUSQ[i] || '');
+  let filas = s.filas.map((f,idx)=>({f, idx}));
+  if(q) filas = filas.filter(({f})=>cols.some(c=>sinTildes(valorTxt(f[c.clave], c)).includes(q)));
+  if(o){
+    filas.sort((x,y)=>{
+      const a = x.f[o.k], b = y.f[o.k];
+      if(a===null||a===undefined||a==='') return 1; if(b===null||b===undefined||b==='') return -1;
+      return (typeof a === 'number' && typeof b === 'number' ? a - b : String(a).localeCompare(String(b), 'es', {numeric:true})) * o.d;
+    });
+  }
+  const tope = VISIBLES[i] || 200;
+  const incompletas = s.filas.filter(f=>f._incompleto && f._incompleto.length).length;
+  const cont = document.getElementById('sec'+i);
+  cont.innerHTML = `
+    <div class="card-cab"><h3>${escapar(s.titulo)} <span class="n">${num(s.total_filas ?? s.filas.length,0)} registro(s)${incompletas?` · <span style="color:var(--o-tx-ambar,#7a5400)">${incompletas} incompleto(s)</span>`:''}</span></h3>
+      ${s.filas.length>8?`<div class="buscar"><input type="search" placeholder="Buscar en esta tabla…" value="${escapar(BUSQ[i]||'')}" data-busca="${i}"></div>`:''}</div>
+    ${s.descripcion?`<div class="desc">${escapar(s.descripcion)}</div>`:''}
+    ${s.encabezado && s.encabezado.length?`<div class="inf-kv">${s.encabezado.map(([l,v])=>`<div><div class="l">${escapar(l)}</div><div class="v">${escapar(v ?? '—')}</div></div>`).join('')}</div>`:''}
+    ${s.filas.length ? `<div class="tabla-envoltura"><table>
+      <thead><tr>${cols.map(c=>`<th data-k="${c.clave}" class="${esNum(c)?'num':''} ${o&&o.k===c.clave?'act':''}">${escapar(c.titulo)}<span class="fl">${o&&o.k===c.clave?(o.d>0?'▲':'▼'):'↕'}</span></th>`).join('')}</tr></thead>
+      <tbody>${filas.slice(0, tope).map(({f, idx})=>{
+        const faltan = new Set(f._incompleto || []);
+        return `<tr data-i="${idx}" class="${faltan.size?'incompleta':''}">${cols.map(c=>{
+          const falta = faltan.has(c.clave);
+          const largo = c.tipo==='texto' && (c.ancho||0) >= 24;
+          return `<td class="${esNum(c)?'num':''} ${largo?'largo':''} ${falta?'falta':''}">${falta?'':valorHtml(f[c.clave], c)}</td>`;
+        }).join('')}</tr>`;}).join('') || `<tr><td colspan="${cols.length}"><div class="empty" style="padding:22px">Nada coincide con la búsqueda.</div></td></tr>`}</tbody>
+      ${s.totales && !q ? `<tfoot><tr>${cols.map((c,j)=>`<td class="${esNum(c)?'num':''}">${c.clave in s.totales ? escapar(valorTxt(s.totales[c.clave], c)) : (j===0?'Total':'')}</td>`).join('')}</tr></tfoot>` : ''}
+    </table></div>
+    ${filas.length>tope?`<div class="mas"><button class="btn secundario peq" data-mas="${i}">Mostrar ${num(Math.min(filas.length-tope, 500),0)} más de ${num(filas.length-tope,0)}</button></div>`:''}
+    ${s.recortada?`<p class="mut" style="font-size:12px;margin-top:8px">En pantalla se ven los primeros ${num(s.filas.length,0)} de ${num(s.total_filas,0)} registros. El Excel y el PDF los llevan todos.</p>`:''}`
+    : `<div class="empty" style="padding:26px">${escapar(s.vacio)}</div>`}
+    ${s.firmas && s.firmas.length?`<div class="inf-firmas">${s.firmas.map(f=>`<div>${escapar(f)}</div>`).join('')}</div>`:''}`;
+
+  cont.querySelectorAll('th[data-k]').forEach(th=>th.onclick = ()=>{
+    const k = th.dataset.k, c = cols.find(x=>x.clave===k);
+    if(ORDEN[i] && ORDEN[i].k===k) ORDEN[i].d *= -1; else ORDEN[i] = {k, d: esNum(c) ? -1 : 1};
+    pintarSeccion(i);
+  });
+  cont.querySelectorAll('tbody tr[data-i]').forEach(tr=>tr.onclick = ()=>detalleFila(s, s.filas[tr.dataset.i]));
+  const b = cont.querySelector('[data-busca]');
+  if(b){
+    b.oninput = ()=>{ BUSQ[i] = b.value; clearTimeout(b._t); b._t = setTimeout(()=>{ pintarSeccion(i);
+      const nb = document.querySelector(`[data-busca="${i}"]`); if(nb){ nb.focus(); nb.setSelectionRange(nb.value.length, nb.value.length); } }, 180); };
+  }
+  const m = cont.querySelector('[data-mas]');
+  if(m) m.onclick = ()=>{ VISIBLES[i] = tope + 500; pintarSeccion(i); };
+}
+
+const DESTINO_TXT = {'/operaciones':'Operaciones', '/bitacora':'Bitácora de reparaciones', '/ordenes-trabajo':'Órdenes de trabajo',
+  '/aeronavegabilidad':'Aeronavegabilidad', '/contactos':'Contactos', '/combustible':'Combustible', '/bodega':'Bodega',
+  '/rentabilidad':'Rentabilidad', '/mantenimiento':'Mantenimiento', '/normativa':'Normativa RAC', '/catalogo':'Catálogo',
+  '/flota':'Flota', '/checklist':'Chequeo pre-vuelo'};
+
+function detalleFila(s, f){
+  if(!f) return;
+  const faltan = new Set(f._incompleto || []);
+  const kv = s.columnas.filter(c=>c.tipo!=='firma').map(c=>{
+    const falta = faltan.has(c.clave);
+    return `<div class="l">${escapar(c.titulo)}</div><div class="v ${falta?'falta':''}">${falta?'Falta: complétalo antes de entregar':(valorHtml(f[c.clave], c) || '<span class="mut">—</span>')}</div>`;
+  }).join('');
+  const destino = f._enlace ? (DESTINO_TXT[f._enlace] || (f._enlace.startsWith('/flota/') ? 'la ficha del activo' : 'el módulo')) : '';
+  const p = panelLateral({titulo: escapar(s.titulo), subtitulo: escapar(R.titulo),
+    cuerpo: `${faltan.size?`<div class="aviso ambar">${IC.aviso}<div>A este registro le faltan <b>${faltan.size}</b> dato(s) que exige el formato.</div></div>`:''}
+      <div class="det-kv">${kv}</div>`,
+    pie: f._enlace ? `<div style="display:flex;justify-content:flex-end;gap:8px"><a class="btn" href="${escapar(f._enlace)}">${faltan.size?'Completar en':'Abrir en'} ${escapar(destino)} ${IC.ir}</a></div>` : ''});
+  return p;
+}
+
+function verIncompletos(){
+  const conFaltas = [];
+  R.secciones.forEach(s=>s.filas.forEach(f=>{ if(f._incompleto && f._incompleto.length) conFaltas.push([s, f]); }));
+  if(!conFaltas.length) return toast('No hay registros incompletos.');
+  const s0 = conFaltas[0][0];
+  const cols = s0.columnas.filter(c=>c.tipo!=='firma').slice(0, 4);
+  const p = panelLateral({titulo:'Registros incompletos', subtitulo:`${num(conFaltas.length,0)} registro(s) · ${escapar(R.titulo)}`,
+    cuerpo:`<p class="mut" style="font-size:12.5px;margin-bottom:10px">Toca un registro para ver qué le falta y abrirlo donde se completa.</p>
+      <div class="det-lista tabla-envoltura"><table><thead><tr>${cols.map(c=>`<th>${escapar(c.titulo)}</th>`).join('')}<th>Falta</th></tr></thead>
+      <tbody>${conFaltas.slice(0,300).map(([s,f],i)=>`<tr data-i="${i}">${cols.map(c=>`<td>${valorHtml(f[c.clave], c)}</td>`).join('')}
+        <td>${f._incompleto.map(k=>escapar((s.columnas.find(c=>c.clave===k)||{titulo:k}).titulo)).join(', ')}</td></tr>`).join('')}</tbody></table></div>`});
+  p.$$('tbody tr[data-i]').forEach(tr=>tr.onclick = ()=>{ const [s,f] = conFaltas[tr.dataset.i]; detalleFila(s, f); });
+}
+
+// ===================== Arranque =====================
+document.getElementById('busca').addEventListener('input', ()=>{ clearTimeout(window._tb); window._tb = setTimeout(pintarCatalogo, 120); });
+cargarCatalogo().catch(err=>{ document.getElementById('catalogo').innerHTML = `<div class="aviso rojo">${IC.aviso}<div>${escapar(err.message)}</div></div>`; });
+</script>
+{% endblock %}

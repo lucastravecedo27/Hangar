@@ -1,0 +1,449 @@
+{% extends "_layout.html" %}
+{% block titulo %}Chequeo pre-vuelo{% endblock %}
+{% block clase_body %}pagina-chequeo{% endblock %}
+{% block encabezado %}Chequeo pre-vuelo{% endblock %}
+{% block subtitulo %}Revisa cada punto antes de despegar. Si algo falla, anota qué pasa o toma una foto: se abre sola una orden de trabajo para el técnico.{% endblock %}
+
+{% block head %}
+<style>
+  /* ===== Móvil primero: el piloto lo llena en la pista con el celular ===== */
+  .ck{max-width:760px;margin:0 auto;padding-bottom:110px}
+  .ck-card{background:var(--bg2);border:.5px solid var(--line);border-radius:var(--r);padding:18px;margin-bottom:14px;box-shadow:var(--shadow)}
+  .ck-card h3{font-size:12px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;
+    display:flex;align-items:center;gap:8px}
+  .ck-card h3 .n{width:22px;height:22px;border-radius:50%;background:var(--acc);color:var(--acc-txt);display:grid;place-items:center;
+    font-size:11px;letter-spacing:0}
+  .ck-card h3 .der{margin-left:auto;text-transform:none;letter-spacing:0;font-weight:560;font-size:12px}
+
+  .activos{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}
+  .activo-btn{min-width:0}
+  .activo-btn{display:flex;align-items:center;gap:11px;text-align:left;padding:12px;border-radius:16px;cursor:pointer;
+    background:var(--o-sup,#fff);border:1.5px solid var(--line2);font-family:var(--font);color:var(--ink);min-height:64px;transition:.15s}
+  .activo-btn:hover{border-color:var(--acc-d)}
+  .activo-btn.sel{border-color:var(--acc);background:var(--acc-soft);box-shadow:0 0 0 3px rgba(253,185,19,.25)}
+  .activo-btn .ic{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;flex:none;background:rgba(115,122,134,.1)}
+  .activo-btn.avion .ic{background:var(--acc);color:var(--acc-txt)}
+  .activo-btn .ic svg{width:22px;height:22px}
+  .activo-btn .t{min-width:0}
+  .activo-btn b{display:block;font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .activo-btn small{display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--mut);margin-top:1px}
+  .ck-punto-est{width:8px;height:8px;border-radius:50%;flex:none;background:var(--green)}
+  .ck-punto-est.observaciones{background:var(--amber)} .ck-punto-est.no_apto{background:var(--red)}
+
+  .ck-campos{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+  .ck-campos label{display:block;font-size:11px;font-weight:640;color:var(--mut);text-transform:uppercase;letter-spacing:.03em;margin-bottom:5px}
+  .ck-campos input,.ck-nota textarea,.ck-punto .falla textarea{width:100%;font-family:var(--font);font-size:16px;color:var(--ink);background:var(--o-sup,#fff);
+    border:.5px solid var(--line2);border-radius:12px;padding:12px 13px;outline:none}
+  .ck-campos input:focus,.ck-nota textarea:focus,.ck-punto .falla textarea:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(253,185,19,.2)}
+
+  /* Barra de progreso fija arriba mientras se revisa */
+  .progreso{position:sticky;top:0;z-index:30;margin:0 -2px 14px;padding:12px 16px;border-radius:16px;
+    background:var(--o-velo-sup,rgba(255,255,255,.94));backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    border:.5px solid var(--line);box-shadow:var(--shadow)}
+  .progreso .fila{display:flex;align-items:baseline;gap:10px;margin-bottom:8px}
+  .progreso .num{font-family:var(--font-marca);font-size:22px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+  .progreso .num span{color:var(--mut);font-size:15px}
+  .progreso .txt{font-size:12.5px;color:var(--mut)}
+  .progreso .fallas{margin-left:auto;font-size:12.5px;font-weight:680;color:var(--red)}
+  .progreso .pista-b{height:10px;border-radius:99px;background:rgba(115,122,134,.14);overflow:hidden;display:flex}
+  .progreso .pista-b i{display:block;height:100%;transition:width .25s}
+  .progreso .pista-b i.ok{background:var(--green)} .progreso .pista-b i.mal{background:var(--red)}
+
+  .ck-punto{border:1.5px solid var(--line);border-radius:18px;padding:14px;margin-bottom:10px;background:var(--o-sup,#fff);transition:.15s}
+  .ck-punto.ok{border-color:rgba(47,143,78,.45);background:rgba(47,143,78,.04)}
+  .ck-punto.mal{border-color:rgba(224,71,62,.55);background:rgba(224,71,62,.035)}
+  .ck-punto .cab{display:flex;gap:11px;align-items:flex-start;margin-bottom:12px}
+  .ck-punto .idx{width:26px;height:26px;border-radius:8px;flex:none;display:grid;place-items:center;font-size:12px;font-weight:700;
+    background:rgba(115,122,134,.12);color:var(--ink2);font-variant-numeric:tabular-nums}
+  .ck-punto.ok .idx{background:var(--green);color:#fff} .ck-punto.mal .idx{background:var(--red);color:#fff}
+  .ck-punto .texto{font-size:15.5px;font-weight:600;line-height:1.35;padding-top:2px}
+  .botones{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .b-ok,.b-falla{min-height:56px;border-radius:14px;font-family:var(--font);font-size:16px;font-weight:720;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;gap:8px;border:1.5px solid var(--line2);background:var(--o-sup,#fff);color:var(--ink2);
+    transition:.12s;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+  .b-ok svg,.b-falla svg{width:22px;height:22px}
+  .b-ok:active,.b-falla:active{transform:scale(.97)}
+  .b-ok.on{background:var(--green);border-color:var(--green);color:#fff}
+  .b-falla.on{background:var(--red);border-color:var(--red);color:#fff}
+  .ck-punto .falla{margin-top:12px;display:none}
+  .ck-punto.mal .falla{display:block}
+  .ck-punto .falla textarea{min-height:74px;resize:vertical;font-size:15px}
+  .ck-punto .falla .req{font-size:12px;color:var(--red);margin:6px 2px 0;display:none}
+  .ck-punto.incompleto .falla .req{display:block}
+  .foto-fila{display:flex;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap}
+  .b-foto{display:inline-flex;align-items:center;gap:8px;min-height:48px;padding:0 16px;border-radius:12px;cursor:pointer;
+    background:var(--o-grafito,var(--ink));color:#fff;font-size:14.5px;font-weight:640;-webkit-tap-highlight-color:transparent}
+  .b-foto svg{width:20px;height:20px}
+  .b-foto input{display:none}
+  .miniatura{position:relative;width:64px;height:64px;border-radius:12px;overflow:hidden;border:.5px solid var(--line2);background:var(--o-gris,#f3f4f6)}
+  .miniatura img{width:100%;height:100%;object-fit:cover;display:block}
+  .miniatura button{position:absolute;top:3px;right:3px;width:22px;height:22px;border-radius:50%;border:none;cursor:pointer;
+    background:rgba(26,29,36,.75);color:#fff;font-size:12px;line-height:22px;padding:0}
+  .miniatura .cargador{position:absolute;inset:0;margin:auto}
+
+  .ck-nota textarea{min-height:70px}
+  .ck-enviar{position:fixed;left:var(--side-w,232px);right:0;bottom:0;z-index:45;padding:12px 16px calc(12px + env(safe-area-inset-bottom));
+    background:var(--o-velo-bg,rgba(250,250,250,.94));backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:.5px solid var(--line)}
+  .ck-enviar .dentro{max-width:760px;margin:0 auto;display:flex;gap:12px;align-items:center}
+  .ck-enviar .estado{font-size:12.5px;color:var(--mut);flex:1;line-height:1.35}
+  .ck-enviar .btn{min-height:54px;font-size:16px;padding:0 26px;border-radius:16px}
+  .ck-enviar .btn[disabled]{opacity:.45;cursor:not-allowed}
+
+  .aviso-activo{margin:12px 0 0}
+
+  /* Resultado grande */
+  .resultado{position:fixed;inset:0;z-index:700;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    padding:28px 22px;text-align:center;color:#fff;opacity:0;transition:opacity .2s}
+  .resultado.ver{opacity:1}
+  .resultado.apto{background:#2f8f4e} .resultado.no_apto,.resultado.no_recomendado{background:#c93a31}
+  .resultado.observaciones{background:#b77a00}
+  .resultado .motivos{margin-top:10px;font-size:14px;max-width:38ch;opacity:.95;line-height:1.45}
+  .resultado .sello{width:132px;height:132px;border-radius:50%;background:rgba(255,255,255,.18);display:grid;place-items:center;margin-bottom:20px}
+  .resultado .sello svg{width:76px;height:76px}
+  .resultado h2{font-family:var(--font-marca);font-size:54px;font-weight:800;letter-spacing:-.03em;line-height:1}
+  .resultado p{font-size:16px;margin-top:12px;max-width:34ch;line-height:1.45;opacity:.95}
+  .resultado .acciones{display:flex;flex-direction:column;gap:10px;margin-top:28px;width:min(100%,340px)}
+  .resultado .acciones a,.resultado .acciones button{width:100%;padding:0 20px;min-height:54px;border-radius:16px;font-size:16px;font-weight:700;display:flex;
+    align-items:center;justify-content:center;text-decoration:none;cursor:pointer;font-family:var(--font);border:none}
+  .resultado .primario{background:var(--o-sup,#fff);color:var(--ink)}
+  .resultado .secundario{background:rgba(255,255,255,.16);color:#fff;border:1px solid rgba(255,255,255,.4)!important}
+
+  /* Historial */
+  .hist-item{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-top:.5px solid var(--line)}
+  .hist-item:first-child{border-top:none;padding-top:0}
+  .hist-item .res{flex:none;min-width:84px;text-align:center;padding:6px 8px;border-radius:10px;font-size:12px;font-weight:760;letter-spacing:.02em}
+  .hist-item .res.apto{background:rgba(47,143,78,.12);color:var(--o-tx-verde,#1d6b38)}
+  .hist-item .res.no_apto,.hist-item .res.no_recomendado{background:rgba(224,71,62,.12);color:var(--o-tx-rojo,#8f231b)}
+  .hist-item .res.observaciones{background:rgba(224,161,0,.14);color:var(--o-tx-ambar,#7a5500)}
+  .hist-item .info{flex:1;min-width:0;font-size:13px;line-height:1.45}
+  .hist-item .info b{font-weight:680}
+  .hist-item .info .mut{font-size:12px}
+  .hist-item .fallas-l{margin-top:4px;font-size:12px;color:var(--o-tx-rojo,#8f231b)}
+  .hist-item .fotos{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+  .hist-item .fotos a{width:52px;height:52px;border-radius:10px;overflow:hidden;border:.5px solid var(--line2);display:block}
+  .hist-item .fotos img{width:100%;height:100%;object-fit:cover;display:block}
+
+  @media(max-width:1040px){ .ck-enviar{left:64px} }
+  @media(max-width:640px){
+    /* En el celular la barra lateral se esconde; queda un acceso compacto arriba */
+    body.pagina-chequeo{padding-left:0}
+    body.pagina-chequeo .side{display:none}
+    body.pagina-chequeo .wrap{padding:0 16px}
+    body.pagina-chequeo .pagina-cab{padding:14px 0 12px;gap:8px}
+    body.pagina-chequeo .pagina-tit h1{font-size:25px}
+    body.pagina-chequeo .pagina-tit p{font-size:13px}
+    body.pagina-chequeo .pagina-acciones{margin-left:0;width:100%}
+    .ck-card{padding:15px;border-radius:18px}
+    .activos{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+    .ck-campos{grid-template-columns:1fr}
+    .ck-enviar{left:0}
+    .ck-enviar .btn{flex:1}
+    .resultado h2{font-size:46px}
+  }
+  .ck-top{display:none}
+  @media(max-width:640px){
+    .ck-top{display:flex;align-items:center;gap:10px;padding:12px 16px 0}
+    .ck-top a{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:640;color:var(--ink2);text-decoration:none;
+      padding:8px 12px;border-radius:980px;background:var(--o-sup,#fff);border:.5px solid var(--line2)}
+    .ck-top .marca-m{font-family:var(--font-marca);font-weight:800;font-size:15px;margin-right:auto}
+  }
+</style>
+{% endblock %}
+
+{% block barra %}{% endblock %}
+
+{% block contenido %}
+<div class="ck" id="ck">
+  <div class="ck-card">
+    <h3><span class="n">1</span> Activo y piloto</h3>
+    <div class="activos" id="activos"><div class="empty"><span class="cargador oscuro"></span></div></div>
+    <div id="avisoActivo"></div>
+    <div class="ck-campos">
+      <div><label for="piloto">Piloto</label><input id="piloto" list="dlPilotos" autocomplete="name" value="{{ usuario_actual or '' }}"></div>
+      <div><label for="fecha">Fecha</label><input id="fecha" type="date"></div>
+    </div>
+    <datalist id="dlPilotos"></datalist>
+  </div>
+
+  <div class="progreso" id="progreso">
+    <div class="fila"><div class="num" id="pNum">0<span> / 0</span></div><div class="txt">puntos revisados</div>
+      <div class="fallas" id="pFallas"></div></div>
+    <div class="pista-b"><i class="ok" id="pOk" style="width:0"></i><i class="mal" id="pMal" style="width:0"></i></div>
+  </div>
+
+  <div class="ck-card">
+    <h3><span class="n">2</span> Puntos de revisión <span class="der" id="tipoTxt"></span></h3>
+    <div id="puntos"><div class="empty"><span class="cargador oscuro"></span></div></div>
+  </div>
+
+  <div class="ck-card ck-nota">
+    <h3><span class="n">3</span> Observaciones <span class="der mut">opcional</span></h3>
+    <textarea id="notaGeneral" placeholder="Algo más que deba saber el técnico o el jefe de pilotos…"></textarea>
+  </div>
+
+  <div class="ck-card">
+    <h3>Chequeos recientes <span class="der" id="histTxt"></span></h3>
+    <div id="historial"><div class="empty">Elige un activo.</div></div>
+  </div>
+</div>
+
+<div class="ck-enviar"><div class="dentro">
+  <div class="estado" id="estadoEnvio">Revisa todos los puntos para enviar.</div>
+  <button class="btn" id="btnEnviar" disabled>Enviar chequeo</button>
+</div></div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Acceso compacto arriba en el celular (la barra lateral se esconde a ese ancho).
+document.querySelector('main').insertAdjacentHTML('afterbegin',
+  `<div class="ck-top"><span class="marca-m">{{ nombre_app|default('Hangar') }}</span>
+     <a href="/">← Menú</a></div>`);
+
+const IC_AVION = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 15.5v-1.8l-8-4.7V4.2C13 3.5 12.6 3 12 3s-1 .5-1 1.2V9l-8 4.7v1.8l8-2.3v4.9l-2.2 1.6V21l3.2-.9 3.2.9v-1.3L13 18.1v-4.9z"/></svg>`;
+const IC_DRON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="5.5" cy="5.5" r="2.5"/><circle cx="18.5" cy="5.5" r="2.5"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/><path d="M7.5 7.5l3 3m6-3l-3 3m-6 6l3-3m6 3l-3-3"/><rect x="10" y="10" width="4" height="4" rx="1"/></svg>`;
+const IC_OK = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.2 4.2L19 7"/></svg>`;
+const IC_X = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>`;
+const IC_CAM = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1.4-2h6.2l1.4 2h2A1.5 1.5 0 0 1 20 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5z"/><circle cx="12" cy="13" r="3.4"/></svg>`;
+
+let EQUIPOS = [], EQUIPO = null, PUNTOS = [], RESP = {};
+let enviando = false;
+
+function hoyLocal(){
+  const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  return d.toISOString().slice(0,10);
+}
+document.getElementById('fecha').value = hoyLocal();
+document.getElementById('fecha').max = hoyLocal();
+
+async function cargarActivos(){
+  EQUIPOS = (await api('/api/equipos')).filter(e=>e.estado !== 'baja');
+  const pre = paramURL('equipo_id') || paramURL('equipo');
+  pintarActivos();
+  const elegido = EQUIPOS.find(e=>String(e.id) === String(pre)) || (EQUIPOS.length === 1 ? EQUIPOS[0] : null);
+  if(elegido) elegir(elegido.id);
+  else {
+    document.getElementById('puntos').innerHTML = '<div class="empty">Elige arriba el activo que vas a volar.</div>';
+    actualizar();
+  }
+}
+
+function pintarActivos(){
+  document.getElementById('activos').innerHTML = EQUIPOS.map(e=>{
+    const est = e.aeronavegable?.estado || 'apto';
+    return `<button type="button" class="activo-btn ${e.tipo_activo} ${EQUIPO?.id === e.id ? 'sel' : ''}" data-id="${e.id}">
+      <span class="ic">${e.tipo_activo === 'avion' ? IC_AVION : IC_DRON}</span>
+      <span class="t"><b>${escapar(e.nombre)}</b>
+        <small><span class="ck-punto-est ${est}"></span>${escapar(e.modelo)}</small></span>
+    </button>`;
+  }).join('') || '<div class="empty">No hay activos registrados.</div>';
+  document.querySelectorAll('.activo-btn').forEach(b=>b.onclick = ()=>elegir(Number(b.dataset.id)));
+}
+
+async function elegir(id){
+  const hayDatos = Object.keys(RESP).length;
+  if(EQUIPO && EQUIPO.id !== id && hayDatos && !await confirmar({titulo:'Cambiar de activo',
+      mensaje:'Se borrarán las respuestas marcadas para el activo actual.', aceptar:'Cambiar'})) return;
+  EQUIPO = EQUIPOS.find(e=>e.id === id);
+  RESP = {};
+  pintarActivos();
+  const u = new URL(location.href); u.searchParams.set('equipo_id', id); history.replaceState(null, '', u);
+  const est = EQUIPO.aeronavegable || {};
+  document.getElementById('avisoActivo').innerHTML = est.estado && est.estado !== 'apto' ? `
+    <div class="aviso ${est.estado === 'no_apto' ? 'rojo' : 'ambar'} aviso-activo"><div>
+      <b>${est.estado === 'no_apto' ? `Recomendamos no volar ${escapar(EQUIPO.nombre)}` : `${escapar(EQUIPO.nombre)} tiene observaciones de mantenimiento`}:</b>
+      ${(est.motivos||[]).slice(0,3).map(escapar).join(' · ')}${(est.motivos||[]).length > 3 ? '…' : ''}
+      ${est.estado === 'no_apto' ? '<br>Aunque la revisión visual salga bien, consulta con el técnico antes de volar.' : ''}</div></div>` : '';
+  document.getElementById('tipoTxt').textContent = EQUIPO.tipo_activo === 'avion' ? 'Avión' : 'Dron';
+  document.getElementById('puntos').innerHTML = '<div class="empty"><span class="cargador oscuro"></span> Cargando lista…</div>';
+  PUNTOS = await api(`/api/checklists/plantilla?tipo=${EQUIPO.tipo_activo}`);
+  pintarPuntos();
+  cargarHistorial();
+}
+
+function pintarPuntos(){
+  document.getElementById('puntos').innerHTML = PUNTOS.map((p,i)=>`
+    <div class="ck-punto" data-k="${escapar(p.clave)}">
+      <div class="cab"><span class="idx">${i+1}</span><div class="texto">${escapar(p.texto)}</div></div>
+      <div class="botones">
+        <button type="button" class="b-ok" data-r="ok">${IC_OK} OK</button>
+        <button type="button" class="b-falla" data-r="falla">${IC_X} Falla</button>
+      </div>
+      <div class="falla">
+        <textarea placeholder="¿Qué encontraste? p. ej. fisura en el borde de la pala"></textarea>
+        <div class="foto-fila">
+          <label class="b-foto">${IC_CAM} Tomar foto
+            <input type="file" accept="image/*" capture="environment"></label>
+          <div class="foto-slot"></div>
+        </div>
+        <div class="req">Anota qué falla o toma una foto.</div>
+      </div>
+    </div>`).join('');
+  document.querySelectorAll('.ck-punto').forEach(el=>{
+    const k = el.dataset.k;
+    el.querySelectorAll('[data-r]').forEach(b=>b.onclick = ()=>{
+      const r = RESP[k] || (RESP[k] = {nota:'', foto:null});
+      r.ok = b.dataset.r === 'ok';
+      pintarPunto(el);
+      actualizar();
+      // Tras marcar OK, llevar la vista al siguiente punto pendiente.
+      if(r.ok){
+        const sig = [...document.querySelectorAll('.ck-punto')].find(x=>!RESP[x.dataset.k] || RESP[x.dataset.k].ok === undefined);
+        // Sólo si el siguiente queda tapado por la barra de envío: así no se mueve lo que el piloto va a tocar.
+        if(sig && window.innerWidth < 900){
+          const bajo = sig.getBoundingClientRect().bottom > window.innerHeight - document.querySelector('.ck-enviar').offsetHeight;
+          if(bajo) setTimeout(()=>sig.scrollIntoView({behavior:'smooth', block:'center'}), 150);
+        }
+      } else el.querySelector('textarea').focus({preventScroll:true});
+    });
+    el.querySelector('textarea').addEventListener('input', e=>{
+      (RESP[k] || (RESP[k] = {foto:null})).nota = e.target.value;
+      el.classList.remove('incompleto'); actualizar();
+    });
+    el.querySelector('input[type=file]').addEventListener('change', e=>subirFoto(el, e.target));
+  });
+  actualizar();
+}
+
+function pintarPunto(el){
+  const r = RESP[el.dataset.k] || {};
+  el.classList.toggle('ok', r.ok === true);
+  el.classList.toggle('mal', r.ok === false);
+  el.querySelector('.b-ok').classList.toggle('on', r.ok === true);
+  el.querySelector('.b-falla').classList.toggle('on', r.ok === false);
+  if(r.ok !== false) el.classList.remove('incompleto');
+  const slot = el.querySelector('.foto-slot');
+  slot.innerHTML = r.subiendo ? `<div class="miniatura"><span class="cargador oscuro"></span></div>`
+    : r.foto ? `<div class="miniatura"><img src="/archivos/${encodeURIComponent(r.foto)}" alt="Foto de la falla">
+        <button type="button" title="Quitar foto" aria-label="Quitar foto">✕</button></div>` : '';
+  const quitar = slot.querySelector('button');
+  if(quitar) quitar.onclick = ()=>{ r.foto = null; pintarPunto(el); actualizar(); };
+}
+
+async function subirFoto(el, entrada){
+  const archivo = entrada.files[0]; if(!archivo) return;
+  const r = RESP[el.dataset.k] || (RESP[el.dataset.k] = {ok:false, nota:''});
+  r.subiendo = true; pintarPunto(el); actualizar();
+  try{
+    const datos = new FormData(); datos.append('archivo', archivo);
+    const resp = await fetch('/api/archivos', {method:'POST', body:datos});
+    const j = await resp.json().catch(()=>({}));
+    if(!resp.ok) throw new Error(j.error || `Error ${resp.status}`);
+    r.foto = j.archivo;
+    el.classList.remove('incompleto');
+  }catch(err){ toast('No se pudo subir la foto: ' + err.message); }
+  r.subiendo = false; entrada.value = '';
+  pintarPunto(el); actualizar();
+}
+
+function actualizar(){
+  const total = PUNTOS.length;
+  const resp = PUNTOS.filter(p=>RESP[p.clave] && RESP[p.clave].ok !== undefined);
+  const fallas = resp.filter(p=>RESP[p.clave].ok === false);
+  const oks = resp.length - fallas.length;
+  document.getElementById('pNum').innerHTML = `${resp.length}<span> / ${total}</span>`;
+  document.getElementById('pFallas').textContent = fallas.length ? `${fallas.length} falla(s)` : '';
+  document.getElementById('pOk').style.width = total ? (oks/total*100) + '%' : 0;
+  document.getElementById('pMal').style.width = total ? (fallas.length/total*100) + '%' : 0;
+  const sinSoporte = fallas.filter(p=>!(RESP[p.clave].nota || '').trim() && !RESP[p.clave].foto);
+  const subiendo = PUNTOS.some(p=>RESP[p.clave]?.subiendo);
+  const listo = EQUIPO && total && resp.length === total && !sinSoporte.length && !subiendo;
+  const btn = document.getElementById('btnEnviar');
+  btn.disabled = !listo || enviando;
+  document.getElementById('estadoEnvio').innerHTML = !EQUIPO ? 'Elige el activo.'
+    : resp.length < total ? `Faltan <b>${total - resp.length}</b> punto(s) por revisar.`
+    : subiendo ? 'Subiendo foto…'
+    : sinSoporte.length ? `<span style="color:var(--red)"><b>${sinSoporte.length}</b> falla(s) sin nota ni foto.</span>`
+    : fallas.length ? `<b style="color:var(--red)">${fallas.length} falla(s):</b> se abrirá una orden de trabajo.`
+    : '<b style="color:var(--green)">Todo en orden.</b> Listo para enviar.';
+}
+
+document.getElementById('btnEnviar').onclick = async ()=>{
+  const btn = document.getElementById('btnEnviar');
+  const fallas = PUNTOS.filter(p=>RESP[p.clave]?.ok === false);
+  const sinSoporte = fallas.filter(p=>!(RESP[p.clave].nota || '').trim() && !RESP[p.clave].foto);
+  if(sinSoporte.length){
+    sinSoporte.forEach(p=>document.querySelector(`.ck-punto[data-k="${CSS.escape(p.clave)}"]`).classList.add('incompleto'));
+    document.querySelector('.ck-punto.incompleto').scrollIntoView({behavior:'smooth', block:'center'});
+    return;
+  }
+  const fecha = document.getElementById('fecha').value;
+  if(fecha && fecha > hoyLocal()){ toast('La fecha no puede ser futura.'); return; }
+  enviando = true; btn.disabled = true; btn.innerHTML = '<span class="cargador"></span> Enviando…';
+  try{
+    const r = await api('/api/checklists', {method:'POST', body:{
+      equipo_id: EQUIPO.id, piloto: document.getElementById('piloto').value.trim() || null, fecha,
+      nota: document.getElementById('notaGeneral').value.trim() || null,
+      items: PUNTOS.map(p=>({clave:p.clave, ok: RESP[p.clave].ok, nota:(RESP[p.clave].nota||'').trim() || null, foto: RESP[p.clave].foto || null})),
+    }});
+    const hist = await cargarHistorial();
+    const fila = hist.find(h=>h.id === r.id);
+    mostrarResultado(r, fila, fallas.length);
+  }catch(err){ toast(err.message); }
+  enviando = false; btn.textContent = 'Enviar chequeo'; actualizar();
+};
+
+const RES_TXT = {apto:'APTO', observaciones:'APTO CON OBSERVACIONES', no_recomendado:'RECOMENDAMOS NO VOLAR', no_apto:'RECOMENDAMOS NO VOLAR'};
+
+function mostrarResultado(r, fila, nFallas){
+  const apto = r.resultado === 'apto' || r.resultado === 'observaciones';
+  const motivos = (r.motivos||[]).slice(0,4).map(escapar).join(' · ');
+  let texto;
+  if(r.resultado === 'apto') texto = `${escapar(EQUIPO.nombre)} pasó los ${PUNTOS.length} puntos del chequeo y tiene el mantenimiento al día. Buen vuelo.`;
+  else if(r.resultado === 'observaciones') texto = `La revisión visual está bien, pero hay mantenimiento por vencer: ${motivos}. Puedes volar; avisa al técnico.`;
+  else if(r.resultado === 'no_recomendado') texto = `La revisión visual está bien, pero <b>recomendamos no volarlo</b>: ${motivos}. Consulta con el técnico.`;
+  else texto = `Recomendamos no volarlo: ${nFallas} punto(s) con falla. Se creó ${fila?.orden_codigo ? `la orden <b>${escapar(fila.orden_codigo)}</b>` : 'una orden de trabajo'} para el técnico.`
+             + (motivos ? `<br><span style="opacity:.85">Además en mantenimiento: ${motivos}</span>` : '');
+  const div = document.createElement('div');
+  div.className = `resultado ${r.resultado}`;
+  div.setAttribute('role', 'alertdialog');
+  div.innerHTML = `
+    <div class="sello">${apto ? IC_OK : IC_X}</div>
+    <h2>${RES_TXT[r.resultado] || r.resultado}</h2>
+    <p>${texto}</p>
+    <div class="acciones">
+      ${r.orden_id ? `<a class="primario" href="/ordenes-trabajo?ot=${r.orden_id}">Ver ${escapar(fila?.orden_codigo || 'la orden de trabajo')}</a>` : ''}
+      ${r.resultado === 'no_recomendado' ? `<a class="primario" href="/flota/${EQUIPO.id}">Ver qué está vencido</a>` : ''}
+      ${apto ? `<a class="primario" href="/operaciones?equipo=${EQUIPO.id}">Ir a registrar la operación</a>` : ''}
+      <button type="button" class="secundario" data-nuevo>Nuevo chequeo</button>
+    </div>`;
+  document.body.appendChild(div);
+  requestAnimationFrame(()=>div.classList.add('ver'));
+  div.querySelector('[data-nuevo]').onclick = ()=>{
+    div.remove(); RESP = {}; document.getElementById('notaGeneral').value = '';
+    pintarPuntos(); window.scrollTo({top:0, behavior:'smooth'});
+  };
+}
+
+async function cargarHistorial(){
+  if(!EQUIPO) return [];
+  const lista = await api(`/api/checklists?equipo_id=${EQUIPO.id}`);
+  const pilotos = [...new Set(lista.map(h=>h.piloto).filter(Boolean))];
+  document.getElementById('dlPilotos').innerHTML = pilotos.map(p=>`<option value="${escapar(p)}">`).join('');
+  document.getElementById('histTxt').textContent = lista.length ? `${escapar(EQUIPO.nombre)} · ${lista.length}` : '';
+  const recientes = lista.slice(0, 8);
+  document.getElementById('historial').innerHTML = recientes.length ? recientes.map(h=>{
+    const fallas = (h.items||[]).filter(i=>!i.ok);
+    const fotos = (h.items||[]).filter(i=>i.foto);
+    return `<div class="hist-item">
+      <div class="res ${h.resultado}">${({apto:'APTO', observaciones:'OBSERVACIONES', no_recomendado:'NO VOLAR', no_apto:'NO VOLAR'})[h.resultado] || h.resultado}</div>
+      <div class="info"><b>${fmtFecha(h.fecha)}</b> · ${escapar(h.piloto || h.usuario || '—')}
+        <div class="mut">${(h.items||[]).length} puntos · ${fallas.length ? `${fallas.length} falla(s)` : 'sin fallas'}
+          ${h.orden_codigo ? ` · <a href="/ordenes-trabajo?ot=${h.orden_id}">${escapar(h.orden_codigo)}</a>` : ''}</div>
+        ${fallas.length ? `<div class="fallas-l">${fallas.map(f=>escapar(f.texto) + (f.nota ? `: ${escapar(f.nota)}` : '')).join(' · ')}</div>` : ''}
+        ${h.nota ? `<div class="mut" style="margin-top:3px">${escapar(h.nota)}</div>` : ''}
+        ${fotos.length ? `<div class="fotos">${fotos.map(f=>`<a href="/archivos/${encodeURIComponent(f.foto)}" target="_blank" rel="noopener" title="${escapar(f.texto)}">
+            <img src="/archivos/${encodeURIComponent(f.foto)}" alt="${escapar(f.texto)}" loading="lazy"></a>`).join('')}</div>` : ''}
+      </div></div>`;
+  }).join('') : '<div class="empty">Este activo aún no tiene chequeos.</div>';
+  return lista;
+}
+
+// Evita perder un chequeo a medias al salir por accidente.
+window.addEventListener('beforeunload', e=>{
+  if(Object.keys(RESP).length && !document.querySelector('.resultado')){ e.preventDefault(); e.returnValue = ''; }
+});
+
+cargarActivos();
+</script>
+{% endblock %}

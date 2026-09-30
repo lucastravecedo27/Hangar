@@ -1,0 +1,913 @@
+{% extends "_layout.html" %}
+{% block titulo %}Ficha del activo{% endblock %}
+{% block encabezado %}<a href="/flota" class="volver-flota">Flota</a> <span class="migas-sep">/</span> <span id="tituloPag">Ficha del activo</span>{% endblock %}
+{% block subtitulo %}Estado de aeronavegabilidad, contadores, vencimientos y piezas con serial{% endblock %}
+
+{% block head %}
+<style>
+  .volver-flota{color:var(--mut);text-decoration:none;font-weight:inherit}
+  .volver-flota:hover{color:var(--acc-ink)}
+  .migas-sep{color:var(--o-linea-hover,var(--line2));font-weight:400}
+
+  /* ===== Cabecera grafito ===== */
+  .ficha-hero{position:relative;background:var(--o-hero,#1a1d24);color:#fff;border-radius:var(--r);padding:24px 26px;margin-bottom:18px;
+    display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:22px;overflow:hidden;box-shadow:var(--shadow-l)}
+  .ficha-hero::after{content:"";position:absolute;right:-60px;top:-60px;width:260px;height:260px;border-radius:50%;
+    background:radial-gradient(circle,rgba(253,185,19,.16),rgba(253,185,19,0) 70%);pointer-events:none}
+  @media(max-width:980px){.ficha-hero{grid-template-columns:minmax(0,1fr)}}
+  .fh-id{display:flex;gap:16px;align-items:flex-start;min-width:0}
+  .fh-ic{width:66px;height:66px;border-radius:18px;flex:none;display:grid;place-items:center;background:rgba(253,185,19,.12);color:var(--acc);border:1px solid rgba(253,185,19,.3)}
+  .fh-ic svg{width:44px;height:44px}
+  .fh-nom{font-family:var(--font-marca);font-size:28px;font-weight:800;letter-spacing:-.035em;line-height:1.1;overflow-wrap:anywhere}
+  .fh-mat{display:inline-block;margin-top:8px;font-family:var(--font-marca);font-weight:800;font-size:15px;letter-spacing:.08em;padding:3px 11px;border-radius:8px;background:var(--acc);color:var(--acc-txt)}
+  .fh-mat.serie{background:rgba(255,255,255,.1);color:#e7e9ee;font-family:var(--font);font-weight:600;font-size:12.5px;letter-spacing:.02em}
+  .fh-datos{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:12px;font-size:12.5px;color:#b9bec8}
+  .fh-datos b{color:#fff;font-weight:600}
+  .fh-acc{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+  .fh-acc .btn.oscuro{background:rgba(255,255,255,.08);color:#fff;border:1px solid rgba(255,255,255,.16);box-shadow:none}
+  .fh-acc .btn.oscuro:hover{background:rgba(255,255,255,.14);border-color:var(--acc);color:var(--acc)}
+  .fh-acc .btn svg{width:16px;height:16px}
+  .fh-acc select{background:rgba(255,255,255,.06);color:#fff;border-color:rgba(255,255,255,.18);font-size:12.5px}
+  .fh-acc select option{color:var(--ink)}
+
+  .aero{position:relative;z-index:1;border-radius:16px;padding:16px 18px;align-self:start}
+  .aero .cab{display:flex;align-items:center;gap:12px}
+  .aero .luz{width:44px;height:44px;border-radius:50%;flex:none;display:grid;place-items:center;color:#fff}
+  .aero .luz svg{width:24px;height:24px}
+  .aero .lbl{font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;opacity:.75}
+  .aero .est{font-family:var(--font-marca);font-size:24px;font-weight:800;letter-spacing:-.03em;line-height:1.05}
+  .aero ul{list-style:none;margin-top:12px;display:flex;flex-direction:column;gap:5px;max-height:170px;overflow:auto}
+  .aero li{font-size:12.5px;line-height:1.4;padding-left:16px;position:relative}
+  .aero li::before{content:"";position:absolute;left:3px;top:.55em;width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.7}
+  .aero.apto{background:rgba(47,143,78,.18);color:#bfeccb;border:1px solid rgba(47,143,78,.5)}.aero.apto .luz{background:var(--green)}
+  .aero.observaciones{background:rgba(232,164,0,.16);color:#ffe29a;border:1px solid rgba(232,164,0,.5)}.aero.observaciones .luz{background:var(--amber);color:#1a1d24}
+  .aero.no_apto{background:rgba(224,71,62,.18);color:#ffc7c2;border:1px solid rgba(224,71,62,.55)}.aero.no_apto .luz{background:var(--red)}
+
+  /* ===== Medidores ===== */
+  .medidores{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin-bottom:18px}
+  .medidor{background:var(--bg2);border:1px solid var(--line);border-radius:18px;padding:16px 18px 14px;display:flex;flex-direction:column;gap:2px}
+  .medidor .top{display:flex;align-items:center;gap:8px}
+  .medidor .lbl{font-size:10.5px;font-weight:700;color:var(--mut);letter-spacing:.08em;text-transform:uppercase;flex:1}
+  .medidor .dial{width:34px;height:34px;flex:none}
+  .medidor .val{font-family:var(--font-marca);font-size:34px;font-weight:800;letter-spacing:-.045em;line-height:1;margin-top:6px;font-variant-numeric:tabular-nums}
+  .medidor .val small{font-family:var(--font);font-size:13px;font-weight:600;color:var(--mut);letter-spacing:0;margin-left:5px}
+  .medidor .prox{font-size:11.8px;color:var(--mut);margin-top:6px;line-height:1.4;min-height:1.4em}
+  .medidor .prox b{color:var(--ink2);font-weight:620}
+  .medidor .prox.alerta b{color:var(--o-tx-rojo,#a4271f)}
+  .medidor .btn{align-self:flex-start;margin-top:10px}
+
+  /* ===== Rejillas ===== */
+  .fila2{display:grid;align-items:start;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px}
+  .fila2 > .card{margin-bottom:18px}
+  @media(max-width:1020px){.fila2{grid-template-columns:minmax(0,1fr)}}
+  .fila-diag{display:grid;align-items:start;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:18px}
+  .col-izq{min-width:0;display:flex;flex-direction:column;align-self:stretch}
+  .col-izq > .card:last-child{flex:1;margin-bottom:0}
+  /* Filas sin huecos: las tarjetas de una misma fila miden lo mismo. */
+  .fila-diag{align-items:stretch;margin-bottom:18px}
+  .fila-diag > .card{margin-bottom:0}
+  .fila-diag.midiendo{align-items:start}
+  .fila-diag.midiendo .col-izq > .card:last-child{flex:none}
+  .fila2{align-items:stretch}
+  .fila2 > .card{display:flex;flex-direction:column}
+  .fila2.midiendo{align-items:start}
+  .oculta-eq{display:none !important}
+  .fila2.solo-repuestos{grid-template-columns:minmax(0,1fr)}
+  .fila2.solo-repuestos #repuestos{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(360px,100%),1fr));gap:10px}
+  .fila2.solo-repuestos #repuestos .repuesto{margin:0;min-width:0}
+  .fila2.solo-repuestos > .card{min-width:0}
+  #repuestos .repuesto{grid-template-columns:minmax(0,1fr) auto}
+  .eq-mas{margin-top:10px;align-self:flex-start}
+  /* Los indicadores viven bajo el diagrama o las baterías: en media columna caben 2–3 por fila. */
+  .col-izq .ind-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  /* La última fila de indicadores no deja huecos: la tarjeta final se estira hasta cerrarla. */
+  .col-izq .ind-grid .kpi:last-child:nth-child(3n+1){grid-column:1/-1}
+  .col-izq .ind-grid .kpi:last-child:nth-child(3n+2){grid-column:span 2}
+  @media(max-width:560px){.col-izq .ind-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .col-izq .ind-grid .kpi:last-child:nth-child(3n+1),.col-izq .ind-grid .kpi:last-child:nth-child(3n+2){grid-column:auto}
+    .col-izq .ind-grid .kpi:last-child:nth-child(odd){grid-column:1/-1}}
+  .col-izq .ind-grid .kpi{min-width:0;overflow:visible}
+  .col-izq .ind-grid .kpi .lbl{padding-right:26px;white-space:normal;overflow-wrap:anywhere}
+  .col-izq .ind-grid .kpi .delta{white-space:normal;line-height:1.35}
+  @media(max-width:1100px){.fila-diag{grid-template-columns:minmax(0,1fr)}}
+  .card-cab .der a{font-size:12.5px}
+
+  /* ===== Diagrama ===== */
+  .diag-cont{min-height:340px;border-radius:14px;background:var(--o-gris,#f6f7f9);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .diag-cont.con-diagrama{display:block;min-height:0;background:none;border:0;border-radius:0;overflow:visible}
+  a.btn{text-decoration:none}
+  .tabla-scroll th,.tabla-scroll td{padding:9px 8px}
+  .tabla-scroll table{font-size:13px}
+  .diag-cont > svg{max-width:100%}
+  .zonas{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+  .zona{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:600;padding:6px 11px;border-radius:980px;border:1px solid var(--line2);background:var(--o-sup,#fff);cursor:pointer;color:var(--ink2);font-family:var(--font)}
+  .zona i{width:9px;height:9px;border-radius:50%;background:var(--green)}
+  .zona i.proximo{background:var(--amber)}.zona i.critico{background:var(--red)}.zona i.vencido{background:#b3261e}
+  .zona:hover{border-color:var(--acc)}
+  .zona.activa{background:var(--acc);border-color:var(--acc-d);color:var(--acc-txt)}
+  .diag-vacio{text-align:center;color:var(--mut);font-size:13px;padding:30px}
+  .diag-vacio svg{width:180px;height:auto;color:var(--line2);display:block;margin:0 auto 10px}
+
+  /* ===== Próximo a vencer ===== */
+  .pv-sec{font-size:10.5px;font-weight:700;color:var(--mut);letter-spacing:.09em;text-transform:uppercase;margin:6px 0 8px;display:flex;align-items:center;gap:8px}
+  .pv-sec::after{content:"";flex:1;height:1px;background:var(--line)}
+  .pv{padding:11px 0;border-bottom:1px solid var(--line)}
+  .pv:last-child{border-bottom:0}
+  .pv .l1{display:flex;align-items:flex-start;gap:10px}
+  .pv .nom{flex:1;min-width:0;font-size:13.5px;font-weight:620;line-height:1.35}
+  .pv .plazo{font-size:12.5px;font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums;text-align:right}
+  .pv .plazo.vencido,.pv .plazo.critico{color:var(--o-tx-rojo,#a4271f)}.pv .plazo.proximo{color:var(--o-tx-ambar,#7a5400)}.pv .plazo.ok{color:var(--o-tx-verde,#1d6b38)}
+  .pv .badges{display:inline-flex;flex-wrap:wrap;gap:5px;margin-left:6px;vertical-align:1px}
+  .pv .badges .tag{font-size:10.5px;padding:1px 8px;white-space:nowrap}
+  .tag.ref{background:var(--o-gris-3,#eef0f4);color:var(--o-tx-gris,#4a505c);border:1px dashed var(--o-borde-gris,#c3c8d1)}
+  .tag.tol{background:rgba(13,148,136,.13);color:var(--o-tx-teal,#0b6b62)}
+  .tag.serial{background:var(--o-grafito,#1a1d24);color:var(--acc);font-family:ui-monospace,Menlo,monospace;letter-spacing:.02em}
+  .pv .l2{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:11.8px;color:var(--mut);margin:3px 0 7px}
+  .pv .l2 b{color:var(--ink2);font-weight:600;font-variant-numeric:tabular-nums}
+  .pv .barra{height:8px}
+  .pv-mas{margin-top:8px}
+  .filtro-zona{display:inline-flex;align-items:center;gap:6px;font-size:12px;background:var(--acc-soft);color:var(--acc-deep);border-radius:980px;padding:3px 6px 3px 11px;font-weight:600}
+  .filtro-zona button{border:0;background:rgba(0,0,0,.07);border-radius:50%;width:18px;height:18px;cursor:pointer;font-size:10px;color:inherit}
+
+  /* ===== Baterías ===== */
+  .bat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+  .bat{border:1px solid var(--line);border-radius:14px;padding:13px 14px;background:var(--bg2)}
+  .bat .s{font-family:ui-monospace,Menlo,monospace;font-size:12.5px;font-weight:700}
+  .bat .c{font-family:var(--font-marca);font-size:24px;font-weight:800;letter-spacing:-.04em;margin-top:6px;font-variant-numeric:tabular-nums}
+  .bat .c small{font-family:var(--font);font-size:12px;color:var(--mut);font-weight:600;letter-spacing:0}
+  .bat .m{font-size:11.5px;color:var(--mut);margin-top:6px;display:flex;justify-content:space-between;gap:8px}
+  .bat .acc{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+  .bat .barra{margin-top:6px}
+
+  /* ===== Tablas compactas ===== */
+  .tabla-scroll{overflow-x:auto;margin:0 -4px}
+  .tabla-scroll table{min-width:520px}
+  td .sub{font-size:11.5px;color:var(--mut)}
+  td.mono,.mono{font-family:ui-monospace,Menlo,monospace;font-size:12.5px}
+  .item .punto.no_apto{background:#e0473e}
+
+  /* ===== Indicadores del activo ===== */
+  .ind-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px}
+  .ind-grid .kpi{padding:14px 16px 12px}
+  .ind-grid .kpi .lbl{padding-right:22px}
+  .ind-grid .kpi .val{font-size:27px;margin:8px 0 5px}
+  .ind-grid .kpi .val small{font-family:var(--font);font-size:12.5px;font-weight:650;color:var(--mut);letter-spacing:0;margin-left:4px}
+  .ind-grid .kpi .info{position:absolute;top:11px;right:11px;width:18px;height:18px;border-radius:50%;display:grid;place-items:center;color:var(--mut);opacity:.55;transition:opacity .15s;cursor:help}
+  .ind-grid .kpi .info svg{width:15px;height:15px}
+  .ind-grid .kpi:hover .info{opacity:1}
+  .ind-grid .kpi .info .tip{position:absolute;top:24px;right:-6px;z-index:30;width:max-content;max-width:250px;padding:8px 11px;border-radius:10px;
+    background:var(--ink);color:var(--bg2);font-size:12px;line-height:1.4;font-weight:500;letter-spacing:0;text-transform:none;
+    box-shadow:0 8px 24px rgba(0,0,0,.18);opacity:0;pointer-events:none;transform:translateY(-3px);transition:opacity .15s,transform .15s}
+  .ind-grid .kpi .info:hover .tip,.ind-grid .kpi .info:focus .tip{opacity:1;transform:none}
+  .ind-sin{font-size:12px;color:var(--mut);margin-top:12px;line-height:1.5}
+  .ind-tend{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+  .ind-tend .t{font-size:10.5px;font-weight:700;color:var(--mut);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px}
+  @media(max-width:640px){
+    .ind-grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+    .ind-grid .kpi{padding:12px 12px 10px}
+    .ind-grid .kpi .val{font-size:22px}
+    .ind-grid .kpi .delta{white-space:normal}
+    #cardIndicadores .card-cab{flex-wrap:wrap;gap:8px}
+    #cardIndicadores .card-cab .der{width:100%;min-width:0}
+    #segIndPeriodo{display:flex;width:100%}
+    #segIndPeriodo button{flex:1 1 0;min-width:0;padding:6px 4px}
+  }
+
+  @media(max-width:640px){
+    .ficha-hero{padding:18px}
+    .fh-nom{font-size:23px}
+    .fh-ic{width:52px;height:52px}.fh-ic svg{width:34px;height:34px}
+    .medidor .val{font-size:24px}
+    .medidores{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    .medidor{padding:12px 13px}
+    .medidor .dial{width:26px;height:26px}
+    .medidor .prox{font-size:11px}
+    .fh-datos{gap:4px 12px}
+    .pv .l1{flex-wrap:wrap;gap:2px 10px}
+    .pv .plazo{width:100%;text-align:left}
+  }
+</style>
+{% endblock %}
+
+{% block contenido %}
+<div id="cargando" class="card"><div class="empty"><span class="cargador oscuro"></span> Cargando ficha…</div></div>
+<div id="ficha" style="display:none">
+  <section class="ficha-hero" id="hero"></section>
+  <div class="medidores" id="medidores"></div>
+
+  <div class="fila-diag" id="filaPrincipal">
+    <div class="col-izq">
+    <div class="card" id="cardDiagrama" style="display:none">
+      <div class="card-cab"><h3 id="tituloDiagrama">Diagrama del avión</h3>
+        <span class="der"><a id="linkDiagrama" href="#">Ver diagrama completo →</a></span></div>
+      <div class="diag-cont" id="diagAvion"></div>
+      <div class="zonas" id="zonas"></div>
+    </div>
+    <div class="card" id="cardBaterias" style="display:none">
+      <div class="card-cab"><h3>Baterías <span class="mut" id="batConteo"></span></h3>
+        <span class="der acciones">
+          <button class="btn secundario peq" type="button" id="btnAsignarBat">Asignar existente</button>
+          <button class="btn peq" type="button" id="btnNuevaBat">＋ Batería</button></span></div>
+      <div id="baterias"></div>
+    </div>
+      <div class="card" id="cardIndicadores">
+        <div class="card-cab"><h3>Indicadores <span class="mut" id="indPeriodoTxt"></span></h3>
+          <span class="der"><span class="segmento" id="segIndPeriodo">
+            <button type="button" data-v="30d">30 días</button>
+            <button type="button" data-v="90d" class="activo">90 días</button>
+            <button type="button" data-v="anio">Este año</button>
+            <button type="button" data-v="todo">Todo</button>
+          </span></span></div>
+        <div class="ind-grid" id="indicadores"><div class="empty" style="grid-column:1/-1"><span class="cargador oscuro"></span> Calculando…</div></div>
+        <div class="ind-sin" id="indSin"></div>
+        <div class="ind-tend" id="indTend" style="display:none"><div class="t">Rendimiento mensual · hectáreas por hora de vuelo (12 meses)</div><div id="indGrafica"></div></div>
+      </div>
+    </div>
+    <div class="card" id="cardVencer">
+      <div class="card-cab"><h3>Próximo a vencer</h3><span id="zonaSel"></span>
+        <span class="der"><span id="pvResumen"></span></span></div>
+      <div id="vencer"></div>
+    </div>
+  </div>
+
+  <div class="card" id="cardSerial">
+    <div class="card-cab"><h3>Piezas con serial <span class="mut" id="serialConteo"></span></h3>
+      <span class="der"><button class="btn peq" type="button" id="btnNuevaSerial">＋ Registrar pieza con serial</button></span></div>
+    <div class="tabla-scroll"><table>
+      <thead><tr><th>Puesto</th><th>Serial</th><th class="num">TSO</th><th class="num">TSN</th><th>Vida</th><th>Estado</th><th></th></tr></thead>
+      <tbody id="tablaSerial"></tbody>
+    </table></div>
+  </div>
+
+  <div class="fila2">
+    <div class="card">
+      <div class="card-cab"><h3>Directivas y documentos</h3>
+        <span class="der"><a href="/aeronavegabilidad">Gestionar en aeronavegabilidad →</a></span></div>
+      <div id="dirdoc"></div>
+    </div>
+    <div class="card">
+      <div class="card-cab"><h3>Próximos repuestos</h3><span class="der" id="repBase"></span></div>
+      <div id="repuestos"></div>
+    </div>
+  </div>
+
+  <div class="fila2">
+    <div class="card">
+      <div class="card-cab"><h3>Últimas operaciones</h3>
+        <span class="der"><a id="linkOps" href="/operaciones">Ver todas →</a></span></div>
+      <div class="tabla-scroll" id="operaciones"></div>
+    </div>
+    <div class="card">
+      <div class="card-cab"><h3>Últimos mantenimientos</h3>
+        <span class="der"><a id="linkMant" href="/mantenimiento">Ver historial →</a></span></div>
+      <div class="tabla-scroll" id="mantenimientos"></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static_shell', archivo='avion.js') }}" onerror="this.dataset.falta=1"></script>
+<script>
+const EQUIPO_ID = {{ equipo_id|tojson }};
+let E = null, ZONA = null, DIAG = null, VER_TODO = {inspeccion:false, pieza:false};
+let LIM_PV = 6, ALTO_TEND = 170, IND_AUTO = true;   // se ajustan en equilibrar()
+
+const IC_DRON = `<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <circle cx="9" cy="9" r="5.5"/><circle cx="31" cy="9" r="5.5"/><circle cx="9" cy="31" r="5.5"/><circle cx="31" cy="31" r="5.5"/>
+  <path d="M13 13l4 4M27 13l-4 4M13 27l4-4M27 27l-4-4"/><rect x="15.5" y="15.5" width="9" height="9" rx="2.5" fill="currentColor" fill-opacity=".25"/></svg>`;
+const IC_AVION = `<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M20 3.5c1.6 0 2.4 1.6 2.4 3.6v8.4l14.1 2.4c.6.1 1 .6 1 1.2v2.1l-15.1-.9-.8 10.5 4.6 1.7v2.3H13.8v-2.3l4.6-1.7-.8-10.5-15.1.9v-2.1c0-.6.4-1.1 1-1.2l14.1-2.4V7.1c0-2 .8-3.6 2.4-3.6z" fill="currentColor" fill-opacity=".22"/>
+  <path d="M16 3.5h8"/></svg>`;
+const IC_SEM = {
+  apto: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 10.5l3.2 3.2L15 7"/></svg>',
+  observaciones: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M10 5.5v5.5"/><path d="M10 14.6v.1"/></svg>',
+  no_apto: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l8 8M14 6l-8 8"/></svg>',
+};
+const IC_OT = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12.7 3.4a3.9 3.9 0 0 0-4.5 5.1L3.6 13a1.6 1.6 0 0 0 2.3 2.3l4.5-4.6a3.9 3.9 0 0 0 5.1-4.5l-2.3 2.3-2-.5-.5-2z"/></svg>';
+const IC_CHECK = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.6" y="3.4" width="12.8" height="13.2" rx="2.2"/><path d="M6.6 8.2l1.5 1.5 3-3"/><path d="M6.6 13.4h6.8"/></svg>';
+const IC_OP = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4v12M4 10h12"/></svg>';
+const IC_DIAL = '<svg class="dial" viewBox="0 0 34 34" fill="none" stroke-linecap="round"><circle cx="17" cy="17" r="14" stroke="var(--line)" stroke-width="3"/><path d="M6.2 26A14 14 0 1 1 27.8 26" stroke="var(--acc)" stroke-width="3"/><path d="M17 17l6-6" stroke="var(--ink)" stroke-width="2.2"/><circle cx="17" cy="17" r="2.2" fill="var(--ink)"/></svg>';
+const EST_ACTIVO = [{v:'activo',t:'Activo'},{v:'mantenimiento',t:'En mantenimiento'},{v:'taller',t:'En taller'},{v:'baja',t:'De baja'}];
+const EST_SERIAL = {montada:'Montada', bodega:'En bodega', overhaul:'En overhaul', baja:'De baja'};
+const ORDEN_NIVEL = {vencido:0, critico:1, proximo:2, ok:3};
+
+const esAvion = ()=> E && E.tipo_activo === 'avion';
+const nomCont = c => (E.contadores_info[c]||{}).nombre || c;
+const uniCont = c => (E.contadores_info[c]||{}).unidad || '';
+const decCont = c => /^h$/i.test(uniCont(c)) ? 1 : 0;
+
+async function cargar(){
+  try{
+    E = await api(`/api/equipos/${EQUIPO_ID}`);
+  }catch(err){
+    document.getElementById('cargando').innerHTML = `<div class="vacio-rico"><b>No se pudo abrir el activo</b><p>${escapar(err.message)}</p><a class="btn" href="/flota">Volver a la flota</a></div>`;
+    return;
+  }
+  document.title = `${E.nombre} · Flota`;
+  document.getElementById('tituloPag').textContent = E.nombre;
+  document.getElementById('cargando').style.display = 'none';
+  document.getElementById('ficha').style.display = '';
+  pintarHero(); pintarMedidores(); pintarVencer(); pintarSerial(); pintarDirDoc();
+  pintarRepuestos(); pintarOperaciones(); pintarMantenimientos();
+  // Aviones y drones llevan diagrama de zonas; los drones además la tarjeta de baterías.
+  document.getElementById('cardDiagrama').style.display = '';
+  document.getElementById('tituloDiagrama').textContent = esAvion() ? 'Diagrama del avión' : 'Diagrama del dron';
+  document.getElementById('cardBaterias').style.display = esAvion() ? 'none' : '';
+  pintarDiagrama();
+  const izq = esAvion() ? null : pintarBaterias();
+  await Promise.allSettled([izq, pintarIndicadores()]);
+  equilibrar();
+  document.getElementById('linkOps').href = `/operaciones?equipo=${E.id}`;
+  document.getElementById('linkMant').href = `/mantenimiento?equipo=${E.id}`;
+}
+
+// ===================== Sin huecos en la fila principal =====================
+// Las dos columnas deben terminar a la misma altura. Si la izquierda (baterías o diagrama +
+// indicadores) es más alta, «Próximo a vencer» enseña más ítems hasta alcanzarla; si la derecha
+// es más alta, la gráfica de rendimiento crece para rellenar.
+function equilibrar(){
+  const fila = document.getElementById('filaPrincipal');
+  const izq = fila.querySelector('.col-izq'), der = document.getElementById('cardVencer');
+  if(window.innerWidth < 1100 || !izq.offsetParent){ document.querySelectorAll('.fila2').forEach(igualarPar); return; }
+  fila.classList.add('midiendo');
+  const alto = el => el.getBoundingClientRect().height;
+  // 1) Más ítems a la derecha mientras quepan (sin tocar lo que el usuario expandió a mano).
+  if(!VER_TODO.pieza && !ZONA){
+    const total = E.componentes.filter(c=>(c.tipo_item||'pieza')==='pieza').length;
+    let guarda = 0;
+    while(alto(der) + 80 < alto(izq) && LIM_PV < total && guarda++ < 80){ LIM_PV++; pintarVencer(); }
+    while(alto(der) > alto(izq) + 10 && LIM_PV > 6 && guarda++ < 160){ LIM_PV--; pintarVencer(); }
+  }
+  // 2) Si aún sobra altura a la izquierda de la derecha, la gráfica de tendencia la ocupa.
+  const falta = alto(der) - alto(izq);
+  const tend = document.getElementById('indTend');
+  if(tend.style.display !== 'none'){
+    const nuevo = Math.max(170, Math.min(420, ALTO_TEND + falta));
+    if(Math.abs(nuevo - ALTO_TEND) > 8){ ALTO_TEND = nuevo; pintarTendencia(); }
+  }
+  fila.classList.remove('midiendo');
+  document.querySelectorAll('.fila2').forEach(igualarPar);
+}
+// En las filas de dos tarjetas, la lista más larga se recorta a la altura de su vecina
+// (nunca por debajo de un mínimo) y deja un «Ver N más»; así no quedan tarjetas medio vacías.
+const FILAS_EQ = '.repuesto, tbody tr, .dd-item';
+function igualarPar(fila){
+  const cards = [...fila.children].filter(c => c.classList.contains('card') && c.offsetParent);
+  if(cards.length !== 2 || window.innerWidth < 1020) return;
+  fila.querySelectorAll('.oculta-eq').forEach(x => x.classList.remove('oculta-eq'));
+  fila.querySelectorAll('.eq-mas').forEach(x => x.remove());
+  fila.classList.add('midiendo');
+  const alto = el => el.getBoundingClientRect().height;
+  const [larga, corta] = alto(cards[0]) >= alto(cards[1]) ? cards : [cards[1], cards[0]];
+  const filas = [...larga.querySelectorAll(FILAS_EQ)];
+  const min = 3;
+  let ocultas = 0;
+  for(let i = filas.length - 1; i >= min && alto(larga) > alto(corta) + 4; i--){ filas[i].classList.add('oculta-eq'); ocultas++; }
+  if(ocultas && larga.querySelector('.repuesto')){
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'btn secundario peq eq-mas'; b.textContent = `Ver ${ocultas} más`;
+    b.onclick = () => { larga.querySelectorAll('.oculta-eq').forEach(x => x.classList.remove('oculta-eq')); b.remove(); };
+    larga.appendChild(b);
+  }
+  fila.classList.remove('midiendo');
+}
+let _eqT = null;
+window.addEventListener('resize', ()=>{ clearTimeout(_eqT); _eqT = setTimeout(()=>{ if(E){ ALTO_TEND = 170; equilibrar(); } }, 200); });
+
+// ===================== Indicadores del activo =====================
+// Los mismos indicadores de la flota, filtrados a este activo. Se pide con tipo=<tipo del activo>
+// para que el servidor quite los que no aplican (combustible sólo en aviones).
+const IND_CLAVES = 'rendimiento,ha_galon,gal_ha,ha_vuelo,dosis,litros_hora,horas_dia,costo_mant_hora,disponibilidad,mttr';
+const IND_NOMBRE = {rendimiento:'Hectáreas por hora', ha_galon:'Hectáreas por galón', gal_ha:'Galones por hectárea',
+  ha_vuelo:'Hectáreas por vuelo', dosis:'Dosis real', litros_hora:'Litros por hora', horas_dia:'Horas por día operativo',
+  costo_mant_hora:'Costo mant. por hora', disponibilidad:'Disponibilidad', mttr:'MTTR (reparación)'};
+const IND_AYUDA = {
+  ha_vuelo: esA => esA ? 'Σ hectáreas ÷ Σ aterrizajes' : 'Σ hectáreas ÷ Σ despegues (≈ ha por tanque o batería)',
+  disponibilidad: () => 'Días apto o con observaciones ÷ días con foto diaria del estado. Sólo cuenta desde que el sistema empezó a tomar la foto diaria.',
+  mttr: () => 'Días promedio entre abrir y cerrar las OT correctivas (o por daño) cerradas en el período.',
+};
+const IND_NOTA = {rendimiento:'ha aplicadas por hora de vuelo', ha_galon:'rendimiento del combustible', gal_ha:'combustible por hectárea',
+  ha_vuelo: esA => esA ? 'por aterrizaje' : 'por despegue (tanque o batería)', dosis:'litros de mezcla por hectárea',
+  litros_hora:'mezcla aplicada por hora de vuelo', horas_dia:'en los días que voló', costo_mant_hora:'repuestos + mano de obra',
+  disponibilidad:'días en servicio', mttr:'de abrir a cerrar una OT correctiva'};
+const IND_PER_TXT = {'30d':'últimos 30 días', '90d':'últimos 90 días', 'anio':'este año', 'todo':'todo el historial'};
+let IND_PERIODO = '90d';
+const IC_INFO = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="6.3"/><path d="M8 7.2v3.6M8 5.1h.01" stroke-linecap="round"/></svg>';
+
+function valorIndicador(i){
+  const n = fmt(i.valor, i.decimales ?? 1);
+  if(i.unidad === '$/h') return `$ ${n}<small>/h</small>`;
+  if(i.unidad === '%') return `${n}<small>%</small>`;
+  return `${n}<small>${escapar(i.unidad || '')}</small>`;
+}
+function deltaIndicador(i){
+  if(i.variacion === null || i.variacion === undefined) return null;
+  const v = i.variacion;
+  if(Math.abs(v) < 0.05) return {txt:'= igual que el período anterior', cls:''};
+  const bueno = i.mejor === 'alto' ? v > 0 : i.mejor === 'bajo' ? v < 0 : null;
+  return {txt:`${v > 0 ? '▲' : '▼'} ${fmt(Math.abs(v), 1)} % vs. período anterior`, cls: bueno === null ? '' : bueno ? 'up' : 'dn'};
+}
+
+async function pintarIndicadores(){
+  const cont = document.getElementById('indicadores');
+  document.getElementById('indPeriodoTxt').textContent = `· ${IND_PER_TXT[IND_PERIODO]}`;
+  const q = new URLSearchParams({equipo_id: E.id, tipo: E.tipo_activo || 'dron', periodo: IND_PERIODO, claves: IND_CLAVES, series: 'rendimiento'});
+  let r;
+  try{ r = await api('/api/indicadores?' + q); }
+  catch(err){ cont.innerHTML = `<div class="empty" style="grid-column:1/-1">${escapar(err.message)}</div>`; return; }
+  const I = r.indicadores || {};
+  const orden = IND_CLAVES.split(',').filter(k => I[k]);
+  const con = orden.filter(k => I[k].valor !== null && I[k].valor !== undefined);
+  // Al abrir la ficha: si el período por defecto no tiene vuelos, se amplía solo (este año → todo)
+  // para no enseñar una tarjeta casi vacía. Si el usuario elige el período, se respeta.
+  const deVuelo = con.filter(k => !['disponibilidad', 'mttr', 'costo_mant_hora'].includes(k));
+  if(IND_AUTO && !deVuelo.length && IND_PERIODO !== 'todo'){
+    IND_PERIODO = IND_PERIODO === '90d' ? 'anio' : 'todo';
+    document.querySelectorAll('#segIndPeriodo button').forEach(x => x.classList.toggle('activo', x.dataset.v === IND_PERIODO));
+    return pintarIndicadores();
+  }
+  IND_AUTO = false;
+  const sin = orden.filter(k => !con.includes(k));
+  cont.innerHTML = con.length ? con.map(k => {
+    const i = I[k], d = deltaIndicador(i);
+    const ayuda = IND_AYUDA[k] ? IND_AYUDA[k](esAvion()) : i.formula;
+    const cls = k === 'disponibilidad' ? (i.valor >= 85 ? 'verde' : i.valor >= 60 ? 'ambar' : 'rojo') : '';
+    return `<div class="kpi" data-ind="${k}">
+      <span class="info" tabindex="0" aria-label="${escapar(ayuda)}">${IC_INFO}<span class="tip">${escapar(ayuda)}</span></span>
+      <div class="lbl">${escapar(IND_NOMBRE[k] || i.nombre)}</div>
+      <div class="val ${cls}">${valorIndicador(i)}</div>
+      ${d ? `<div class="delta ${d.cls}">${d.txt}</div>` : `<div class="note">${escapar(typeof IND_NOTA[k] === 'function' ? IND_NOTA[k](esAvion()) : (IND_NOTA[k] || ''))}</div>`}
+    </div>`;
+  }).join('') : `<div class="empty" style="grid-column:1/-1">Sin operaciones ni registros en este período para calcular indicadores.</div>`;
+  document.getElementById('indSin').innerHTML = con.length && sin.length
+    ? `Sin datos suficientes en el período: ${sin.map(k => escapar(IND_NOMBRE[k] || I[k].nombre)).join(', ')}.` : '';
+  SERIE_REND = ((r.series || {}).rendimiento || []);
+  pintarTendencia();
+}
+let SERIE_REND = [];
+function pintarTendencia(){
+  // Tendencia mensual del rendimiento (12 meses; no depende del período elegido).
+  const serie = SERIE_REND;
+  const hay = serie.filter(p => p.valor !== null && p.valor !== undefined).length >= 2;
+  document.getElementById('indTend').style.display = hay ? '' : 'none';
+  if(hay && window.graficoBarras){
+    const mes = m => { const [y, mm] = m.split('-').map(Number); return new Date(y, mm - 1, 1).toLocaleDateString('es-CO', {month:'short', year:'2-digit'}); };
+    // Barras y no línea: un mes sin vuelos queda sin barra en vez de caer a cero.
+    graficoBarras('indGrafica', serie.map(p => mes(p.mes)),
+      [{nombre:'Rendimiento', unidad:'ha/h', color:'#0d9488', datos: serie.map(p => p.valor ?? 0)}], {alto: ALTO_TEND});
+  }
+}
+document.querySelectorAll('#segIndPeriodo button').forEach(b => b.onclick = () => {
+  IND_PERIODO = b.dataset.v; IND_AUTO = false;
+  document.querySelectorAll('#segIndPeriodo button').forEach(x => x.classList.toggle('activo', x === b));
+  pintarIndicadores().then(equilibrar);
+});
+
+// ===================== Cabecera =====================
+function pintarHero(){
+  const av = E.aeronavegable || {estado:'apto', estado_txt:'Apto', motivos:[]};
+  const mi = E.modelo_info || {};
+  const datos = [
+    ['Modelo', mi.nombre || E.modelo],
+    esAvion() && E.anio ? ['Año', E.anio] : null,
+    E.base ? ['Base', E.base] : null,
+    esAvion() && E.numero_serie ? ['Serie', E.numero_serie] : null,
+    ['Alta', fmtFecha(E.fecha_alta)],
+    ['Operaciones', fmt(E.n_operaciones,0)],
+  ].filter(Boolean);
+  document.getElementById('hero').innerHTML = `
+    <div>
+      <div class="fh-id">
+        <div class="fh-ic">${esAvion() ? IC_AVION : IC_DRON}</div>
+        <div style="min-width:0">
+          <div class="fh-nom">${escapar(E.nombre)}</div>
+          ${esAvion() ? `<span class="fh-mat">${escapar(E.matricula || 'SIN MATRÍCULA')}</span>`
+                      : `<span class="fh-mat serie">S/N ${escapar(E.numero_serie || '—')}</span>`}
+          <div class="fh-datos">${datos.map(([k,v])=>`<span>${k} <b>${escapar(v)}</b></span>`).join('')}</div>
+        </div>
+      </div>
+      <div class="fh-acc">
+        <a class="btn" href="/ordenes-trabajo?nueva=1&equipo=${E.id}">${IC_OT} Nueva orden de trabajo</a>
+        <a class="btn oscuro" href="/checklist?equipo_id=${E.id}">${IC_CHECK} Chequeo pre-vuelo</a>
+        <a class="btn oscuro" href="/operaciones?equipo=${E.id}&nueva=1">${IC_OP} Registrar operación</a>
+        <select id="selEstado" title="Estado del activo" aria-label="Estado del activo">${opciones(EST_ACTIVO, E.estado)}</select>
+      </div>
+    </div>
+    <div class="aero ${av.estado}">
+      <div class="cab"><span class="luz">${IC_SEM[av.estado]||''}</span>
+        <div><div class="lbl">Aeronavegabilidad</div><div class="est">${escapar(av.estado_txt)}</div></div></div>
+      ${(av.motivos||[]).length ? `<ul>${av.motivos.map(m=>`<li>${escapar(m)}</li>`).join('')}</ul>`
+        : `<ul><li>Sin ítems vencidos, directivas pendientes ni documentos por vencer.</li></ul>`}
+    </div>`;
+  document.getElementById('selEstado').onchange = async ev=>{
+    try{ await api(`/api/equipos/${E.id}`, {method:'PUT', body:{estado: ev.target.value}}); toast('Estado actualizado'); cargar(); }
+    catch(err){ toast(err.message); }
+  };
+}
+
+// ===================== Medidores =====================
+function contadoresVisibles(){
+  const lista = (E.modelo_info && E.modelo_info.contadores) || Object.keys(E.contadores || {});
+  return lista.filter(c=>c in (E.contadores||{}) || c in (E.contadores_info||{}));
+}
+function pintarMedidores(){
+  const cs = contadoresVisibles();
+  document.getElementById('medidores').innerHTML = cs.map(c=>{
+    // El ítem que vence primero medido en este contador: dice para qué sirve la lectura.
+    const prox = E.componentes.filter(x=>(x.contador_base===c && x.restante!=null) || (x.contador_ciclos===c && x.restante_ciclos!=null))
+      .map(x=>({x, r: x.contador_ciclos===c && x.restante_ciclos!=null && (x.contador_base!==c || x.restante==null) ? x.restante_ciclos : x.restante}))
+      .sort((a,b)=>a.r-b.r)[0];
+    const txtProx = prox ? (prox.r < 0
+      ? `<div class="prox alerta">Vencido: <b>${escapar(prox.x.nombre)}</b> (${fmt(-prox.r, decCont(c))} ${escapar(uniCont(c))} de exceso)</div>`
+      : `<div class="prox">Próximo: <b>${escapar(prox.x.nombre)}</b> en ${fmt(prox.r, decCont(c))} ${escapar(uniCont(c))}</div>`)
+      : `<div class="prox">Sin ítems medidos en este contador</div>`;
+    return `<div class="medidor">
+      <div class="top"><span class="lbl">${escapar(nomCont(c))}</span>${IC_DIAL}</div>
+      <div class="val">${fmt((E.contadores||{})[c], decCont(c))}<small>${escapar(uniCont(c))}</small></div>
+      ${txtProx}
+      <button class="btn secundario peq" type="button" onclick="ajustarContador('${c}')">Ajustar lectura</button>
+    </div>`;
+  }).join('');
+}
+function ajustarContador(c){
+  const actual = (E.contadores||{})[c];
+  const v = ventana({
+    titulo: `Ajustar lectura · ${nomCont(c)}`, ancho:'angosta',
+    subtitulo: `Lectura actual: <b>${fmt(actual, decCont(c))} ${escapar(uniCont(c))}</b>. El cambio queda auditado con su motivo.`,
+    cuerpo: `<form id="fCont"><div class="form-grid">
+      <div class="campo ancho"><label>Nueva lectura (${escapar(uniCont(c))})</label><input name="valor" type="number" min="0" step="${decCont(c)?0.1:1}" required value="${actual??''}"></div>
+      <div class="campo ancho"><label>Motivo *</label><input name="motivo" required placeholder="p. ej. Lectura del instrumento en la inspección de 50 h"></div>
+    </div></form>`,
+    pie: `<div class="der"><button class="btn secundario" data-no type="button">Cancelar</button><button class="btn" type="submit" form="fCont">Guardar lectura</button></div>`,
+  });
+  v.$('[data-no]').onclick = v.cerrar;
+  v.$('#fCont').onsubmit = async ev=>{
+    ev.preventDefault();
+    const f = Object.fromEntries(new FormData(ev.target));
+    if(!f.motivo.trim()){ toast('Indica el motivo del ajuste'); return; }
+    try{
+      await api(`/api/equipos/${E.id}/contadores`, {method:'PUT', body:{contador:c, valor:Number(f.valor), motivo:f.motivo.trim()}});
+      toast('Lectura actualizada'); await v.cerrar(); cargar();
+    }catch(err){ toast(err.message); }
+  };
+}
+
+// ===================== Diagrama de zonas (avión o dron) =====================
+function peorNivel(items){
+  return items.reduce((p, c)=> ORDEN_NIVEL[c.nivel] < ORDEN_NIVEL[p] ? c.nivel : p, 'ok');
+}
+function pintarDiagrama(){
+  document.getElementById('linkDiagrama').href = `/flota/${E.id}/diagrama`;
+  const cont = document.getElementById('diagAvion');
+  if(typeof window.diagramaAeronave === 'function'){
+    try{
+      cont.innerHTML = '';
+      cont.classList.add('con-diagrama');
+      DIAG = window.diagramaAeronave(cont, E.componentes, {
+        tipo: esAvion() ? 'avion' : 'dron',
+        modelo: E.modelo,
+        alElegir: (zona)=>elegirZona(zona, true),
+        seleccion: ZONA || undefined,
+        titulo: [E.matricula || E.nombre, (E.modelo_info||{}).nombre].filter(Boolean).join(' · '),
+      });
+      document.getElementById('zonas').innerHTML = '';   // el diagrama trae sus propios chips de zona
+      return;
+    }catch(err){
+      console.warn('diagramaAeronave', err);
+      cont.innerHTML = `<div class="diag-vacio">No se pudo dibujar el diagrama.</div>`;
+    }
+  } else {
+    cont.innerHTML = `<div class="diag-vacio">${(esAvion() ? IC_AVION : IC_DRON).replace('<svg','<svg aria-hidden="true"')}El diagrama interactivo aún no está disponible.<br>Filtra por zona con los botones de abajo.</div>`;
+  }
+  // Zonas como botones: sirven de leyenda y de filtro también sin diagrama.
+  const mods = [...new Set(E.componentes.map(c=>c.modulo))];
+  document.getElementById('zonas').innerHTML = mods.map(m=>{
+    const items = E.componentes.filter(c=>c.modulo===m);
+    return `<button type="button" class="zona ${ZONA===m?'activa':''}" data-zona="${escapar(m)}"><i class="${peorNivel(items)}"></i>${escapar(m)} <span class="mut">${items.length}</span></button>`;
+  }).join('');
+  document.querySelectorAll('#zonas [data-zona]').forEach(b=>b.onclick = ()=>elegirZona(ZONA===b.dataset.zona ? null : b.dataset.zona));
+}
+function elegirZona(zona, desdeDiagrama){
+  ZONA = zona || null;
+  // El diagrama no tiene «quitar selección»: al limpiar el filtro se vuelve a dibujar sin zona.
+  if(!ZONA && DIAG && !desdeDiagrama) pintarDiagrama();
+  document.querySelectorAll('#zonas [data-zona]').forEach(b=>b.classList.toggle('activa', b.dataset.zona===ZONA));
+  pintarVencer();
+  if(ZONA && window.innerWidth < 1100) document.getElementById('cardVencer').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+// ===================== Próximo a vencer =====================
+function lineaUso(c){
+  const partes = [];
+  if(c.vida_util_horas) partes.push(`${escapar(c.contador_txt || 'Horas')} <b>${fmt(c.horas_uso)} / ${fmt(c.vida_util_horas,0)} ${escapar(c.unidad||'h')}</b>`);
+  if(c.limite_ciclos) partes.push(`${escapar(nomCont(c.contador_ciclos) || 'Ciclos')} <b>${fmt(c.ciclos_uso,0)} / ${fmt(c.limite_ciclos,0)} ${escapar(c.unidad_ciclos||'')}</b>`);
+  if(c.vida_util_meses) partes.push(`Calendario <b>${fmt(c.meses_en_servicio)} / ${fmt(c.vida_util_meses,0)} meses</b>`);
+  if(!partes.length) partes.push('Sin plazo · revisión diaria');
+  return partes.join('<span class="mut">·</span>');
+}
+function filaVencer(c){
+  const badges = [
+    c.en_tolerancia ? `<span class="tag tol" title="Dentro de la tolerancia permitida${c.tolerancia?` (${fmt(c.tolerancia)})`:''}">en tolerancia</span>` : '',
+    c.referencia ? `<span class="tag ref" title="Valor de referencia: confirmar con el manual del fabricante y el programa aprobado">Referencia · confirmar</span>` : '',
+    c.serial ? `<span class="tag serial">S/N ${escapar(c.serial)}</span>` : '',
+  ].join('');
+  const manda = c.motivo_alerta === 'ciclos' ? nomCont(c.contador_ciclos) : c.motivo_alerta === 'calendario' ? 'Calendario' : (c.contador_txt || '');
+  return `<div class="pv">
+    <div class="l1"><div class="nom">${escapar(c.nombre)}<span class="badges">${badges}</span></div>
+      <div class="plazo ${c.nivel}">${escapar(c.sin_plazo ? 'sin plazo' : (c.plazo_txt || ''))}</div></div>
+    <div class="l2"><span>${escapar(c.modulo)}</span>${manda && !c.sin_plazo ? `<span>Manda: <b>${escapar(manda)}</b></span>` : ''}<span>${lineaUso(c)}</span></div>
+    <div class="barra ${c.nivel}"><i style="width:${Math.min(c.pct||0,100)}%"></i></div>
+  </div>`;
+}
+function pintarVencer(){
+  // La zona del diagrama puede agrupar varios módulos (y «Otros»): se filtra con su misma regla.
+  const zonaDe = c => DIAG ? DIAG.zonaDe(c) : c.modulo;
+  const lista = E.componentes.filter(c=>!ZONA || zonaDe(c)===ZONA)
+    .sort((a,b)=> (a.sin_plazo - b.sin_plazo) || (b.pct - a.pct));
+  const n = k => E.componentes.filter(c=>c.nivel===k).length;
+  document.getElementById('pvResumen').innerHTML = [
+    n('vencido') ? `<span class="tag vencido">${n('vencido')} vencidos</span>` : '',
+    n('critico') ? `<span class="tag critico">${n('critico')} críticos</span>` : '',
+    n('proximo') ? `<span class="tag proximo">${n('proximo')} próximos</span>` : '',
+  ].filter(Boolean).join(' ') || '<span class="tag ok">Todo al día</span>';
+  document.getElementById('zonaSel').innerHTML = ZONA
+    ? `<span class="filtro-zona">Zona: ${escapar(ZONA)} <button type="button" onclick="elegirZona(null)" aria-label="Quitar filtro">✕</button></span>` : '';
+  const grupos = [['inspeccion','Inspecciones periódicas'], ['pieza','Piezas']];
+  const LIM = LIM_PV;
+  const html = grupos.map(([t, titulo])=>{
+    const items = lista.filter(c=>(c.tipo_item||'pieza')===t);
+    if(!items.length) return '';
+    const ver = VER_TODO[t] || ZONA ? items : items.slice(0, LIM);
+    return `<div class="pv-sec">${titulo} · ${items.length}</div>${ver.map(filaVencer).join('')}
+      ${items.length > ver.length ? `<button class="btn secundario peq pv-mas" type="button" onclick="VER_TODO['${t}']=true;pintarVencer()">Ver ${items.length-ver.length} más</button>` : ''}
+      ${VER_TODO[t] && !ZONA && items.length > LIM ? `<button class="btn secundario peq pv-mas" type="button" onclick="VER_TODO['${t}']=false;pintarVencer()">Ver menos</button>` : ''}`;
+  }).join('<div style="height:14px"></div>');
+  document.getElementById('vencer').innerHTML = html || '<div class="empty" style="padding:30px">Sin ítems de seguimiento en esta zona.</div>';
+}
+
+// ===================== Piezas con serial =====================
+function pintarSerial(){
+  const piezas = E.piezas_serie || [];
+  const puestos = E.componentes.filter(c=>c.serializada);
+  const card = document.getElementById('cardSerial');
+  // En un dron sin piezas serializadas no hay nada que enseñar aquí.
+  card.style.display = (piezas.length || puestos.length) ? '' : 'none';
+  document.getElementById('serialConteo').textContent = `· ${piezas.length} montada${piezas.length===1?'':'s'} de ${puestos.length} puesto${puestos.length===1?'':'s'}`;
+  const filas = [];
+  puestos.forEach(c=>{
+    const p = piezas.find(s=>s.componente_id===c.id);
+    if(p){
+      const pct = p.vida_util_horas ? Math.round(p.uso_actual / p.vida_util_horas * 100) : null;
+      filas.push(`<tr>
+        <td><b>${escapar(c.nombre)}</b><div class="sub">${escapar(c.modulo)}${p.descripcion?` · ${escapar(p.descripcion)}`:''}</div></td>
+        <td class="mono"><b>${escapar(p.serial)}</b></td>
+        <td class="num"><b>${fmt(p.uso_actual)}</b> <span class="sub">${escapar(uniCont(p.contador_base)||'h')}</span></td>
+        <td class="num">${fmt(p.tsn)}</td>
+        <td style="min-width:130px">${pct!=null ? `<div class="barra ${c.nivel}"><i style="width:${Math.min(pct,100)}%"></i></div><div class="pct">${pct}% de ${fmt(p.vida_util_horas,0)} · ${escapar(c.plazo_txt||'')}</div>` : '<span class="sub">—</span>'}</td>
+        <td><span class="tag green">${EST_SERIAL[p.estado]||p.estado}</span></td>
+        <td class="nowrap"><button class="btn secundario peq" type="button" onclick="desmontar(${p.id}, '${escapar(p.serial)}')">Desmontar</button></td>
+      </tr>`);
+    } else {
+      filas.push(`<tr>
+        <td><b>${escapar(c.nombre)}</b><div class="sub">${escapar(c.modulo)}</div></td>
+        <td colspan="4"><span class="sub">Sin pieza con serial registrada en este puesto · uso del puesto ${fmt(c.horas_uso)} ${escapar(c.unidad||'h')}</span></td>
+        <td><span class="tag gray">Sin serial</span></td>
+        <td class="nowrap"><button class="btn peq" type="button" onclick="instalar(${c.id})">Instalar</button></td>
+      </tr>`);
+    }
+  });
+  // Piezas del activo que no casan con un puesto (no debería pasar, pero que no se pierdan).
+  piezas.filter(p=>!puestos.some(c=>c.id===p.componente_id)).forEach(p=>filas.push(`<tr>
+    <td><b>${escapar(p.pieza_nombre || p.descripcion || 'Pieza')}</b></td><td class="mono"><b>${escapar(p.serial)}</b></td>
+    <td class="num">${fmt(p.uso_actual)}</td><td class="num">${fmt(p.tsn)}</td><td></td>
+    <td><span class="tag gray">${EST_SERIAL[p.estado]||p.estado}</span></td>
+    <td>${p.estado==='montada'?`<button class="btn secundario peq" type="button" onclick="desmontar(${p.id}, '${escapar(p.serial)}')">Desmontar</button>`:''}</td></tr>`));
+  document.getElementById('tablaSerial').innerHTML = filas.join('') || `<tr><td colspan="7"><div class="empty" style="padding:24px">Sin puestos con serial en este modelo.</div></td></tr>`;
+}
+function opcionesPuestos(sel){
+  return `<option value="">— Dejar en bodega —</option>` + E.componentes.filter(c=>c.serializada).map(c=>
+    `<option value="${c.id}" ${String(sel)===String(c.id)?'selected':''}>${escapar(c.nombre)}${c.serial?` (hoy ${escapar(c.serial)})`:''}</option>`).join('');
+}
+document.getElementById('btnNuevaSerial').onclick = ()=>{
+  const libre = E.componentes.find(c=>c.serializada && !c.serial);
+  const v = ventana({
+    titulo: 'Registrar pieza con serial', ancho:'ancha',
+    subtitulo: 'Motor, hélice, magnetos… Si la montas en un puesto, el puesto empieza a contar con el TSO que trae.',
+    cuerpo: `<form id="fSer"><div class="form-grid">
+      <div class="campo"><label>Serial *</label><input name="serial" required placeholder="p. ej. O470R-512344" style="font-family:ui-monospace,Menlo,monospace"></div>
+      <div class="campo"><label>Descripción</label><input name="descripcion" placeholder="p. ej. Continental O-470-R"></div>
+      <div class="campo ancho"><label>Montar en el puesto</label><select name="componente_id">${opcionesPuestos(libre?.id)}</select></div>
+      <div class="campo"><label>TSO (uso desde overhaul)</label><input name="uso_acumulado" type="number" min="0" step="0.1" placeholder="0"></div>
+      <div class="campo"><label>TSN (uso desde nuevo)</label><input name="tsn_inicial" type="number" min="0" step="0.1" placeholder="Opcional"></div>
+      <div class="campo"><label>Precio</label><input name="precio" type="number" min="0" step="1" placeholder="Opcional"></div>
+      <div class="campo"><label>Fecha de montaje</label><input name="fecha" type="date" value="${hoyISO()}"></div>
+    </div></form>`,
+    pie: `<div class="der"><button class="btn secundario" data-no type="button">Cancelar</button><button class="btn" type="submit" form="fSer">Registrar pieza</button></div>`,
+  });
+  v.$('[data-no]').onclick = v.cerrar;
+  v.$('#fSer').onsubmit = async ev=>{
+    ev.preventDefault();
+    const f = Object.fromEntries(new FormData(ev.target));
+    const comp = E.componentes.find(c=>String(c.id)===f.componente_id);
+    const body = {serial:f.serial.trim(), descripcion:f.descripcion||null, uso_acumulado:f.uso_acumulado||0,
+      tsn_inicial:f.tsn_inicial||null, precio:f.precio||null, fecha:f.fecha||null,
+      componente_id: comp ? comp.id : null, pieza_clave: comp ? comp.clave : null};
+    try{ await api('/api/piezas-serie', {method:'POST', body}); toast(comp?'Pieza registrada y montada':'Pieza registrada en bodega'); await v.cerrar(); cargar(); }
+    catch(err){ toast(err.message); }
+  };
+};
+async function instalar(componenteId){
+  const c = E.componentes.find(x=>x.id===componenteId);
+  let bodega = [];
+  try{ bodega = await api('/api/piezas-serie?estado=bodega'); }catch(e){}
+  bodega.sort((a,b)=> (b.pieza_clave===c.clave) - (a.pieza_clave===c.clave));
+  const v = ventana({
+    titulo: `Instalar en «${escapar(c.nombre)}»`, ancho:'angosta',
+    subtitulo: 'Elige una pieza con serial que esté en bodega. Si no está registrada, créala con «Registrar pieza con serial».',
+    cuerpo: bodega.length ? `<form id="fIns"><div class="form-grid">
+      <div class="campo ancho"><label>Pieza en bodega</label><select name="pieza" required>${bodega.map(p=>
+        `<option value="${p.id}">${escapar(p.serial)} · ${escapar(p.descripcion || p.pieza_clave || '')} · TSO ${fmt(p.uso_actual)}${p.pieza_clave===c.clave?' ★':''}</option>`).join('')}</select></div>
+      <div class="campo"><label>Fecha</label><input name="fecha" type="date" value="${hoyISO()}"></div>
+      <div class="campo"><label>Motivo</label><input name="motivo" placeholder="p. ej. Cambio por overhaul"></div>
+    </div></form>` : `<div class="aviso gris">No hay piezas con serial en bodega.</div>`,
+    pie: `<div class="der"><button class="btn secundario" data-no type="button">Cancelar</button>${bodega.length?`<button class="btn" type="submit" form="fIns">Instalar</button>`:''}</div>`,
+  });
+  v.$('[data-no]').onclick = v.cerrar;
+  const f = v.$('#fIns');
+  if(f) f.onsubmit = async ev=>{
+    ev.preventDefault();
+    const d = Object.fromEntries(new FormData(ev.target));
+    try{ await api(`/api/piezas-serie/${d.pieza}/instalar`, {method:'POST', body:{componente_id:c.id, fecha:d.fecha, motivo:d.motivo||null}});
+      toast('Pieza instalada'); await v.cerrar(); cargar(); }
+    catch(err){ toast(err.message); }
+  };
+}
+function desmontar(id, serial){
+  const v = ventana({
+    titulo: `Desmontar ${escapar(serial)}`, ancho:'angosta',
+    subtitulo: 'La pieza guarda su TSO acumulado y el puesto queda libre.',
+    cuerpo: `<form id="fDes"><div class="form-grid">
+      <div class="campo"><label>Fecha</label><input name="fecha" type="date" value="${hoyISO()}" required></div>
+      <div class="campo"><label>Destino</label><select name="estado">${opciones([{v:'bodega',t:'A bodega'},{v:'overhaul',t:'A overhaul'},{v:'baja',t:'De baja'}],'bodega')}</select></div>
+      <div class="campo ancho"><label>Motivo *</label><input name="motivo" required placeholder="p. ej. Cumplió TBO"></div>
+    </div></form>`,
+    pie: `<div class="der"><button class="btn secundario" data-no type="button">Cancelar</button><button class="btn rojo" type="submit" form="fDes">Desmontar</button></div>`,
+  });
+  v.$('[data-no]').onclick = v.cerrar;
+  v.$('#fDes').onsubmit = async ev=>{
+    ev.preventDefault();
+    const d = Object.fromEntries(new FormData(ev.target));
+    try{ await api(`/api/piezas-serie/${id}/desmontar`, {method:'POST', body:d}); toast('Pieza desmontada'); await v.cerrar(); cargar(); }
+    catch(err){ toast(err.message); }
+  };
+}
+
+// ===================== Baterías (drones) =====================
+async function pintarBaterias(){
+  let bats = [];
+  try{ bats = await api(`/api/baterias?equipo_id=${E.id}`); }catch(e){ bats = E.baterias || []; }
+  bats = bats.filter(b=>b.estado !== 'baja');
+  document.getElementById('batConteo').textContent = `· ${bats.length}`;
+  document.getElementById('baterias').innerHTML = bats.length ? `<div class="bat-grid">${bats.map(b=>`
+    <div class="bat">
+      <div class="fila-flex" style="gap:6px"><span class="s">${escapar(b.serial)}</span>${tagNivel(b.nivel)}${b.ciclos_estimados?'<span class="tag ref" title="Repartiendo los despegues del dron entre sus baterías">estimado</span>':''}</div>
+      <div class="c">${fmt(b.ciclos,0)} <small>/ ${fmt(b.vida_ciclos,0) } ciclos</small></div>
+      <div class="barra ${b.nivel}"><i style="width:${Math.min(b.pct||0,100)}%"></i></div>
+      <div class="m"><span>${fmt(b.pct,0)}% de vida</span><span>${b.costo_ciclo!=null?`$ ${fmt(b.costo_ciclo,0)} / ciclo`:'sin precio'}</span></div>
+      <div class="acc">
+        <button class="btn secundario peq" type="button" onclick="leerCiclos(${b.id}, '${escapar(b.serial)}', ${b.ciclos||0})">Lectura real</button>
+        <button class="btn secundario peq" type="button" onclick="quitarBateria(${b.id}, '${escapar(b.serial)}')">Quitar</button>
+      </div>
+    </div>`).join('')}</div>`
+    : `<div class="vacio-rico" style="padding:26px"><b>Sin baterías asignadas</b><p>Registra las baterías del dron para seguir sus ciclos y el costo por ciclo.</p></div>`;
+}
+function leerCiclos(id, serial, actual){
+  const v = ventana({
+    titulo: `Lectura de ciclos · ${escapar(serial)}`, ancho:'angosta',
+    subtitulo: 'El número que muestra la batería en el control remoto o la app. Sustituye a la estimación.',
+    cuerpo: `<form id="fCic"><div class="form-grid"><div class="campo ancho"><label>Ciclos</label><input name="ciclos" type="number" min="0" step="1" required value="${actual}"></div></div></form>`,
+    pie: `<div class="der"><button class="btn secundario" data-no type="button">Cancelar</button><button class="btn" type="submit" form="fCic">Guardar</button></div>`,
+  });
+  v.$('[data-no]').onclick = v.cerrar;
+  v.$('#fCic').onsubmit = async ev=>{
+    ev.preventDefault();
+    try{ await api(`/api/baterias/${id}`, {method:'PUT', body:{ciclos: Number(new FormData(ev.target).get('ciclos'))}});
+      toast('Ciclos actualizados'); await v.cerrar(); pintarBaterias(); }
+    catch(err){ toast(err.message); }
+  };
+}
+async function quitarBateria(id, serial){
+  if(!await confirmar({titulo:'Quitar batería', aceptar:'Quitar del dron',
+    mensaje:`La batería <b>${escapar(serial)}</b> deja de estar asignada a ${escapar(E.nombre)} y queda disponible para otro dron.`})) return;
+  try{ await api(`/api/baterias/${id}`, {method:'PUT', body:{equipo_id:null}}); toast('Batería quitada'); pintarBaterias(); }
+  catch(err){ toast(err.message); }
+}
+document.getElementById('btnNuevaBat').onclick = ()=>{
+  const v = ventana({
+    titulo: `Nueva batería para ${escapar(E.nombre)}`, ancho:'angosta',
+    cuerpo: `<form id="fBat"><div class="form-grid">
+      <div class="campo ancho"><label>Serial *</label><input name="serial" required placeholder="p. ej. DB1560-005"></div>
+      <div class="campo"><label>Vida (ciclos)</label><input name="vida_ciclos" type="number" min="1" step="1" value="1500"></div>
+      <div class="campo"><label>Precio</label><input name="precio" type="number" min="0" step="1" placeholder="Opcional"></div>
+    </div></form>`,
+    pie: `<div class="der"><button class="btn secundario" data-no type="button">Cancelar</button><button class="btn" type="submit" form="fBat">Agregar batería</button></div>`,
+  });
+  v.$('[data-no]').onclick = v.cerrar;
+  v.$('#fBat').onsubmit = async ev=>{
+    ev.preventDefault();
+    const f = Object.fromEntries(new FormData(ev.target));
+    try{ await api('/api/baterias', {method:'POST', body:{serial:f.serial.trim(), vida_ciclos:f.vida_ciclos||null, precio:f.precio||null, equipo_id:E.id}});
+      toast('Batería agregada'); await v.cerrar(); pintarBaterias(); }
+    catch(err){ toast(err.message); }
+  };
+};
+document.getElementById('btnAsignarBat').onclick = async ()=>{
+  let libres = [];
+  try{ libres = (await api('/api/baterias')).filter(b=>!b.equipo_id && b.estado!=='baja'); }catch(e){}
+  const v = ventana({
+    titulo: 'Asignar batería existente', ancho:'angosta',
+    cuerpo: libres.length ? `<form id="fAsig"><div class="form-grid"><div class="campo ancho"><label>Batería sin dron</label>
+      <select name="id">${libres.map(b=>`<option value="${b.id}">${escapar(b.serial)} · ${fmt(b.ciclos,0)} / ${fmt(b.vida_ciclos,0)} ciclos</option>`).join('')}</select></div></div></form>`
+      : `<div class="aviso gris">No hay baterías libres. Quita una de otro dron o registra una nueva.</div>`,
+    pie: `<div class="der"><button class="btn secundario" data-no type="button">Cancelar</button>${libres.length?'<button class="btn" type="submit" form="fAsig">Asignar</button>':''}</div>`,
+  });
+  v.$('[data-no]').onclick = v.cerrar;
+  const f = v.$('#fAsig');
+  if(f) f.onsubmit = async ev=>{
+    ev.preventDefault();
+    try{ await api(`/api/baterias/${new FormData(ev.target).get('id')}`, {method:'PUT', body:{equipo_id:E.id}});
+      toast('Batería asignada'); await v.cerrar(); pintarBaterias(); }
+    catch(err){ toast(err.message); }
+  };
+};
+
+// ===================== Directivas y documentos =====================
+function pintarDirDoc(){
+  const dirs = (E.directivas||[]).slice().sort((a,b)=>ORDEN_NIVEL[a.nivel]-ORDEN_NIVEL[b.nivel]);
+  const docs = (E.documentos||[]).slice().sort((a,b)=>(a.dias_restantes??1e9)-(b.dias_restantes??1e9));
+  // Sin directivas ni documentos la tarjeta quedaría vacía: se oculta y «Próximos repuestos»
+  // ocupa todo el ancho en dos columnas.
+  const vacia = !dirs.length && !docs.length;
+  const cardDD = document.getElementById('dirdoc').closest('.card');
+  cardDD.style.display = vacia ? 'none' : '';
+  cardDD.parentElement.classList.toggle('solo-repuestos', vacia);
+  const itemsDir = dirs.map(d=>{
+    const cuando = d.estado === 'cumplida' && d.proxima!=null ? `próx. ${fmt(d.proxima)} ${escapar(d.unidad||'')}`
+      : d.restante!=null ? (d.restante<0 ? `excedida ${fmt(-d.restante)} ${escapar(d.unidad||'')}` : `quedan ${fmt(d.restante)} ${escapar(d.unidad||'')}`)
+      : d.dias_restantes!=null ? fmtDias(d.dias_restantes) : '';
+    return `<div class="item"><span class="punto ${d.nivel}"></span>
+      <div class="cuerpo"><b>${escapar(d.numero)} · ${escapar(d.titulo)}</b>
+        <div class="mut"><span class="tag ${d.tipo==='AD'?'critico':'gray'}" style="font-size:10px;padding:1px 7px">${escapar(d.tipo)}</span> ${escapar(d.estado_txt)}${d.recurrente?' · recurrente':''}</div></div>
+      <div class="der">${tagNivel(d.nivel)}<div class="mut" style="margin-top:3px">${cuando}</div></div></div>`;
+  }).join('');
+  const itemsDoc = docs.map(d=>`<div class="item"><span class="punto ${d.nivel}"></span>
+      <div class="cuerpo"><b>${escapar(d.tipo_txt)}</b><div class="mut">${d.numero?`N.º ${escapar(d.numero)} · `:''}vence ${fmtFecha(d.vence)}</div></div>
+      <div class="der">${tagNivel(d.nivel)}<div class="mut" style="margin-top:3px">${d.dias_restantes==null?'sin vencimiento':d.dias_restantes<0?`vencido hace ${fmtDias(-d.dias_restantes)}`:`en ${fmtDias(d.dias_restantes)}`}</div></div></div>`).join('');
+  document.getElementById('dirdoc').innerHTML = `
+    <div class="pv-sec">Directivas (AD / SB) · ${dirs.length}</div>
+    ${itemsDir ? `<div class="lista">${itemsDir}</div>` : '<div class="mut" style="font-size:12.5px;padding:4px 0 8px">Sin directivas que apliquen a este activo.</div>'}
+    <div style="height:14px"></div>
+    <div class="pv-sec">Documentos · ${docs.length}</div>
+    ${itemsDoc ? `<div class="lista">${itemsDoc}</div>` : '<div class="mut" style="font-size:12.5px;padding:4px 0">Sin documentos registrados.</div>'}`;
+}
+
+// ===================== Repuestos, operaciones, mantenimientos =====================
+function pintarRepuestos(){
+  const r = E.repuestos || [];
+  document.getElementById('repBase').textContent = r[0] && r[0].base_ritmo ? `ritmo de ${r[0].base_ritmo}` : '';
+  document.getElementById('repuestos').innerHTML = r.length ? r.slice(0, document.getElementById('dirdoc').closest('.card').style.display === 'none' ? 8 : 12).map(p=>`
+    <div class="repuesto u-${p.urgencia}">
+      <div><div class="nom">${escapar(p.nombre)}</div>
+        <div class="sub">${escapar(p.modulo)} · ${escapar(p.plazo_txt || usoPieza(p))}${p.h_dia?` · ${fmt(p.h_dia,2)} h/día`:''}</div></div>
+      <div class="cuando"><div class="dias">${fmtDias(p.dias_estimados)}</div><div class="fecha">${p.fecha_estimada?fmtFecha(p.fecha_estimada):'—'}</div></div>
+      <div class="barra ${p.nivel}"><i style="width:${Math.min(p.pct||0,100)}%"></i></div>
+    </div>`).join('') : '<div class="empty" style="padding:30px">Sin repuestos próximos a cambio.</div>';
+}
+function pintarOperaciones(){
+  const ops = E.ultimas_operaciones || [];
+  if(!ops.length){ document.getElementById('operaciones').innerHTML = '<div class="empty" style="padding:30px">Sin operaciones registradas.</div>'; return; }
+  const av = esAvion();
+  document.getElementById('operaciones').innerHTML = `<table><thead><tr><th>Fecha</th><th>Piloto · cliente</th><th class="num">ha</th><th class="num">Horas</th>
+    ${av ? '<th class="num">Hobbs</th><th class="num">Aterr.</th>' : '<th class="num">Desp.</th>'}</tr></thead><tbody>
+    ${ops.map(o=>`<tr><td class="nowrap">${fmtFecha(o.fecha)}</td>
+      <td>${escapar(o.piloto||'—')}<div class="sub">${escapar([o.cliente, o.lote || o.zona].filter(Boolean).join(' · ') || '—')}</div></td>
+      <td class="num">${fmt(o.hectareas)}</td><td class="num"><b>${fmt(o.horas_vuelo)}</b></td>
+      ${av ? `<td class="num nowrap">${o.hobbs_ini!=null?`${fmt(o.hobbs_ini)} → ${fmt(o.hobbs_fin)}`:'—'}</td><td class="num">${fmt(o.aterrizajes,0)}</td>`
+           : `<td class="num">${fmt(o.despegues,0)}</td>`}</tr>`).join('')}</tbody></table>`;
+}
+function pintarMantenimientos(){
+  const ms = E.mantenimientos || [];
+  if(!ms.length){ document.getElementById('mantenimientos').innerHTML = '<div class="empty" style="padding:30px">Sin mantenimientos registrados.</div>'; return; }
+  const nomComp = id => (E.componentes.find(c=>c.id===id)||{}).nombre;
+  document.getElementById('mantenimientos').innerHTML = `<table><thead><tr><th>Fecha</th><th>Trabajo</th><th>Tipo</th><th class="num">Costo</th></tr></thead><tbody>
+    ${ms.map(m=>`<tr><td class="nowrap">${fmtFecha(m.fecha)}</td>
+      <td><b>${escapar(m.nombre_pieza || nomComp(m.componente_id) || m.descripcion || '—')}</b>
+        <div class="sub">${escapar([m.descripcion && (m.nombre_pieza||nomComp(m.componente_id)) ? m.descripcion : null, m.realizado_por, m.orden_codigo].filter(Boolean).join(' · '))}</div></td>
+      <td><span class="tag ${escapar(m.tipo)}">${escapar(m.tipo)}</span></td>
+      <td class="num">${m.costo?`$ ${fmt(m.costo,0)}`:'—'}</td></tr>`).join('')}</tbody></table>`;
+}
+
+cargar();
+</script>
+{% endblock %}

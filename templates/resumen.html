@@ -1,0 +1,494 @@
+{% extends "_layout.html" %}
+{% block titulo %}Centro de operaciones{% endblock %}
+{% block encabezado %}Centro de operaciones{% endblock %}
+{% block subtitulo %}Aeronavegabilidad, producción y alertas de toda la flota — drones y avionetas — de un vistazo{% endblock %}
+
+{% block head %}
+<style>
+/* ===== Centro de operaciones ===== */
+.co-filtros{display:flex;align-items:center;gap:12px;flex-wrap:wrap;width:100%}
+.co-filtros .co-lbl{font-size:10.5px;font-weight:700;color:var(--mut);letter-spacing:.08em;text-transform:uppercase}
+.co-filtros .segmento button{display:inline-flex;align-items:center;gap:6px}
+.co-filtros .segmento svg{width:15px;height:15px}
+.co-filtros .co-act{margin-left:auto;font-size:12px;color:var(--mut);display:inline-flex;align-items:center;gap:7px}
+
+/* Aviso de no aptos: más presente que un aviso normal */
+.co-aviso{display:flex;gap:16px;align-items:center;border-radius:18px;padding:16px 20px;margin-bottom:20px;
+  background:linear-gradient(100deg,#b3261e 0%,#e0473e 100%);color:#fff;box-shadow:0 10px 30px rgba(179,38,30,.22)}
+.co-aviso .ico{width:46px;height:46px;border-radius:14px;background:rgba(255,255,255,.16);display:grid;place-items:center;flex:none}
+.co-aviso .ico svg{width:26px;height:26px}
+.co-aviso .txt{flex:1;min-width:0}
+.co-aviso .txt b{font-size:16px;font-weight:720;letter-spacing:-.01em;display:block}
+.co-aviso .txt span{font-size:12.5px;opacity:.92}
+.co-aviso .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.co-aviso .chips a{background:rgba(255,255,255,.18);color:#fff;text-decoration:none;border-radius:980px;padding:3px 11px;font-size:12px;font-weight:600;border:.5px solid rgba(255,255,255,.35)}
+.co-aviso .chips a:hover{background:rgba(255,255,255,.3)}
+.co-aviso .ir{flex:none;background:var(--o-sup,#fff);color:var(--o-tx-rojo,#a4271f);border-radius:980px;padding:9px 16px;font-weight:680;font-size:13px;text-decoration:none;white-space:nowrap}
+.co-aviso .ir:hover{background:var(--o-gris,#fff4f3)}
+
+/* KPIs: una fila principal con mini-gráficas y una fila compacta de salud */
+.co-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:14px}
+.co-kpis2{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:14px;margin-bottom:24px}
+.co-kpis .kpi .val small,.co-kpis2 .kpi .val small{font-size:15px;font-weight:700;color:var(--mut);letter-spacing:-.01em;margin-left:3px}
+.co-kpis .kpi.destacado{background:var(--o-destacado,var(--ink));border-color:var(--o-destacado-borde,var(--ink));color:var(--o-destacado-tx,#fff)}
+.co-kpis .kpi.destacado .lbl{color:var(--o-destacado-mut,rgba(255,255,255,.62))}
+.co-kpis .kpi.destacado .val{color:var(--acc)}
+.co-kpis .kpi.destacado .val small{color:var(--o-destacado-mut,rgba(255,255,255,.6))}
+.co-kpis .kpi.destacado .delta{color:var(--o-destacado-mut,rgba(255,255,255,.7))}
+.co-kpis .kpi.destacado .delta.up{color:#6fd08f}.co-kpis .kpi.destacado .delta.dn{color:#ff8a82}
+.co-kpis .kpi.destacado .note{color:var(--o-destacado-mut,rgba(255,255,255,.6))}
+.co-kpis2 .kpi{padding:14px 16px 12px}
+.co-kpis2 .kpi .val{font-size:26px;margin:8px 0 5px}
+.kpi{position:relative}
+.kpi .lbl{padding-right:22px}
+.kpi .info{position:absolute;top:12px;right:12px;width:18px;height:18px;border-radius:50%;display:grid;place-items:center;
+  color:var(--mut);opacity:.55;transition:opacity .15s}
+.kpi .info svg{width:15px;height:15px}
+.kpi:hover .info{opacity:1}
+.kpi .info .tip{position:absolute;top:24px;right:-6px;z-index:30;width:max-content;max-width:260px;padding:8px 11px;border-radius:10px;
+  background:var(--o-globo,#1a1d24);border:.5px solid var(--o-borde-globo,transparent);color:#fff;font-size:12px;line-height:1.4;font-weight:500;letter-spacing:0;text-transform:none;
+  box-shadow:0 8px 24px rgba(0,0,0,.18);opacity:0;pointer-events:none;transform:translateY(-3px);transition:opacity .15s,transform .15s}
+.kpi .info:hover .tip{opacity:1;transform:none}
+.kpi.destacado .info{color:var(--o-destacado-tx,#fff)}
+@media(max-width:1180px){.co-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.co-kpis2{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:640px){
+  .co-kpis{grid-template-columns:minmax(0,1fr)}
+  .co-kpis2{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .co-kpis .kpi .delta,.co-kpis2 .kpi .delta{white-space:normal}
+  .co-kpis2 .kpi .val{font-size:23px}
+  .co-filtros .segmento button{padding-left:9px;padding-right:9px}
+  .co-activo .cont .v{font-size:16px}
+}
+
+/* Semáforo de aeronavegabilidad */
+.semaforo{display:inline-flex;align-items:center;gap:4px;background:var(--o-grafito,#1a1d24);border-radius:980px;padding:4px 6px}
+.semaforo i{width:9px;height:9px;border-radius:50%;background:#3a3f4a}
+.semaforo i.on.rojo{background:#ff5a4f;box-shadow:0 0 8px #ff5a4f}
+.semaforo i.on.ambar{background:#fdb913;box-shadow:0 0 8px #fdb913}
+.semaforo i.on.verde{background:#3ccf6e;box-shadow:0 0 8px #3ccf6e}
+.estado-aero{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:680}
+.estado-aero.apto{color:var(--o-tx-verde,#1d6b38)}.estado-aero.observaciones{color:var(--o-tx-ambar,#7a5400)}.estado-aero.no_apto{color:var(--o-tx-rojo,#a4271f)}
+
+.co-conteo{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto}
+.co-conteo span{display:inline-flex;align-items:center;gap:7px;border-radius:980px;padding:4px 12px 4px 8px;font-size:12px;font-weight:650;border:.5px solid var(--line2);background:var(--bg2)}
+.co-conteo span i{width:9px;height:9px;border-radius:50%}
+.co-conteo b{font-family:var(--font-marca);font-size:14px;font-weight:800}
+
+/* Tarjetas de activo */
+.co-flota{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.co-activo{position:relative;display:flex;flex-direction:column;gap:12px;background:var(--bg2);border:1px solid var(--line);
+  border-radius:18px;padding:18px 18px 14px;text-decoration:none;color:inherit;overflow:hidden;
+  transition:border-color .2s,box-shadow .2s,transform .2s cubic-bezier(.22,.7,.25,1)}
+.co-activo::before{content:"";position:absolute;left:0;top:0;right:0;height:4px;background:var(--green)}
+.co-activo.observaciones::before{background:var(--amber)}
+.co-activo.no_apto::before{background:var(--red)}
+.co-activo.no_apto{border-color:rgba(224,71,62,.35)}
+.co-activo:hover{border-color:var(--acc);box-shadow:0 12px 32px rgba(0,0,0,.08);transform:translateY(-2px)}
+.co-activo .cab{display:flex;align-items:center;gap:12px}
+.co-activo .ico{width:42px;height:42px;border-radius:13px;background:var(--o-grafito,var(--ink));color:var(--acc);display:grid;place-items:center;flex:none}
+.co-activo .ico svg{width:24px;height:24px}
+.co-activo .nom{flex:1;min-width:0}
+.co-activo .nom b{display:block;font-size:15.5px;font-weight:700;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.co-activo .nom span{font-size:12px;color:var(--mut)}
+.co-activo .cont{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;background:var(--bg);border-radius:12px;padding:10px 12px}
+.co-activo .cont div{min-width:0}
+.co-activo .cont .v{font-family:var(--font-marca);font-size:18px;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums;line-height:1.1}
+.co-activo .cont .l{font-size:10px;font-weight:700;color:var(--mut);letter-spacing:.06em;text-transform:uppercase}
+.co-activo .pie{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--ink2)}
+.co-activo .pie .ultima{display:inline-flex;align-items:center;gap:5px}
+.co-activo .pie .ultima svg{width:14px;height:14px;color:var(--mut)}
+.co-activo .pie .ultima.tarde{color:var(--o-tx-rojo,#a4271f);font-weight:650}
+.co-activo .pie .ultima.tarde svg{color:var(--o-tx-rojo,#a4271f)}
+.co-activo .pie .ultima.futura{color:var(--o-tx-ambar,#7a5400);font-weight:650}
+.co-activo .pie .alertas{margin-left:auto;display:flex;gap:5px;flex-wrap:wrap}
+.co-activo .motivos{font-size:11.5px;color:var(--mut);line-height:1.45;border-top:.5px dashed var(--line2);padding-top:9px}
+.co-activo .motivos b{color:var(--o-tx-rojo,#a4271f);font-weight:650}
+.co-activo .estado-op{font-size:10.5px}
+
+/* Alertas unificadas */
+.co-alerta{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:12px;border:.5px solid var(--line);
+  background:var(--bg2);text-decoration:none;color:inherit;transition:.15s}
+.co-alerta:hover{border-color:var(--line2);background:var(--acc-soft)}
+.co-alerta .fuente{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;flex:none;background:rgba(115,122,134,.12);color:var(--ink2)}
+.co-alerta .fuente svg{width:18px;height:18px}
+.co-alerta.vencido .fuente,.co-alerta.critico .fuente{background:rgba(224,71,62,.12);color:var(--o-tx-rojo,#a4271f)}
+.co-alerta.proximo .fuente{background:var(--o-suave-ambar,#fff3d1);color:var(--o-tx-ambar,#7a5400)}
+.co-alerta .cuerpo{flex:1;min-width:0}
+.co-alerta .cuerpo b{display:block;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.co-alerta .cuerpo .mut{font-size:11.5px;color:var(--mut)}
+.co-alerta .plazo{font-size:12px;font-weight:650;text-align:right;white-space:nowrap;color:var(--ink2)}
+.co-lista{display:flex;flex-direction:column;gap:8px}
+.grid2>.card{min-width:0}
+
+@media(max-width:640px){
+  .co-aviso{flex-wrap:wrap;padding:14px 16px}.co-aviso .ico{display:none}.co-aviso .ir{width:100%;text-align:center}
+  .co-filtros .co-act{margin-left:0}
+  .co-flota{grid-template-columns:1fr}
+}
+</style>
+{% endblock %}
+
+{% block acciones %}
+<button class="btn secundario" id="btnRepuestos"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><circle cx="10" cy="10" r="6.6"/><path d="M10 6.4V10l2.4 1.6"/></svg> Próximos repuestos</button>
+<a class="btn secundario" href="{{ url_for('ordenes_servicio') }}?nueva=1">＋ Orden de servicio</a>
+<a class="btn" href="{{ url_for('operaciones') }}">＋ Nueva operación</a>
+{% endblock %}
+
+{% block barra %}
+<div class="tabsbar"><div class="wrap">
+  <div class="co-filtros">
+    <span class="co-lbl">Flota</span>
+    <div class="segmento" id="segTipo">
+      <button data-t="" class="activo">Todos</button>
+      <button data-t="dron"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7.2 7.2 12.8 12.8M12.8 7.2 7.2 12.8"/><circle cx="5.4" cy="5.4" r="2.4"/><circle cx="14.6" cy="5.4" r="2.4"/><circle cx="5.4" cy="14.6" r="2.4"/><circle cx="14.6" cy="14.6" r="2.4"/></svg>Drones</button>
+      <button data-t="avion"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.4c.8 0 1.3.9 1.3 2.1v3.3l5.5 3.1v1.7l-5.5-1.6v3.3l1.8 1.4v1.4L10 16.4l-3.1.7v-1.4l1.8-1.4v-3.3l-5.5 1.6v-1.7l5.5-3.1V4.5c0-1.2.5-2.1 1.3-2.1z"/></svg>Aviones</button>
+    </div>
+    <span class="co-lbl" style="margin-left:8px">Período</span>
+    <div class="segmento" id="segPeriodo">
+      <button data-p="7d">7 días</button>
+      <button data-p="30d" class="activo">30 días</button>
+      <button data-p="mes">Este mes</button>
+      <button data-p="90d">90 días</button>
+    </div>
+    <span class="co-act"><span class="punto-vivo"></span><span id="actualizado">Cargando…</span></span>
+  </div>
+</div></div>
+{% endblock %}
+
+{% block contenido %}
+<div id="avisoNoAptos"></div>
+
+<div class="co-kpis" id="kpis1"></div>
+<div class="co-kpis2" id="kpis2"></div>
+
+<div class="card">
+  <div class="card-cab">
+    <h3>Estado de la flota <span class="mut" id="flotaConteo"></span></h3>
+    <div class="co-conteo" id="conteoAero"></div>
+  </div>
+  <div class="co-flota" id="flota"></div>
+  <div class="empty" id="flotaVacia" style="display:none">No hay activos de este tipo. <a href="{{ url_for('pagina_flota') }}">Registrar el primero</a>.</div>
+</div>
+
+<div class="grid2">
+  <div class="card">
+    <div class="card-cab"><h3>Alertas de aeronavegabilidad <span class="mut">piezas, inspecciones, directivas y documentos</span></h3></div>
+    <div class="co-lista" id="alertas"></div>
+    <div class="empty" id="alertasVacio" style="display:none">Sin alertas. Toda la flota dentro de sus límites.</div>
+    <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+      <a class="btn secundario" href="{{ url_for('pagina_aeronavegabilidad') }}">Ver aeronavegabilidad</a>
+      <a class="btn secundario" href="{{ url_for('mantenimiento') }}">Mantenimiento</a>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-cab"><h3>Actividades pendientes</h3><div class="der" id="actConteo"></div></div>
+    <div class="lista" id="actividades"></div>
+    <div class="empty" id="actVacio" style="display:none">Nada pendiente.</div>
+    <div style="margin-top:12px"><a class="btn secundario" href="{{ url_for('actividades') }}">Ver actividades</a></div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-cab"><h3>Últimas operaciones</h3><div class="der"><a href="{{ url_for('operaciones') }}">Ver todas</a></div></div>
+  <div class="tabla-envoltura">
+  <table>
+    <thead><tr><th>Fecha</th><th>Activo</th><th>Finca / cliente</th><th>Producto</th><th class="num">Horas</th><th class="num">Ha</th><th>Piloto</th></tr></thead>
+    <tbody id="ops"></tbody>
+  </table>
+  </div>
+  <div class="empty" id="opsVacio" style="display:none">Sin operaciones registradas.</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ---------- Estado de la página ----------
+const F = {tipo: '', periodo: '30d'};
+const TXT_PERIODO = {'7d':'últimos 7 días', '30d':'últimos 30 días', 'mes':'este mes', '90d':'últimos 90 días'};
+const ICO = {
+  dron: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7.2 7.2 12.8 12.8M12.8 7.2 7.2 12.8"/><circle cx="5.4" cy="5.4" r="2.4"/><circle cx="14.6" cy="5.4" r="2.4"/><circle cx="5.4" cy="14.6" r="2.4"/><circle cx="14.6" cy="14.6" r="2.4"/><rect x="8" y="8" width="4" height="4" rx="1.2" fill="currentColor" stroke="none"/></svg>',
+  avion: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.4c.8 0 1.3.9 1.3 2.1v3.3l5.5 3.1v1.7l-5.5-1.6v3.3l1.8 1.4v1.4L10 16.4l-3.1.7v-1.4l1.8-1.4v-3.3l-5.5 1.6v-1.7l5.5-3.1V4.5c0-1.2.5-2.1 1.3-2.1z"/></svg>',
+  pieza: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="2.4"/><path d="M10 2.8v2.4M10 14.8v2.4M2.8 10h2.4M14.8 10h2.4M4.9 4.9l1.7 1.7M13.4 13.4l1.7 1.7M4.9 15.1l1.7-1.7M13.4 6.6l1.7-1.7"/></svg>',
+  inspeccion: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="8.8" cy="8.8" r="5"/><path d="m12.4 12.4 4.4 4.4"/><path d="m6.8 8.8 1.4 1.4 2.6-2.6"/></svg>',
+  directiva: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.8 16 5v4.6c0 3.6-2.6 6.2-6 7.6-3.4-1.4-6-4-6-7.6V5z"/><path d="M10 7v3.6M10 13h.01"/></svg>',
+  documento: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11.6 2.8H5.8a1.4 1.4 0 0 0-1.4 1.4v11.6a1.4 1.4 0 0 0 1.4 1.4h8.4a1.4 1.4 0 0 0 1.4-1.4V6.8z"/><path d="M11.6 2.8v4h4"/><path d="M7.4 10.6h5.2M7.4 13.4h3.4"/></svg>',
+  reloj: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="6.6"/><path d="M10 6.4V10l2.4 1.6"/></svg>',
+};
+const FUENTE_TXT = {pieza:'Pieza', inspeccion:'Inspección', directiva:'Directiva', documento:'Documento'};
+const ESTADO_AERO = {apto:'Apto', observaciones:'Con observaciones', no_apto:'No recomendado volar'};
+const ORDEN_AERO = {no_apto:0, observaciones:1, apto:2};
+
+function qs(extra={}){
+  const p = new URLSearchParams();
+  if(F.tipo) p.set('tipo', F.tipo);
+  for(const k in extra) if(extra[k] !== undefined && extra[k] !== '') p.set(k, extra[k]);
+  return p.toString();
+}
+const diasDesde = f => f ? Math.floor((Date.now() - new Date(f + 'T00:00:00').getTime()) / 86400000) : null;
+
+function semaforo(estado){
+  return `<span class="semaforo" aria-hidden="true">
+    <i class="rojo ${estado==='no_apto'?'on':''}"></i><i class="ambar ${estado==='observaciones'?'on':''}"></i><i class="verde ${estado==='apto'?'on':''}"></i></span>`;
+}
+
+// ---------- KPIs ----------
+function spark(serie, color){
+  if(!serie || serie.length < 2) return '';
+  const W = 92, H = 40, max = Math.max(...serie, 1), min = Math.min(...serie, 0);
+  const x = i => (i / (serie.length - 1)) * (W - 4) + 2;
+  const y = v => H - 3 - ((v - min) / (max - min || 1)) * (H - 8);
+  const linea = serie.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(' ');
+  return `<svg class="spark" viewBox="0 0 ${W} ${H}" style="color:${color}" aria-hidden="true">
+    <path class="area" d="${linea} L${x(serie.length-1).toFixed(1)} ${H} L${x(0).toFixed(1)} ${H} Z"></path>
+    <path d="${linea}" stroke="currentColor"></path>
+    <circle cx="${x(serie.length-1).toFixed(1)}" cy="${y(serie[serie.length-1]).toFixed(1)}" r="2.6" fill="currentColor"></circle></svg>`;
+}
+
+function valorInd(i){
+  if(!i || i.valor === null || i.valor === undefined) return '—';
+  const n = fmt(i.valor, i.decimales ?? 1);
+  if(i.unidad === '$/ha') return `$ ${n}<small>/ha</small>`;
+  if(i.unidad === '%') return `${n}<small>%</small>`;
+  return i.unidad ? `${n}<small>${escapar(i.unidad)}</small>` : n;
+}
+
+// Variación con color según qué es «mejor» para el indicador.
+function variacionInd(i){
+  if(!i || i.variacion === null || i.variacion === undefined) return null;
+  const v = i.variacion;
+  if(Math.abs(v) < 0.05) return {txt:'= igual que el período anterior', cls:''};
+  const bueno = i.mejor === 'alto' ? v > 0 : i.mejor === 'bajo' ? v < 0 : null;
+  return {txt:`${v > 0 ? '▲' : '▼'} ${fmt(Math.abs(v), 1)} % vs. período anterior`,
+          cls: bueno === null ? '' : bueno ? 'up' : 'dn'};
+}
+
+function tarjetaKpi(i, {nota='', serie=null, color='#c08600', clase='', claseVal=''}={}){
+  if(!i) return '';
+  const d = variacionInd(i);
+  const pie = d ? `<div class="delta ${d.cls}">${d.txt}</div>` : `<div class="note">${nota}</div>`;
+  const info = i.formula ? `<span class="info" aria-label="${escapar(i.formula)}"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="6.3"/><path d="M8 7.2v3.6M8 5.1h.01" stroke-linecap="round"/></svg><span class="tip">${escapar(i.formula)}</span></span>` : '';
+  return `<div class="kpi ${clase}">${info}
+    <div class="lbl">${escapar(i.nombre)}</div>
+    <div class="val ${claseVal}">${valorInd(i)}</div>${pie}${spark(serie, color)}</div>`;
+}
+
+async function cargarKpis(){
+  const claves = 'hectareas,horas,rendimiento,cumplimiento,aptos,no_aptos,disponibilidad,documentos_vencer,costo_ha,dias_sin_datos';
+  const r = await api('/api/indicadores?' + qs({claves, periodo: F.periodo, series: 'hectareas,horas'}));
+  const I = r.indicadores || {}, S = r.series || {};
+  const sHa = (S.hectareas || []).map(p=>p.valor || 0);
+  const sH  = (S.horas || []).map(p=>p.valor || 0);
+  const sRend = sHa.map((ha, k)=> sH[k] ? ha / sH[k] : 0);
+  const per = TXT_PERIODO[F.periodo];
+  document.getElementById('kpis1').innerHTML =
+    tarjetaKpi(I.hectareas, {serie:sHa, color:'#fdb913', clase:'destacado', nota:per}) +
+    tarjetaKpi(I.horas, {serie:sH, color:'var(--cat-2,#1a1d24)', nota:per}) +
+    tarjetaKpi(I.rendimiento, {serie:sRend, color:'#0d9488', nota:'ha por hora de vuelo'}) +
+    tarjetaKpi(I.cumplimiento, {nota:'ha aplicadas vs. programadas',
+      claseVal: I.cumplimiento?.valor == null ? '' : I.cumplimiento.valor >= 90 ? 'verde' : I.cumplimiento.valor >= 75 ? 'ambar' : 'rojo'});
+  const apt = I.aptos?.valor, noA = I.no_aptos?.valor, docs = I.documentos_vencer?.valor, sin = I.dias_sin_datos?.valor;
+  const disp = I.disponibilidad?.valor;
+  document.getElementById('kpis2').innerHTML =
+    tarjetaKpi(I.aptos, {nota:'activos en servicio, hoy', claseVal: apt == null ? '' : apt >= 80 ? 'verde' : apt >= 50 ? 'ambar' : 'rojo'}) +
+    tarjetaKpi(I.no_aptos, {nota: noA ? 'con algo vencido' : 'toda la flota habilitada', claseVal: noA ? 'rojo' : 'verde'}) +
+    tarjetaKpi(I.disponibilidad && {...I.disponibilidad, formula: I.disponibilidad.formula + '. Sólo cuenta desde que el sistema empezó a tomar la foto diaria.'},
+      {nota: disp == null ? 'aún sin historial diario' : `días en servicio · ${per}`,
+       clase: 'kpi-disp', claseVal: disp == null ? '' : disp >= 85 ? 'verde' : disp >= 60 ? 'ambar' : 'rojo'}) +
+    tarjetaKpi(I.documentos_vencer, {nota:'vencidos o en 30 días', claseVal: docs ? 'ambar' : 'verde'}) +
+    tarjetaKpi(I.costo_ha, {nota:'mantenimiento + combustible'}) +
+    tarjetaKpi(I.dias_sin_datos, {nota:'activo más atrasado', claseVal: sin == null ? '' : sin > 3 ? 'rojo' : 'verde'});
+  const kd = document.querySelector('#kpis2 .kpi-disp');
+  if(kd){ kd.style.cursor = 'pointer'; kd.title = 'Ver la disponibilidad día a día';
+          kd.onclick = ()=> location.href = '/aeronavegabilidad?tab=disponibilidad' + (F.tipo ? '&tipo=' + F.tipo : ''); }
+}
+
+// ---------- Flota ----------
+function contadores(e){
+  const c = e.contadores || {};
+  if(e.tipo_activo === 'avion') return [
+    ['Hobbs', fmt(c.hobbs, 1)], ['Tach', fmt(c.tach, 1)], ['Aterrizajes', fmt(c.aterrizajes, 0)]];
+  return [['Horas', fmt(c.horas_vuelo ?? e.horas_totales, 1)], ['Despegues', fmt(c.despegues, 0)],
+          ['Operaciones', fmt(e.n_operaciones, 0)]];
+}
+
+function tarjetaActivo(e){
+  const aero = e.aeronavegable || {estado:'apto', motivos:[]};
+  const a = e.alertas || {};
+  const dias = diasDesde(e.ultima_operacion);
+  // Una fecha futura es un error de captura: se señala en ámbar en lugar de contar días negativos.
+  const futura = dias !== null && dias < 0;
+  const tarde = !futura && e.estado === 'activo' && (dias === null || dias > 3);
+  const ultima = !e.ultima_operacion ? 'sin operaciones'
+    : futura ? `fecha futura · ${fmtFecha(e.ultima_operacion)} (revisar)`
+    : `${dias === 0 ? 'hoy' : dias === 1 ? 'ayer' : `hace ${dias} días`} · ${fmtFecha(e.ultima_operacion)}`;
+  const sub = [e.matricula, e.modelo, e.tipo_activo === 'avion' ? null : e.numero_serie !== e.nombre ? e.numero_serie : null]
+                .filter(Boolean).map(escapar).join(' · ');
+  const motivos = aero.motivos || [];
+  return `<a class="co-activo ${aero.estado}" href="/flota/${e.id}">
+    <div class="cab">
+      <div class="ico">${ICO[e.tipo_activo] || ICO.dron}</div>
+      <div class="nom"><b>${escapar(e.nombre)}</b><span>${sub || escapar(e.tipo_txt || '')}</span></div>
+      <div style="text-align:right">
+        ${semaforo(aero.estado)}
+        <div class="estado-aero ${aero.estado}" style="display:block;margin-top:4px">${ESTADO_AERO[aero.estado] || escapar(aero.estado_txt)}</div>
+      </div>
+    </div>
+    <div class="cont">${contadores(e).map(([l,v])=>`<div><div class="v">${v}</div><div class="l">${l}</div></div>`).join('')}</div>
+    <div class="pie">
+      <span class="ultima ${tarde ? 'tarde' : futura ? 'futura' : ''}" title="Última operación registrada">${ICO.reloj} ${ultima}</span>
+      ${e.estado !== 'activo' ? `<span class="tag ${e.estado==='baja'?'red':'acc'} estado-op">${escapar(e.estado)}</span>` : ''}
+      <span class="alertas">
+        ${a.vencido ? `<span class="tag vencido">${a.vencido} vencida${a.vencido>1?'s':''}</span>` : ''}
+        ${a.critico ? `<span class="tag critico">${a.critico} crítica${a.critico>1?'s':''}</span>` : ''}
+        ${a.proximo ? `<span class="tag proximo">${a.proximo} próxima${a.proximo>1?'s':''}</span>` : ''}
+        ${!a.vencido && !a.critico && !a.proximo ? '<span class="tag ok">Sin alertas</span>' : ''}
+      </span>
+    </div>
+    ${motivos.length ? `<div class="motivos"><b>${motivos.length} motivo${motivos.length>1?'s':''}:</b>
+      ${motivos.slice(0,2).map(escapar).join(' · ')}${motivos.length > 2 ? ` · y ${motivos.length-2} más` : ''}</div>` : ''}
+  </a>`;
+}
+
+let EQUIPOS = [];
+async function cargarFlota(){
+  const [eq, aero] = await Promise.all([
+    api('/api/equipos?' + qs()),
+    api('/api/aeronavegabilidad?' + qs()),
+  ]);
+  EQUIPOS = eq;
+  const lista = eq.filter(e=>e.estado !== 'baja').sort((x,y)=>
+    (ORDEN_AERO[x.aeronavegable?.estado] ?? 3) - (ORDEN_AERO[y.aeronavegable?.estado] ?? 3)
+    || (x.tipo_activo === y.tipo_activo ? 0 : x.tipo_activo === 'avion' ? -1 : 1)
+    || x.nombre.localeCompare(y.nombre, 'es', {numeric:true}));
+  const nD = lista.filter(e=>e.tipo_activo==='dron').length, nA = lista.filter(e=>e.tipo_activo==='avion').length;
+  document.getElementById('flotaConteo').textContent =
+    `· ${lista.length} activo${lista.length===1?'':'s'}` + (!F.tipo ? ` (${nD} dron${nD===1?'':'es'} · ${nA} avi${nA===1?'ón':'ones'})` : '');
+  document.getElementById('flotaVacia').style.display = lista.length ? 'none' : 'block';
+  document.getElementById('flota').innerHTML = lista.map(tarjetaActivo).join('');
+
+  const c = aero.conteo || {};
+  document.getElementById('conteoAero').innerHTML = `
+    <span><i style="background:var(--green)"></i><b>${c.apto||0}</b> aptos</span>
+    <span><i style="background:var(--amber)"></i><b>${c.observaciones||0}</b> con observaciones</span>
+    <span><i style="background:var(--red)"></i><b>${c.no_apto||0}</b> no recomendados</span>`;
+
+  // Aviso destacado de no aptos
+  // Mismo criterio que el indicador y las tarjetas: todo lo que no está de baja.
+  const noAptos = lista.filter(e=>e.aeronavegable?.estado === 'no_apto' && e.estado !== 'baja');
+  document.getElementById('avisoNoAptos').innerHTML = noAptos.length ? `
+    <div class="co-aviso" role="alert">
+      <div class="ico"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3.2 18 16.8H2z"/><path d="M10 8.2v3.4M10 14.2h.01"/></svg></div>
+      <div class="txt"><b>Recomendamos no volar ${noAptos.length} activo${noAptos.length>1?'s':''}</b>
+        <span>Tienen piezas, inspecciones, directivas o documentos vencidos. No programes servicios con ellos hasta resolverlo.</span>
+        <div class="chips">${noAptos.map(e=>`<a href="/flota/${e.id}" title="${escapar((e.aeronavegable.motivos||[]).join(' · '))}">${escapar(e.nombre)} · ${(e.aeronavegable.motivos||[]).length} motivo${(e.aeronavegable.motivos||[]).length===1?'':'s'}${e.estado !== 'activo' ? ` · en ${escapar(e.estado)}` : ''}</a>`).join('')}</div>
+      </div>
+      <a class="ir" href="/aeronavegabilidad">Ver aeronavegabilidad →</a>
+    </div>` : '';
+
+  // Alertas unificadas (top 8)
+  const al = (aero.alertas || []).slice(0, 8);
+  document.getElementById('alertasVacio').style.display = al.length ? 'none' : 'block';
+  document.getElementById('alertas').innerHTML = al.map(x=>`
+    <a class="co-alerta ${x.nivel}" href="/aeronavegabilidad?equipo=${x.equipo_id}" title="${FUENTE_TXT[x.fuente] || x.fuente}">
+      <span class="fuente">${ICO[x.fuente] || ICO.pieza}</span>
+      <div class="cuerpo"><b>${escapar(x.nombre)}</b>
+        <div class="mut">${FUENTE_TXT[x.fuente] || escapar(x.fuente)} · ${escapar(x.equipo)}${x.modulo ? ' · ' + escapar(x.modulo) : ''}</div></div>
+      <div class="plazo">${tagNivel(x.nivel)}<div class="mut" style="font-size:11.5px;font-weight:500;margin-top:3px">${escapar(x.plazo_txt || '')}</div></div>
+    </a>`).join('');
+}
+
+// ---------- Actividades y últimas operaciones ----------
+async function cargarActividad(){
+  const d = await api('/api/resumen?' + qs());
+  document.getElementById('actConteo').textContent = d.n_actividades_pendientes ? `${d.n_actividades_pendientes} pendiente(s)` : '';
+  document.getElementById('actVacio').style.display = d.actividades_pendientes.length ? 'none' : 'block';
+  document.getElementById('actividades').innerHTML = d.actividades_pendientes.map(r=>{
+    const vencida = r.vence && r.vence < hoyISO();
+    return `<div class="item"><span class="punto ${vencida?'vencido':r.vence?'proximo':''}"></span>
+      <div class="cuerpo"><b>${escapar(r.titulo)}</b><div class="mut">${escapar(r.categoria)}${r.equipo?' · '+escapar(r.equipo):''}</div></div>
+      <div class="der" style="font-size:12px;${vencida?'color:var(--o-tx-rojo,#a4271f);font-weight:650':''}">${r.vence?fmtFecha(r.vence):'Sin fecha'}</div></div>`;
+  }).join('');
+
+  // Con filtro de tipo, las últimas operaciones se piden por activo (el resumen no filtra por tipo).
+  let ops = d.ultimas_operaciones;
+  if(F.tipo){
+    const ids = EQUIPOS.filter(e=>e.tipo_activo === F.tipo).map(e=>e.id);
+    const partes = await Promise.all(ids.map(id=>api(`/api/operaciones?equipo_id=${id}&limite=8`)));
+    ops = partes.flat().sort((a,b)=> (b.fecha||'').localeCompare(a.fecha||'') || b.id - a.id).slice(0, 8);
+  }
+  const tipoDe = Object.fromEntries(EQUIPOS.map(e=>[e.id, e.tipo_activo]));
+  document.getElementById('opsVacio').style.display = ops.length ? 'none' : 'block';
+  document.getElementById('ops').innerHTML = ops.map(o=>`<tr class="clk" onclick="location.href='/flota/${o.equipo_id}'">
+    <td>${fmtFecha(o.fecha)}</td>
+    <td><span style="display:inline-flex;align-items:center;gap:6px"><span style="width:16px;height:16px;color:var(--mut);display:inline-flex">${ICO[tipoDe[o.equipo_id]] || ''}</span><b>${escapar(o.equipo)}</b></span></td>
+    <td>${escapar(o.lote||'—')}<div class="mut" style="font-size:11.5px">${escapar(o.cliente||'')}</div></td>
+    <td>${escapar(o.producto||'—')}</td><td class="num">${fmt(o.horas_vuelo,2)}</td><td class="num">${fmt(o.hectareas)}</td><td>${escapar(o.piloto||'—')}</td></tr>`).join('');
+}
+
+// ---------- Próximos repuestos a cambiar (según el ritmo real de operación) ----------
+async function abrirRepuestos(equipoId){
+  const v = ventana({
+    titulo: 'Próximos repuestos a cambiar', ancho: 'ancha',
+    subtitulo: 'Días y fecha estimados con el ritmo de vuelo de los últimos 90 días',
+    cuerpo: '<div id="repCuerpo"><div class="empty" style="padding:44px"><span class="cargador oscuro"></span> Calculando…</div></div>',
+    pie: `<div class="der"><button class="btn secundario" data-cerrar>Cerrar</button>
+          <a class="btn" href="/ordenes-trabajo?nueva=1${equipoId?`&equipo=${equipoId}`:''}">Generar orden de trabajo</a></div>`,
+  });
+  v.$('[data-cerrar]').onclick = v.cerrar;
+  const r = await api('/api/repuestos?limite=40' + (equipoId ? `&equipo_id=${equipoId}` : ''));
+  const f = r.resumen.franjas;
+  v.$('#repCuerpo').innerHTML = `<div class="repuestos-franjas">
+      <div class="franja vencido"><div class="n">${f.vencido}</div><div class="l">Vencidas</div></div>
+      <div class="franja inmediato"><div class="n">${f.inmediato}</div><div class="l">≤ 15 días</div></div>
+      <div class="franja corto"><div class="n">${f.corto}</div><div class="l">16 – 45 días</div></div>
+      <div class="franja medio"><div class="n">${f.medio}</div><div class="l">46 – 120 días</div></div>
+      <div class="franja"><div class="n">${f.lejano}</div><div class="l">Más adelante</div></div>
+    </div>` + (r.lista.length ? r.lista.map(p=>`
+      <div class="repuesto u-${p.urgencia}">
+        <div><div class="nom">${escapar(p.nombre)}</div>
+          <div class="sub">${escapar(p.equipo)} · ${escapar(p.modulo)} · ${usoPieza(p)} ·
+            ${p.h_dia ? `${fmt(p.h_dia,2)} h/día (${escapar(p.base_ritmo)})` : 'sin ritmo de vuelo'}</div></div>
+        <div class="cuando"><div class="dias">${fmtDias(p.dias_estimados)}</div>
+          <div class="fecha">${p.fecha_estimada ? fmtFecha(p.fecha_estimada) : '—'}</div></div>
+        <div class="barra ${p.nivel}"><i style="width:${Math.min(p.pct,100)}%"></i></div>
+      </div>`).join('') : '<div class="empty" style="padding:34px">Sin piezas próximas a cambio.</div>');
+}
+document.getElementById('btnRepuestos').onclick = ()=>abrirRepuestos('');
+
+// ---------- Carga y filtros ----------
+async function cargarTodo(){
+  document.getElementById('actualizado').textContent = 'Actualizando…';
+  try {
+    await Promise.all([cargarKpis(), cargarFlota().then(cargarActividad)]);
+    document.getElementById('actualizado').textContent =
+      'Actualizado ' + new Date().toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit'});
+  } catch(err){
+    document.getElementById('actualizado').textContent = 'No se pudo actualizar';
+    toast(err.message || 'Error al cargar el centro de operaciones');
+  }
+}
+
+function segmento(id, clave, attr){
+  document.getElementById(id).addEventListener('click', e=>{
+    const b = e.target.closest('button'); if(!b) return;
+    document.querySelectorAll(`#${id} button`).forEach(x=>x.classList.toggle('activo', x === b));
+    F[clave] = b.dataset[attr] || '';
+    try { localStorage.setItem('co_' + clave, F[clave]); } catch(_){}
+    if(clave === 'periodo') cargarKpis(); else cargarTodo();
+  });
+}
+// Recordar la última selección del usuario en este navegador.
+try {
+  const t = localStorage.getItem('co_tipo'), p = localStorage.getItem('co_periodo');
+  if(t !== null && ['', 'dron', 'avion'].includes(t)) F.tipo = t;
+  if(p && TXT_PERIODO[p]) F.periodo = p;
+} catch(_){}
+document.querySelectorAll('#segTipo button').forEach(b=>b.classList.toggle('activo', (b.dataset.t||'') === F.tipo));
+document.querySelectorAll('#segPeriodo button').forEach(b=>b.classList.toggle('activo', b.dataset.p === F.periodo));
+segmento('segTipo', 'tipo', 't');
+segmento('segPeriodo', 'periodo', 'p');
+
+cargarTodo();
+setInterval(()=>{ if(!document.hidden) cargarTodo(); }, 5 * 60 * 1000);
+</script>
+{% endblock %}

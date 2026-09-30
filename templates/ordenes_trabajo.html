@@ -1,0 +1,842 @@
+{% extends "_layout.html" %}
+{% block titulo %}Órdenes de trabajo{% endblock %}
+{% block encabezado %}Órdenes de trabajo{% endblock %}
+{% block subtitulo %}El administrador programa el mantenimiento, el cronograma se genera solo con el desgaste real y la orden se envía por correo al personal asignado{% endblock %}
+
+{% block head %}
+<style>
+  .costos-tarea{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px 8px;align-items:end;margin-top:9px;
+    padding-top:9px;border-top:.5px dashed var(--line2)}
+  .costos-tarea .c{display:flex;flex-direction:column;gap:3px;min-width:0}
+  .costos-tarea .c span{font-size:9.5px;font-weight:680;color:var(--mut);text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
+  .costos-tarea input{font-family:var(--font);font-size:12.5px;color:var(--ink);background:var(--o-sup,#fff);border:.5px solid var(--line2);
+    border-radius:8px;padding:5px 8px;outline:none;width:100%;font-variant-numeric:tabular-nums;text-align:right}
+  .costos-tarea input:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(253,185,19,.2)}
+  .costos-tarea input.guardando{border-color:var(--amber)}
+  .costos-tarea input.guardado{border-color:var(--green);box-shadow:0 0 0 3px rgba(47,143,78,.15)}
+  .costos-tarea input.error{border-color:var(--red)}
+  .costos-tarea input[readonly]{background:transparent;border-color:transparent;padding-left:0;padding-right:0}
+  .costos-tarea .tot{grid-column:1/-1;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+  .costos-tarea .tot span{font-size:9.5px;font-weight:680;color:var(--mut);text-transform:uppercase;letter-spacing:.04em}
+  .costos-tarea .tot b{font-size:13.5px;font-weight:720;color:var(--ink);font-variant-numeric:tabular-nums}
+  .costos-tarea .tot em{font-style:normal;font-size:10.5px;color:var(--mut);margin-left:auto}
+  .velo.encima{z-index:520}
+
+  /* Repuestos de bodega apartados para la tarea (core/bodega.py) */
+  .rep-bodega{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:8px}
+  .rep-bodega:empty{display:none}
+  .rb-chip{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;padding:3px 6px 3px 9px;border-radius:980px;
+    background:rgba(115,122,134,.1);color:var(--ink2)}
+  .rb-chip b{color:var(--ink);font-variant-numeric:tabular-nums}
+  .rb-chip.falta{background:rgba(224,71,62,.12);color:var(--o-tx-rojo,#a4271f)}
+  .rb-chip.consumido{background:rgba(47,143,78,.12);color:var(--o-tx-verde,#1d6b38)}
+  .rb-chip button{border:0;background:transparent;color:inherit;cursor:pointer;font-size:11px;padding:0 3px}
+  .rb-sacar{border:.5px dashed var(--line2);background:transparent;border-radius:980px;padding:3px 10px;font:inherit;font-size:11.5px;
+    color:var(--ink2);cursor:pointer;display:inline-flex;align-items:center;gap:5px}
+  .rb-sacar:hover{border-color:var(--acc);color:var(--acc-ink)}
+  .rb-sacar svg{width:13px;height:13px}
+  .rb-lista{display:grid;gap:8px;max-height:340px;overflow:auto}
+  .rb-op{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;border:1.5px solid var(--line);border-radius:14px;padding:10px 12px;
+    background:var(--bg2);cursor:pointer;text-align:left;font:inherit;color:inherit}
+  .rb-op:hover{border-color:var(--acc-d)}.rb-op.sel{border-color:var(--acc);box-shadow:0 0 0 3px var(--acc-soft)}
+  .rb-op[disabled]{opacity:.5;cursor:not-allowed}
+  .rb-op b{font-size:13.5px}.rb-op small{font-size:11.5px;color:var(--mut)}
+  .rb-op .n{text-align:right;font-weight:750;font-variant-numeric:tabular-nums}
+  .rb-stock{font-size:11.5px;color:var(--ink2);flex-basis:100%;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .rb-stock.sin{color:var(--o-tx-rojo,#a4271f)}
+
+  .costo-ot{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:10px;margin-bottom:14px}
+  .costo-ot .k{border-radius:12px;padding:10px 12px;background:rgba(115,122,134,.07);border:.5px solid var(--line)}
+  .costo-ot .k.total{background:var(--acc-soft);border-color:rgba(192,134,0,.3)}
+  .costo-ot .l{font-size:10px;font-weight:680;color:var(--mut);text-transform:uppercase;letter-spacing:.04em}
+  .costo-ot .v{font-family:var(--font-marca);font-size:19px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+  .costo-ot .total .v{color:var(--acc-ink)}
+  .costo-ot .n{font-size:11px;color:var(--mut)}
+
+  .liberacion{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border-radius:14px;margin-bottom:14px;
+    background:var(--acc-soft);border:.5px solid rgba(192,134,0,.35);font-size:12.5px;color:var(--ink2);line-height:1.5}
+  .liberacion .ic{width:34px;height:34px;border-radius:10px;background:var(--acc);color:var(--acc-txt);display:grid;place-items:center;flex:none}
+  .liberacion .ic svg{width:19px;height:19px}
+  .liberacion b{color:var(--ink)}
+  .resultado-cierre{text-align:center;padding:8px 4px 4px}
+  .resultado-cierre .sello{width:64px;height:64px;border-radius:50%;margin:0 auto 12px;display:grid;place-items:center;
+    background:rgba(47,143,78,.12);color:var(--green)}
+  .resultado-cierre .sello svg{width:32px;height:32px}
+  .resultado-cierre .l{font-size:11px;font-weight:680;color:var(--mut);text-transform:uppercase;letter-spacing:.05em;margin-top:6px}
+  .resultado-cierre .costo{font-family:var(--font-marca);font-size:34px;font-weight:800;letter-spacing:-.03em;color:var(--acc-ink);
+    font-variant-numeric:tabular-nums}
+  .resultado-cierre .det{display:flex;justify-content:center;gap:18px;margin-top:10px;font-size:12.5px;color:var(--ink2)}
+  .resultado-cierre .det b{font-size:16px;display:block;color:var(--ink)}
+</style>
+{% endblock %}
+
+{% block acciones %}
+<a class="btn secundario" href="{{ url_for('contactos') }}">Contactos</a>
+<button class="btn" id="btnNueva">＋ Nueva orden de trabajo</button>
+{% endblock %}
+
+{% block barra %}
+<div class="tabsbar"><div class="wrap">
+  <div class="segmento" id="segEstado">
+    <button data-e="" class="activo">Todas</button>
+    <button data-e="abiertas">Abiertas</button>
+    <button data-e="programada">Programadas</button>
+    <button data-e="enviada">Enviadas</button>
+    <button data-e="en_proceso">En proceso</button>
+    <button data-e="completada">Completadas</button>
+  </div>
+  <div class="filters">
+    <select id="fEquipo"></select>
+    <input type="search" id="fBuscar" placeholder="Buscar por código, equipo o responsable…" style="min-width:250px">
+  </div>
+</div></div>
+{% endblock %}
+
+{% block contenido %}
+<div class="kpis">
+  <div class="kpi"><div class="lbl">Abiertas</div><div class="val acc" id="kAbiertas">0</div><div class="note">sin completar ni cancelar</div></div>
+  <div class="kpi"><div class="lbl">Programadas esta semana</div><div class="val" id="kSemana">0</div></div>
+  <div class="kpi"><div class="lbl">Atrasadas</div><div class="val rojo" id="kAtrasadas">0</div><div class="note">fecha vencida y sin completar</div></div>
+  <div class="kpi"><div class="lbl">Trabajos pendientes</div><div class="val" id="kTareas">0</div><div class="note" id="kTareasNota"></div></div>
+</div>
+
+<div class="ordenes-grid" id="grid"></div>
+<div class="card vacio-rico" id="vacio" style="display:none">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>
+  <b>Todavía no hay órdenes de trabajo</b>
+  <p>Crea una orden y la app propondrá sola los trabajos según las horas de uso y la vida útil de cada pieza.</p>
+  <button class="btn" onclick="abrirNueva()">＋ Nueva orden de trabajo</button>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let EQUIPOS = [], PERSONAL = [], ORDENES = [], CONTEO_PIEZAS = null;
+const ROL = {{ (rol_actual or '')|tojson }}, USUARIO = {{ (usuario_actual or '')|tojson }};
+const PUEDE_LIBERAR = ['admin','superadmin','certificador'].includes(ROL);
+const ROL_TXT = {admin:'Administrador', tecnico:'Técnico', piloto:'Piloto', superadmin:'Superadmin', certificador:'Mecánico certificador'};
+let COSTOS = {hora: null, moneda: 'COP'};
+async function cargarCostos(){
+  try{ const c = await api('/api/costos/config');
+       COSTOS = {hora: parseFloat(c.costo_hora_mano_obra) || null, moneda: c.moneda || 'COP'}; }catch(e){}
+}
+function dinero(n){ return (n == null || isNaN(n)) ? '—' : '$ ' + fmt(n, 0); }
+function numero(v){ if(v === '' || v == null) return null; const x = parseFloat(String(v).replace(',','.')); return isFinite(x) ? x : null; }
+// Mismo cálculo que el servidor al cerrar: si no hay costo de mano de obra pero sí horas,
+// se valoran con el costo por hora de Ajustes.
+function costoTarea(t){
+  const rep = numero(t.costo_repuesto);
+  let mano = numero(t.costo_mano_obra), estimada = false;
+  if(mano == null && numero(t.horas_mano_obra) && COSTOS.hora){ mano = numero(t.horas_mano_obra) * COSTOS.hora; estimada = true; }
+  return {rep, mano, estimada, total: (rep || 0) + (mano || 0), vacio: rep == null && mano == null};
+}
+const IC_AVION = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 15.5v-1.8l-8-4.7V4.2C13 3.5 12.6 3 12 3s-1 .5-1 1.2V9l-8 4.7v1.8l8-2.3v4.9l-2.2 1.6V21l3.2-.9 3.2.9v-1.3L13 18.1v-4.9z"/></svg>`;
+
+// Texto de la pista del buscador, con las cifras reales de los dos catálogos del modelo que se
+// esté ordenando: cada modelo tiene su propio despiece, y decir «las 433 piezas del T50» delante
+// de un T100 sería mentir sobre lo que se está buscando.
+function pistaBuscador(){
+  if(!CONTEO_PIEZAS) return 'Busca en todo el despiece del equipo, por nombre o por código.';
+  const t = CONTEO_PIEZAS.seguimiento + CONTEO_PIEZAS.despiece;
+  const modelo = CONTEO_PIEZAS.modelo ? ' del ' + CONTEO_PIEZAS.modelo : '';
+  return `Busca entre las ${t} piezas${modelo}: ${CONTEO_PIEZAS.seguimiento} con vida útil cronometrada
+          y ${CONTEO_PIEZAS.despiece} del despiece de las láminas del fabricante (${CONTEO_PIEZAS.modulos} láminas).
+          Sirve el nombre en castellano, en inglés o el código de pieza.`;
+}
+
+// El conteo depende del equipo elegido, así que se refresca al cambiarlo.
+async function refrescarConteo(equipoId, destino){
+  CONTEO_PIEZAS = await api('/api/piezas/conteo' + (equipoId ? `?equipo_id=${equipoId}` : ''));
+  if(destino) destino.textContent = pistaBuscador();
+}
+
+const PRIORIDADES = [{v:'baja',t:'Baja'},{v:'normal',t:'Normal'},{v:'alta',t:'Alta'},{v:'urgente',t:'Urgente'}];
+const TIPOS = [{v:'preventivo',t:'Preventivo'},{v:'correctivo',t:'Correctivo'},{v:'inspeccion',t:'Inspección'}];
+const ESTADOS = [{v:'borrador',t:'Borrador'},{v:'programada',t:'Programada'},{v:'enviada',t:'Enviada'},
+                 {v:'en_proceso',t:'En proceso'},{v:'completada',t:'Completada'},{v:'cancelada',t:'Cancelada'}];
+
+async function cargarBase(){
+  [EQUIPOS, PERSONAL, CONTEO_PIEZAS] = await Promise.all([
+    api('/api/equipos'), api('/api/personal'), api('/api/piezas/conteo')]);
+  document.getElementById('fEquipo').innerHTML = opcionesEquipos(EQUIPOS, paramURL('equipo')||'', true);
+}
+
+async function cargar(){
+  const eq = document.getElementById('fEquipo').value;
+  ORDENES = await api('/api/ot' + (eq ? `?equipo_id=${eq}` : ''));
+  pintar();
+}
+
+function filtrar(){
+  const estado = document.querySelector('#segEstado button.activo').dataset.e;
+  const q = document.getElementById('fBuscar').value.trim().toLowerCase();
+  return ORDENES.filter(o=>{
+    if(estado === 'abiertas' && ['completada','cancelada'].includes(o.estado)) return false;
+    if(estado && estado !== 'abiertas' && o.estado !== estado) return false;
+    if(q && ![o.codigo,o.equipo,o.titulo,o.asignado_a,o.lugar].join(' ').toLowerCase().includes(q)) return false;
+    return true;
+  });
+}
+
+function pintar(){
+  const lista = filtrar();
+  const hoy = hoyISO();
+  const finSemana = new Date(Date.now() + 7*86400000).toISOString().slice(0,10);
+  const abiertas = ORDENES.filter(o=>!['completada','cancelada'].includes(o.estado));
+  document.getElementById('kAbiertas').textContent = abiertas.length;
+  document.getElementById('kSemana').textContent =
+    abiertas.filter(o=>o.fecha_programada && o.fecha_programada >= hoy && o.fecha_programada <= finSemana).length;
+  document.getElementById('kAtrasadas').textContent =
+    abiertas.filter(o=>o.fecha_programada && o.fecha_programada < hoy).length;
+  const pend = abiertas.reduce((a,o)=>a + (o.n_tareas - o.n_hechas), 0);
+  document.getElementById('kTareas').textContent = pend;
+  document.getElementById('kTareasNota').textContent =
+    `de ${abiertas.reduce((a,o)=>a+o.n_tareas, 0)} trabajos en órdenes abiertas`;
+
+  document.getElementById('vacio').style.display = ORDENES.length ? 'none' : 'block';
+  document.getElementById('grid').innerHTML = lista.map(o=>{
+    const avance = o.n_tareas ? Math.round(o.n_hechas / o.n_tareas * 100) : 0;
+    const atrasada = o.fecha_programada && o.fecha_programada < hoy && !['completada','cancelada'].includes(o.estado);
+    return `<div class="orden-card est-${o.estado}" onclick="abrirDetalle(${o.id})">
+      <div class="codigo">${escapar(o.codigo)} · ${escapar(o.equipo)}</div>
+      <div class="tit">${escapar(o.titulo)}</div>
+      <div class="meta">
+        <span>${o.fecha_programada ? fmtFecha(o.fecha_programada) : 'sin fecha'}${o.hora_programada ? ' · '+escapar(o.hora_programada) : ''}</span>
+        ${o.asignado_a ? `<span>· ${escapar(o.asignado_a)}</span>` : ''}
+        ${atrasada ? '<span style="color:var(--red);font-weight:640">· atrasada</span>' : ''}
+      </div>
+      <div class="pie">
+        <span class="tag ${o.estado}">${escapar(o.estado_txt)}</span>
+        <span class="tag ${o.prioridad}">${escapar((o.prioridad||'').replace(/^./,c=>c.toUpperCase()))}</span>
+        <div class="avance"><div class="barra ${avance===100?'':'proximo'}"><i style="width:${avance}%"></i></div></div>
+        <span class="mut nowrap" style="font-size:11.5px">${o.n_hechas}/${o.n_tareas}</span>
+      </div>
+    </div>`;
+  }).join('') || (ORDENES.length ? '<div class="card empty">Ninguna orden con este filtro.</div>' : '');
+}
+
+// ---------- Nueva orden ----------
+function abrirNueva(){
+  const activos = EQUIPOS.filter(e=>e.estado !== 'baja');
+  const preEquipo = paramURL('equipo') || activos[0]?.id;
+  // Sólo quien puede recibir trabajo: pilotos, técnicos, operarios y administradores activos.
+  const tecnicos = PERSONAL.filter(p=>p.activo && p.operativo);
+  const v = ventana({
+    titulo:'Nueva orden de trabajo', ancho:'ancha',
+    subtitulo:'Identifica el equipo, revisa los trabajos del cronograma y prográmala al personal',
+    cuerpo:`<form id="formOT">
+      <div class="seccion-form">
+        <div class="titulo"><span class="n">1</span> Identificación del equipo</div>
+        <div class="form-grid">
+          <div class="campo"><label>Equipo *</label>
+            <select name="equipo_id" id="otEquipo" required>${opcionesEquipos(activos, preEquipo)}</select></div>
+          <div class="campo"><label>Título de la orden</label>
+            <input name="titulo" id="otTitulo" placeholder="Mantenimiento preventivo 100 h"></div>
+          <div class="campo"><label>Tipo</label><select name="tipo">${opciones(TIPOS,'preventivo')}</select></div>
+          <div class="campo"><label>Prioridad</label><select name="prioridad">${opciones(PRIORIDADES,'normal')}</select></div>
+        </div>
+        <div class="aviso gris" id="otResumenEquipo" style="margin-bottom:0"></div>
+      </div>
+
+      <div class="seccion-form">
+        <div class="titulo"><span class="n">2</span> Trabajos a ejecutar</div>
+        <div class="pista">El cronograma se genera solo con las horas de uso y la vida útil de cada pieza.
+          Desmarca lo que no aplique y añade abajo lo que el personal considere pertinente al ver el uso real.</div>
+        <div class="fila-flex" style="margin-bottom:10px">
+          <label class="mut" style="font-size:12px">Horizonte</label>
+          <select id="otHorizonte" style="width:auto">
+            <option value="30">30 días</option><option value="60" selected>60 días</option>
+            <option value="90">90 días</option><option value="180">180 días</option>
+          </select>
+          <button type="button" class="pillbtn" id="otTodas">Marcar todas</button>
+          <button type="button" class="pillbtn" id="otNinguna">Ninguna</button>
+        </div>
+        <div id="otSugeridas" class="tareas"></div>
+        <div id="otManuales" class="tareas" style="margin-top:8px"></div>
+        <div class="agregar-trabajo" style="margin-top:12px">
+          <div class="segmento" id="otModo" style="margin-bottom:10px">
+            <button type="button" data-m="pieza" class="activo">Cambiar una pieza</button>
+            <button type="button" data-m="libre">Otro trabajo</button>
+          </div>
+          <div id="otAddPieza">
+            <div id="otPiezaElegida"></div>
+            <div class="fila-flex">
+              <input id="otBuscaPieza" placeholder="Escribe 3 letras de la pieza: motor, hélice, bomba…">
+              <select id="otMotivo" style="width:auto">
+                <option value="desgaste">Por desgaste</option>
+                <option value="daño">Por daño o rotura</option>
+              </select>
+              <button type="button" class="btn secundario" id="otAddPiezaBtn" disabled>Añadir cambio</button>
+            </div>
+            <div class="pista" style="margin-top:8px;margin-bottom:0" id="otPistaBuscador">Busca en todo el despiece del equipo:
+              piezas con vida útil y recambios de las láminas del fabricante, por nombre o por código.</div>
+          </div>
+          <div id="otAddLibre" hidden>
+            <div class="fila-flex">
+              <input id="otManual" placeholder="Añadir trabajo: p. ej. limpiar filtro de la bomba" style="flex:1;min-width:220px">
+              <button type="button" class="btn secundario" id="otAgregar">Añadir</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="seccion-form">
+        <div class="titulo"><span class="n">3</span> Programación y notificación</div>
+        <div class="form-grid">
+          <div class="campo"><label>Personal asignado</label>
+            <input name="asignado_a" id="otAsignado" list="listaPersonal" placeholder="Nombre del técnico"></div>
+          <div class="campo"><label>Correo del asignado</label>
+            <input name="asignado_email" id="otEmail" type="email" placeholder="tecnico@empresa.com"></div>
+          <div class="campo"><label>Fecha programada</label>
+            <input type="date" name="fecha_programada" value="${hoyISO()}"></div>
+          <div class="campo"><label>Hora</label><input type="time" name="hora_programada"></div>
+          <div class="campo"><label>Lugar</label><input name="lugar" placeholder="Taller / finca"></div>
+          <div class="campo ancho"><label>Observaciones</label>
+            <textarea name="observaciones" placeholder="Repuestos a llevar, condiciones, contacto en sitio…"></textarea></div>
+        </div>
+        <datalist id="listaPersonal">${tecnicos.map(p=>`<option value="${escapar(p.nombre)}">${escapar([p.cargo||p.rol_txt, p.email].filter(Boolean).join(' · '))}</option>`).join('')}</datalist>
+        <label class="fila-flex" style="font-size:13px;color:var(--ink2)">
+          <input type="checkbox" id="otEnviar" checked style="width:16px;height:16px;accent-color:var(--acc-d)">
+          Enviar la orden por correo al personal asignado al guardar
+        </label>
+      </div>
+    </form>`,
+    pie:`<span class="mut" id="otConteo" style="font-size:12px"></span>
+         <div class="der"><button class="btn secundario" data-cerrar>Cancelar</button>
+         <button class="btn" data-guardar>Crear orden</button></div>`,
+  });
+  v.$('[data-cerrar]').onclick = v.cerrar;
+
+  let sugeridas = [], manuales = [];
+
+  function conteo(){
+    const n = sugeridas.filter(s=>s.marcada).length + manuales.length;
+    v.$('#otConteo').textContent = n ? `${n} trabajo(s) en la orden` : 'Sin trabajos seleccionados';
+  }
+
+  function pintarSugeridas(){
+    v.$('#otSugeridas').innerHTML = sugeridas.length ? sugeridas.map((s,i)=>`
+      <label class="tarea">
+        <input type="checkbox" data-i="${i}" ${s.marcada?'checked':''}>
+        <div class="cuerpo"><div class="txt">${escapar(s.descripcion)}</div>
+          <div class="sub"><span class="origen">cronograma</span>
+            ${s.nivel && s.nivel!=='ok' ? tagNivel(s.nivel) : ''}
+            ${s.dias_estimados !== null ? `<span>cambio estimado en ${fmtDias(s.dias_estimados)}</span>` : ''}</div></div>
+      </label>`).join('')
+      : '<div class="empty" style="padding:22px">Este equipo no tiene piezas que entren en el horizonte elegido.</div>';
+    v.$$('#otSugeridas input').forEach(c=>c.onchange = ()=>{ sugeridas[c.dataset.i].marcada = c.checked; conteo(); });
+    conteo();
+  }
+
+  function pintarManuales(){
+    v.$('#otManuales').innerHTML = manuales.map((m,i)=>`
+      <div class="tarea"><input type="checkbox" checked disabled>
+        <div class="cuerpo"><div class="txt">${escapar(m.descripcion)}</div>
+          <div class="sub"><span class="origen manual">añadido</span>
+            ${m.componente_id ? `<span class="origen pieza">pieza del catálogo</span>` : ''}
+            ${m.motivo ? `<span>${escapar(MOTIVOS_TXT[m.motivo] || m.motivo)}</span>` : ''}</div></div>
+        <button type="button" class="btn-icono" data-q="${i}">✕</button></div>`).join('');
+    v.$$('#otManuales [data-q]').forEach(b=>b.onclick = ()=>{ manuales.splice(Number(b.dataset.q),1); pintarManuales(); });
+    conteo();
+  }
+
+  async function cargarSugerencias(){
+    const id = v.$('#otEquipo').value;
+    const equipo = EQUIPOS.find(e=>String(e.id) === String(id));
+    v.$('#otResumenEquipo').innerHTML = equipo
+      ? `<div><b>${escapar(equipo.nombre)} · ${escapar(equipo.modelo)}</b>${equipo.numero_serie?` · S/N ${escapar(equipo.numero_serie)}`:''}<br>
+         ${fmt(equipo.horas_totales)} h de vuelo acumuladas ·
+         ${equipo.alertas.vencido} vencida(s), ${equipo.alertas.critico} crítica(s), ${equipo.alertas.proximo} próxima(s)</div>`
+      : '';
+    if(!v.$('#otTitulo').value && equipo)
+      v.$('#otTitulo').value = `Mantenimiento preventivo · ${equipo.nombre}`;
+    v.$('#otSugeridas').innerHTML = '<div class="empty" style="padding:22px"><span class="cargador oscuro"></span> Generando cronograma…</div>';
+    const datos = await api(`/api/ot/sugerencias?equipo_id=${id}&horizonte=${v.$('#otHorizonte').value}`);
+    // Desde el diagrama del avión llegan los ítems elegidos (?componentes=1,2,3): se marcan sólo esos.
+    const elegidos = (paramURL('componentes') || '').split(',').filter(Boolean).map(Number);
+    sugeridas = datos.map(s=>({...s, marcada: elegidos.length ? elegidos.includes(s.componente_id) : s.nivel !== 'ok'}));
+    pintarSugeridas();
+  }
+
+  v.$('#otEquipo').onchange = ()=>{ piezaOT = null; pintarPiezaOT(); cargarSugerencias();
+    refrescarConteo(v.$('#otEquipo').value, v.$('#otPistaBuscador')); };
+  v.$('#otHorizonte').onchange = cargarSugerencias;
+  v.$('#otTodas').onclick = ()=>{ sugeridas.forEach(s=>s.marcada = true); pintarSugeridas(); };
+  v.$('#otNinguna').onclick = ()=>{ sugeridas.forEach(s=>s.marcada = false); pintarSugeridas(); };
+  v.$('#otAgregar').onclick = ()=>{
+    const campo = v.$('#otManual'), texto = campo.value.trim();
+    if(!texto) return;
+    manuales.push({descripcion: texto, origen: 'manual'});
+    campo.value = ''; campo.focus(); pintarManuales();
+  };
+
+  // Cambiar una pieza: se elige del catálogo, nunca escribiendo el nombre a mano.
+  let piezaOT = null;
+  const pintarPiezaOT = ()=>{
+    v.$('#otPiezaElegida').innerHTML = piezaOT ? tarjetaPieza(piezaOT) : '';
+    v.$('#otAddPiezaBtn').disabled = !piezaOT;
+    const quitar = v.$('#otPiezaElegida [data-quitar]');
+    if(quitar) quitar.onclick = ()=>{ piezaOT = null; pintarPiezaOT(); };
+  };
+  refrescarConteo(v.$('#otEquipo').value, v.$('#otPistaBuscador'));
+  buscadorPiezas(v.$('#otBuscaPieza'), {
+    equipoId: ()=>v.$('#otEquipo').value,
+    alElegir: p=>{ piezaOT = p; v.$('#otBuscaPieza').value = ''; pintarPiezaOT(); },
+  });
+  v.$('#otModo').onclick = e=>{
+    const b = e.target.closest('button'); if(!b) return;
+    v.$$('#otModo button').forEach(x=>x.classList.toggle('activo', x === b));
+    v.$('#otAddPieza').hidden = b.dataset.m !== 'pieza';
+    v.$('#otAddLibre').hidden = b.dataset.m !== 'libre';
+  };
+  v.$('#otAddPiezaBtn').onclick = ()=>{
+    if(!piezaOT) return;
+    const reinicio = v.$('#otPiezaElegida [data-reinicio]');
+    manuales.push(tareaDeCambio(piezaOT, v.$('#otMotivo').value, reinicio ? reinicio.value : null));
+    piezaOT = null; pintarPiezaOT(); pintarManuales();
+  };
+  v.$('#otManual').addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); v.$('#otAgregar').click(); } });
+  v.$('#otAsignado').addEventListener('change', ()=>{
+    const p = PERSONAL.find(x=>x.nombre === v.$('#otAsignado').value);
+    if(p && p.email && !v.$('#otEmail').value) v.$('#otEmail').value = p.email;
+  });
+
+  v.$('[data-guardar]').onclick = async ()=>{
+    const form = v.$('#formOT');
+    if(!form.reportValidity()) return;
+    const cuerpo = Object.fromEntries(new FormData(form).entries());
+    cuerpo.tareas = [...sugeridas.filter(s=>s.marcada), ...manuales];
+    if(!cuerpo.tareas.length){ toast('Añade al menos un trabajo a la orden.'); return; }
+    cuerpo.enviar = v.$('#otEnviar').checked && !!cuerpo.asignado_email;
+    if(v.$('#otEnviar').checked && !cuerpo.asignado_email)
+      toast('Sin correo del asignado la orden se crea, pero no se envía.');
+    const boton = v.$('[data-guardar]');
+    boton.disabled = true; boton.innerHTML = '<span class="cargador"></span> Creando…';
+    try{
+      const r = await api('/api/ot', {method:'POST', body:cuerpo});
+      toast(r.correo ? `${r.orden.codigo} · ${r.correo.motivo}` : `${r.orden.codigo} creada`);
+      await v.cerrar();
+      await cargar();
+      await abrirDetalle(r.id);
+    }catch(err){ toast(err.message); boton.disabled = false; boton.textContent = 'Crear orden'; }
+  };
+
+  cargarSugerencias();
+}
+
+// ---------- Detalle ----------
+async function abrirDetalle(id){
+  const o = await api(`/api/ot/${id}`);
+  const avance = o.n_tareas ? Math.round(o.n_hechas / o.n_tareas * 100) : 0;
+  const cerrada = ['completada','cancelada'].includes(o.estado);
+  const equipoOT = EQUIPOS.find(e=>e.id === o.equipo_id);
+  const esAvion = equipoOT?.tipo_activo === 'avion';
+  const p = panelLateral({
+    titulo: o.codigo,
+    subtitulo: `${escapar(o.equipo)} · ${escapar(o.modelo)} · ${fmt(o.horas_equipo)} h al programar`,
+    cuerpo: `
+      <div class="fila-flex" style="margin-bottom:14px">
+        <span class="tag ${o.estado}">${escapar(o.estado_txt)}</span>
+        <span class="tag ${o.prioridad}">${escapar((o.prioridad||'').replace(/^./,c=>c.toUpperCase()))}</span>
+        <span class="tag gray">${escapar((o.tipo||'').replace(/^./,c=>c.toUpperCase()))}</span>
+      </div>
+      <div class="card" style="margin-bottom:14px">
+        <h3 style="margin-bottom:10px">${escapar(o.titulo)}</h3>
+        <table><tbody>
+          <tr><td class="mut">Asignado a</td><td><b>${escapar(o.asignado_a||'—')}</b></td></tr>
+          <tr><td class="mut">Correo</td><td>${escapar(o.asignado_email||'—')}</td></tr>
+          <tr><td class="mut">Programada</td><td>${o.fecha_programada?fmtFecha(o.fecha_programada):'—'} ${escapar(o.hora_programada||'')}</td></tr>
+          <tr><td class="mut">Lugar</td><td>${escapar(o.lugar||'—')}</td></tr>
+          <tr><td class="mut">Enviada</td><td>${o.enviado_en?fmtFechaHora(o.enviado_en):'no enviada'}</td></tr>
+        </tbody></table>
+        ${o.observaciones?`<div class="nota" style="margin-top:12px;background:var(--acc-soft);border-radius:10px;padding:10px 12px;font-size:12.5px">${escapar(o.observaciones)}</div>`:''}
+      </div>
+
+      <div class="card">
+        <div class="card-cab"><h3>Trabajos</h3>
+          <div class="der">${o.n_hechas}/${o.n_tareas} · ${avance} %</div></div>
+        <div class="barra ${avance===100?'':'proximo'}" style="margin-bottom:12px"><i style="width:${avance}%"></i></div>
+        <div class="costo-ot" id="costoOT"></div>
+        <div class="tareas" id="tareasOT">${o.tareas.map(t=>`
+          <div class="tarea ${t.estado==='hecho'?'hecho':''}">
+            <input type="checkbox" id="tk${t.id}" data-t="${t.id}" ${t.estado==='hecho'?'checked':''}>
+            <div class="cuerpo"><label class="txt" for="tk${t.id}" style="display:block;cursor:pointer">${escapar(t.descripcion)}</label>
+              <div class="sub"><span class="origen ${t.origen}">${t.origen==='manual'?'añadido':t.origen==='checklist'?'chequeo':'cronograma'}</span>
+                ${t.componente_id?'<span class="origen pieza">reinicia horas</span>':''}
+                ${t.motivo?`<span>${escapar(MOTIVOS_TXT[t.motivo]||t.motivo)}</span>`:''}
+                ${t.nivel && t.nivel!=='ok'?tagNivel(t.nivel):''}</div>
+              <div class="costos-tarea" data-tc="${t.id}">
+                <label class="c"><span>Repuesto $</span><input type="number" min="0" step="1000" data-c="costo_repuesto"
+                  value="${t.costo_repuesto ?? ''}" placeholder="${cerrada?'—':'0'}" ${cerrada?'readonly':''}></label>
+                <label class="c"><span>Mano de obra $</span><input type="number" min="0" step="1000" data-c="costo_mano_obra"
+                  value="${t.costo_mano_obra ?? ''}" placeholder="${cerrada ? '—' : COSTOS.hora ? 'según horas' : '0'}" ${cerrada?'readonly':''}></label>
+                <label class="c"><span>Horas MO</span><input type="number" min="0" step="0.1" data-c="horas_mano_obra"
+                  value="${t.horas_mano_obra ?? ''}" placeholder="${cerrada?'—':'0'}" ${cerrada?'readonly':''}></label>
+                <div class="tot" data-tot></div>
+              </div>
+              <div class="rep-bodega" data-rb="${t.id}"></div></div>
+          </div>`).join('') || '<div class="empty">Sin trabajos.</div>'}</div>
+
+        <div class="agregar-trabajo" style="margin-top:14px">
+          <div class="segmento" id="modoAdd" style="margin-bottom:10px">
+            <button type="button" data-m="pieza" class="activo">Cambiar una pieza</button>
+            <button type="button" data-m="libre">Otro trabajo</button>
+          </div>
+          <div id="addPieza">
+            <div id="piezaElegida"></div>
+            <div class="fila-flex">
+              <input id="buscaPieza" placeholder="Escribe 3 letras de la pieza: motor, hélice, bomba…">
+              <select id="motivoPieza" style="width:auto">
+                <option value="daño">Por daño o rotura</option>
+                <option value="desgaste">Por desgaste</option>
+              </select>
+              <button class="btn secundario peq" id="btnAddPieza" disabled>Añadir cambio</button>
+            </div>
+            <div class="pista" style="margin-top:8px;margin-bottom:0" id="pistaBuscador">Busca en todo el despiece del equipo:
+              piezas con vida útil y recambios de las láminas del fabricante, por nombre o por código.</div>
+          </div>
+          <div id="addLibre" hidden>
+            <div class="fila-flex">
+              <input id="nuevaTarea" placeholder="Añadir trabajo detectado en sitio" style="flex:1;min-width:180px">
+              <button class="btn secundario peq" id="btnAddTarea">Añadir</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-cab"><h3>Estado</h3></div>
+        <select id="cambiarEstado" style="width:100%">${opciones(ESTADOS, o.estado)}</select>
+        <div class="pista" style="margin-top:10px;margin-bottom:0">Al marcar <b>Completada</b> cada trabajo hecho
+          sobre una pieza se registra como mantenimiento y reinicia su vida útil.
+          ${esAvion ? '<br><b>Avión:</b> sólo un mecánico certificador o el administrador la completa y libera el avión, con su firma y número de licencia.' : ''}</div>
+        ${o.firmado_por ? `<div class="aviso verde" style="margin:12px 0 0"><div>Liberado por <b>${escapar(o.firmado_por)}</b>${o.licencia_firma ? ` · licencia ${escapar(o.licencia_firma)}` : ''}</div></div>` : ''}
+      </div>`,
+    pie: `<button class="btn" id="btnEnviar">Enviar por correo</button>
+          <button class="btn secundario" id="btnImprimir">Imprimir / PDF</button>
+          <button class="btn secundario rojo" id="btnBorrar" style="margin-left:auto">Eliminar</button>`,
+  });
+
+  // ---- Costos por tarea: se guardan solos (PUT por campo) y el total se recalcula al vuelo ----
+  const pintarCostos = ()=>{
+    let rep = 0, mano = 0, horas = 0, estimada = false, hechas = 0, nHechas = 0;
+    o.tareas.forEach(t=>{
+      const c = costoTarea(t);
+      if(t.estado === 'hecho'){ hechas += c.total; nHechas++; }
+      rep += c.rep || 0; mano += c.mano || 0; horas += numero(t.horas_mano_obra) || 0; estimada = estimada || c.estimada;
+      const caja = p.$(`[data-tc="${t.id}"] [data-tot]`);
+      if(caja) caja.innerHTML = `<span>Total tarea</span><b>${c.vacio ? '—' : dinero(c.total)}</b>${c.estimada ? `<em>MO ≈ ${fmt(t.horas_mano_obra,1)} h × ${dinero(COSTOS.hora)}</em>` : ''}`;
+    });
+    p.$('#costoOT').innerHTML = (o.estado === 'completada'
+      ? `<div class="k total"><div class="l">Costo registrado</div><div class="v">${dinero(hechas)}</div>
+          <div class="n">${nHechas} trabajo(s) hechos anotados en la bitácora</div></div>`
+      : `<div class="k total"><div class="l">Costo total de la orden</div><div class="v">${dinero(rep + mano)}</div>
+          <div class="n">${nHechas} hecha(s): ${dinero(hechas)} a registrar${estimada ? ' · MO estimada por horas' : ''}</div></div>`) + `
+      <div class="k"><div class="l">Repuestos</div><div class="v">${dinero(rep)}</div></div>
+      <div class="k"><div class="l">Mano de obra</div><div class="v">${dinero(mano)}</div><div class="n">${fmt(horas,1)} h</div></div>`;
+  };
+  pintarCostos();
+  if(!cerrada){
+    const temporizadores = {};
+    const guardarCosto = async (inp)=>{
+      const tid = Number(inp.closest('[data-tc]').dataset.tc), campo = inp.dataset.c;
+      const t = o.tareas.find(x=>x.id === tid);
+      const valor = numero(inp.value);
+      if(valor != null && valor < 0){ inp.classList.add('error'); toast('El valor no puede ser negativo.'); return; }
+      if((t[campo] ?? null) === valor) return;
+      inp.classList.remove('guardado','error'); inp.classList.add('guardando');
+      try{
+        await api(`/api/ot/tareas/${tid}`, {method:'PUT', body:{[campo]: valor}});
+        t[campo] = valor;
+        inp.classList.remove('guardando'); inp.classList.add('guardado');
+        setTimeout(()=>inp.classList.remove('guardado'), 1200);
+      }catch(err){ inp.classList.remove('guardando'); inp.classList.add('error'); toast(err.message); }
+      pintarCostos();
+    };
+    p.$$('.costos-tarea input').forEach(inp=>{
+      inp.addEventListener('input', ()=>{
+        const t = o.tareas.find(x=>x.id === Number(inp.closest('[data-tc]').dataset.tc));
+        // Vista previa del total mientras se escribe; el guardado va tras una pausa.
+        const previo = {...t, [inp.dataset.c]: numero(inp.value)};
+        const c = costoTarea(previo);
+        inp.closest('[data-tc]').querySelector('[data-tot] b').textContent = c.vacio ? '—' : dinero(c.total);
+        clearTimeout(temporizadores[inp.dataset.c + inp.closest('[data-tc]').dataset.tc]);
+        temporizadores[inp.dataset.c + inp.closest('[data-tc]').dataset.tc] = setTimeout(()=>guardarCosto(inp), 900);
+      });
+      inp.addEventListener('change', ()=>guardarCosto(inp));
+      inp.addEventListener('keydown', e=>{ if(e.key === 'Enter'){ e.preventDefault(); inp.blur(); } });
+    });
+  }
+
+  // ---- Repuestos de bodega: lo apartado por tarea, con existencias; se descuenta al completar ----
+  const pintarBodega = async ()=>{
+    let lineas = [];
+    try{ lineas = await api(`/api/bodega/ot-lineas?orden_id=${id}`); }catch(e){ return; }
+    o.tareas.forEach(t=>{
+      const caja = p.$(`[data-rb="${t.id}"]`); if(!caja) return;
+      const mias = lineas.filter(l=>l.tarea_id === t.id);
+      caja.innerHTML = mias.map(l=>`<span class="rb-chip ${l.estado==='consumido'?'consumido':(l.alcanza?'':'falta')}"
+          title="${l.estado==='consumido'?'Descontado de bodega':(l.alcanza?'Hay existencias':'No alcanza en esa ubicación')}">
+          <b>${fmt(l.cantidad,2)} ${escapar(l.unidad)}</b> ${escapar(l.item)} · ${escapar(l.ubicacion||'cualquier ubicación')}
+          ${l.estado==='consumido' ? `· ${dinero(l.costo_estimado)}` : `· hay ${fmt(l.en_ubicacion,2)}${l.costo_estimado!=null?' · ≈ '+dinero(l.costo_estimado):''}`}
+          ${cerrada || l.estado==='consumido' ? '' : `<button type="button" data-rbq="${l.id}" title="Quitar">✕</button>`}</span>`).join('')
+        + (cerrada ? '' : `<button type="button" class="rb-sacar" data-rbs="${t.id}"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2.8 8 10 3.4 17.2 8v8.6H2.8z"/><path d="M5.8 16.6v-6h8.4v6"/></svg>Sacar de bodega</button>`);
+    });
+    p.$$('[data-rbq]').forEach(b=>b.onclick = async ()=>{ await api(`/api/bodega/ot-lineas/${b.dataset.rbq}`, {method:'DELETE', body:{}}); pintarBodega(); });
+    p.$$('[data-rbs]').forEach(b=>b.onclick = ()=>sacarDeBodega(o, o.tareas.find(t=>t.id === Number(b.dataset.rbs)), pintarBodega));
+  };
+  pintarBodega();
+
+  p.$$('#tareasOT input[type=checkbox]').forEach(c=>c.onchange = async ()=>{
+    await api(`/api/ot/tareas/${c.dataset.t}`, {method:'PUT', body:{estado: c.checked?'hecho':'pendiente'}});
+    c.closest('.tarea').classList.toggle('hecho', c.checked);
+    const t = o.tareas.find(x=>x.id === Number(c.dataset.t)); if(t) t.estado = c.checked ? 'hecho' : 'pendiente';
+    pintarCostos();
+    cargar();
+  });
+
+  p.$('#btnAddTarea').onclick = async ()=>{
+    const campo = p.$('#nuevaTarea'), texto = campo.value.trim();
+    if(!texto) return;
+    await api(`/api/ot/${id}/tareas`, {method:'POST', body:{descripcion: texto, origen:'manual'}});
+    await p.cerrar(); await cargar(); await abrirDetalle(id);
+  };
+
+  // Cambio de pieza añadido sobre la marcha: sale del catálogo, así que la tarea queda
+  // enganchada al componente del dron y al cerrar la orden se le pueden reiniciar las horas.
+  let piezaSel = null;
+  let stockSel = [];
+  const pintarPiezaSel = async ()=>{
+    p.$('#piezaElegida').innerHTML = piezaSel ? tarjetaPieza(piezaSel) : '';
+    p.$('#btnAddPieza').disabled = !piezaSel;
+    const quitar = p.$('#piezaElegida [data-quitar]');
+    if(quitar) quitar.onclick = ()=>{ piezaSel = null; pintarPiezaSel(); };
+    stockSel = [];
+    if(!piezaSel) return;
+    // ¿Hay este repuesto en bodega? Se busca por código DJI, por clave del catálogo o por nombre.
+    const q = new URLSearchParams({modelo: o.modelo || ''});
+    if(piezaSel.codigo) q.set('codigo', piezaSel.codigo);
+    if(piezaSel.clave) q.set('clave', piezaSel.clave);
+    if(!piezaSel.codigo && !piezaSel.clave) q.set('q', piezaSel.nombre);
+    try{ stockSel = (await api('/api/bodega/stock?' + q)).filter(i=>i.catalogo_ref === (piezaSel.codigo || piezaSel.clave) || i.codigo === piezaSel.codigo); }catch(e){ stockSel = []; }
+    const caja = p.$('#piezaElegida .pieza-elegida'); if(!caja) return;
+    const it = stockSel[0], con = it && it.existencias.filter(e=>e.cantidad > 0);
+    caja.insertAdjacentHTML('beforeend', !it
+      ? `<div class="rb-stock sin">No está en bodega: al completar la orden no se descontará nada. Pídela o créala en <a href="/bodega?tab=repuestos">Bodega</a>.</div>`
+      : con.length
+        ? `<label class="rb-stock"><input type="checkbox" id="rbApartar" checked> Apartar 1 de bodega:
+            <select id="rbUbic" style="width:auto;padding:3px 8px;font-size:12px">${con.map(e=>`<option value="${e.ubicacion_id}">${escapar(e.ubicacion)} · hay ${fmt(e.cantidad,2)}</option>`).join('')}</select>
+            <span class="mut">disponible ${fmt(it.disponible,2)} · ${dinero(it.costo)} c/u</span></label>`
+        : `<div class="rb-stock sin">Sin existencias en bodega${it.reservado?` (${fmt(it.reservado,2)} apartadas en otras órdenes)`:''}: pide ${fmt(Math.max(1, (it.stock_minimo||0) + 1 - Math.max(it.saldo,0)),0)}${it.proveedor?' a '+escapar(it.proveedor):''}.</div>`);
+  };
+  refrescarConteo(o.equipo_id, p.$('#pistaBuscador'));
+  buscadorPiezas(p.$('#buscaPieza'), {
+    equipoId: ()=>o.equipo_id,
+    alElegir: pieza=>{ piezaSel = pieza; p.$('#buscaPieza').value = ''; pintarPiezaSel(); },
+  });
+  p.$('#modoAdd').onclick = e=>{
+    const b = e.target.closest('button'); if(!b) return;
+    p.$$('#modoAdd button').forEach(x=>x.classList.toggle('activo', x === b));
+    p.$('#addPieza').hidden = b.dataset.m !== 'pieza';
+    p.$('#addLibre').hidden = b.dataset.m !== 'libre';
+  };
+  p.$('#btnAddPieza').onclick = async ()=>{
+    if(!piezaSel) return;
+    const reinicio = p.$('#piezaElegida [data-reinicio]');
+    const nueva = await api(`/api/ot/${id}/tareas`, {method:'POST',
+      body: tareaDeCambio(piezaSel, p.$('#motivoPieza').value, reinicio ? reinicio.value : null)});
+    const apartar = p.$('#rbApartar');
+    if(apartar && apartar.checked && stockSel[0]){
+      try{ await api('/api/bodega/ot-lineas', {method:'POST', body:{orden_id:id, tarea_id:nueva.id, item_id:stockSel[0].id,
+                                                                   ubicacion_id:p.$('#rbUbic').value, cantidad:1}}); }
+      catch(e){ toast(e.message); }
+    }
+    toast(`${piezaSel.nombre} añadida a la orden${apartar && apartar.checked ? ' · apartada de bodega' : ''}`);
+    await p.cerrar(); await cargar(); await abrirDetalle(id);
+  };
+
+  p.$('#cambiarEstado').onchange = async e=>{
+    const estado = e.target.value;
+    if(estado === 'completada'){
+      const r = await completarOT(o, esAvion);
+      if(!r){ e.target.value = o.estado; return; }
+      await p.cerrar(); cargar();
+      mostrarCierre(o, r);
+      return;
+    } else {
+      await api(`/api/ot/${id}`, {method:'PUT', body:{estado}});
+      toast('Estado actualizado');
+    }
+    await p.cerrar(); cargar();
+  };
+
+  p.$('#btnEnviar').onclick = async ()=>{
+    const boton = p.$('#btnEnviar');
+    boton.disabled = true; boton.innerHTML = '<span class="cargador"></span> Enviando…';
+    const r = await api(`/api/ot/${id}/enviar`, {method:'POST', body:{}});
+    toast(r.motivo || (r.ok ? 'Orden enviada' : 'No se pudo enviar'));
+    boton.disabled = false; boton.textContent = 'Enviar por correo';
+    cargar();
+  };
+  p.$('#btnImprimir').onclick = ()=>window.open(`/imprimir/orden-trabajo/${id}`, '_blank', 'noopener');
+  p.$('#btnBorrar').onclick = async ()=>{
+    if(!await confirmar({titulo:'Eliminar orden', peligro:true, aceptar:'Eliminar',
+      mensaje:`Se eliminará <b>${escapar(o.codigo)}</b> y sus trabajos. Los mantenimientos ya registrados se conservan.`})) return;
+    await api(`/api/ot/${id}`, {method:'DELETE'});
+    toast('Orden eliminada'); p.cerrar(); cargar();
+  };
+}
+
+// ---------- Sacar un repuesto de bodega para una tarea ----------
+// Busca el repuesto por el código o la pieza de la tarea (o por texto), muestra en qué ubicación
+// hay existencias y lo aparta. Se descuenta al completar la orden; si no hay, sugiere el pedido.
+function sacarDeBodega(o, t, alTerminar){
+  let sel = null;
+  const v = ventana({titulo:'Sacar de bodega', subtitulo:`${escapar(o.codigo)} · ${escapar(t.descripcion)}`, ancho:'angosta',
+    cuerpo:`<div class="fila-flex" style="margin-bottom:10px"><input type="search" id="rbQ" style="flex:1" placeholder="Repuesto, código o modelo…"
+        value="${escapar(t.codigo_pieza || t.nombre_pieza || '')}"></div>
+      <div class="rb-lista" id="rbLista"><div class="empty"><span class="cargador oscuro"></span></div></div>
+      <div class="form-grid" style="grid-template-columns:1fr 1fr;margin:12px 0 0">
+        <div class="campo"><label>Cantidad</label><input type="number" id="rbCant" min="0" step="any" value="1"></div></div>
+      <div id="rbAviso"></div>`,
+    pie:`<div class="der"><button class="btn secundario" data-no>Cancelar</button><button class="btn" data-si disabled>Apartar para la tarea</button></div>`});
+  v.raiz.classList.add('encima');
+  v.$('[data-no]').onclick = v.cerrar;
+  const avisar = ()=>{
+    const n = numero(v.$('#rbCant').value) || 0;
+    v.$('#rbAviso').innerHTML = sel && n > sel.hay ? `<div class="aviso ambar" style="margin:10px 0 0"><div>En ${escapar(sel.ubicacion)} hay ${fmt(sel.hay,2)}:
+      se apartan igual y al completar el saldo quedará negativo. Pide ${fmt(n - sel.hay,2)} ${escapar(sel.unidad)}${sel.proveedor?' a '+escapar(sel.proveedor):''}.</div></div>` : '';
+  };
+  const buscar = async ()=>{
+    const q = v.$('#rbQ').value.trim();
+    const pr = new URLSearchParams({modelo: o.modelo || ''});
+    if(t.codigo_pieza && q === t.codigo_pieza) pr.set('codigo', q); else if(q) pr.set('q', q);
+    if(t.pieza_clave) pr.set('clave', t.pieza_clave);
+    let lista = [];
+    try{ lista = await api('/api/bodega/stock?' + pr); }catch(e){ toast(e.message); }
+    const opciones = [];
+    lista.forEach(i=>{
+      const ex = i.existencias.filter(e=>e.cantidad > 0);
+      if(ex.length) ex.forEach(e=>opciones.push({item:i, ubicacion_id:e.ubicacion_id, ubicacion:e.ubicacion, hay:e.cantidad}));
+      else opciones.push({item:i, ubicacion_id:null, ubicacion:'sin existencias', hay:0});
+    });
+    v.$('#rbLista').innerHTML = opciones.map((x,j)=>`<button type="button" class="rb-op" data-j="${j}">
+        <span><b>${escapar(x.item.nombre)}</b><br><small>${[x.item.codigo, x.item.modelo, x.ubicacion].filter(Boolean).map(escapar).join(' · ')}</small></span>
+        <span class="n">${fmt(x.hay,2)} <small>${escapar(x.item.unidad)}</small><br><small>${dinero(x.item.costo)}</small></span></button>`).join('')
+      || `<div class="aviso ambar" style="margin:0"><div><b>No hay este repuesto en bodega.</b> La tarea se completa igual, sin descontar inventario.
+           Pídelo${t.nombre_pieza?` («${escapar(t.nombre_pieza)}»)`:''} o créalo en <a href="/bodega?tab=repuestos">Bodega</a>.</div></div>`;
+    v.$$('[data-j]').forEach(b=>b.onclick = ()=>{
+      const x = opciones[Number(b.dataset.j)];
+      sel = {...x, id:x.item.id, unidad:x.item.unidad, proveedor:x.item.ultimo_proveedor || x.item.proveedor};
+      v.$$('[data-j]').forEach(y=>y.classList.toggle('sel', y === b));
+      v.$('[data-si]').disabled = false; avisar();
+    });
+  };
+  let tm = null;
+  v.$('#rbQ').oninput = ()=>{ clearTimeout(tm); tm = setTimeout(buscar, 200); };
+  v.$('#rbCant').oninput = avisar;
+  buscar();
+  v.$('[data-si]').onclick = async ()=>{
+    const n = numero(v.$('#rbCant').value);
+    if(!sel || !n || n <= 0) return toast('Elige el repuesto y la cantidad');
+    try{
+      await api('/api/bodega/ot-lineas', {method:'POST', body:{orden_id:o.id, tarea_id:t.id, item_id:sel.id, ubicacion_id:sel.ubicacion_id, cantidad:n}});
+      toast(`${fmt(n,2)} ${sel.unidad} de ${sel.item.nombre} apartado(s) para la tarea`);
+      await v.cerrar(); if(alTerminar) alTerminar();
+    }catch(err){ v.$('#rbAviso').innerHTML = `<div class="aviso rojo" style="margin:10px 0 0"><div>${escapar(err.message)}</div></div>`; }
+  };
+}
+
+// ---------- Completar (y liberar, si es avión) ----------
+// Devuelve la respuesta del servidor, o null si se canceló. Los errores 403/400 se muestran
+// dentro de la ventana, sin cerrarla, para que se pueda corregir la firma o la licencia.
+function completarOT(o, esAvion){
+  const hechas = o.tareas.filter(t=>t.estado === 'hecho');
+  const conPieza = hechas.filter(t=>t.componente_id).length;
+  // Sólo los trabajos hechos se anotan (y se cobran) al cerrar, igual que en el servidor.
+  const total = hechas.reduce((a,t)=>a + costoTarea(t).total, 0);
+  return new Promise(resolve=>{
+    let resultado = null;
+    const v = ventana({
+      titulo: esAvion ? 'Completar y liberar el avión' : 'Completar la orden', ancho:'angosta',
+      subtitulo: `${escapar(o.codigo)} · ${escapar(o.equipo)}`,
+      cuerpo: `
+        <div id="cierreError"></div>
+        ${esAvion ? `<div class="liberacion"><div class="ic">${IC_AVION}</div><div>
+            <b>Sólo un mecánico certificador o el administrador libera el avión.</b>
+            Quien firma asume la aptitud para el servicio: anota su nombre y su número de licencia.
+            ${PUEDE_LIBERAR ? '' : `<br><span style="color:var(--red);font-weight:640">Tu rol (${escapar(ROL_TXT[ROL]||ROL)}) no puede liberarlo.</span>`}
+          </div></div>` : ''}
+        <p style="font-size:13px;line-height:1.55;color:var(--ink2);margin-bottom:14px">
+          Se anotarán <b>${hechas.length}</b> trabajo(s) en la bitácora de reparaciones y <b>${conPieza}</b> pieza(s)
+          volverán a cero de uso. Costo a registrar: <b>${dinero(total)}</b>.
+          ${hechas.length < o.tareas.length ? `<br><span class="mut">${o.tareas.length - hechas.length} trabajo(s) sin marcar como hechos no se anotan.</span>` : ''}
+          <br><span class="mut">Los repuestos apartados de bodega para los trabajos hechos se descuentan del inventario y su costo promedio pasa a ser el costo de repuesto de la tarea.</span></p>
+        <form id="formCierre" class="form-grid" style="grid-template-columns:1fr 1fr">
+          <div class="campo ancho"><label>Realizado por</label><input name="realizado_por" value="${escapar(o.asignado_a || '')}"></div>
+          ${esAvion ? `
+          <div class="campo"><label>Firmado por *</label><input name="firmado_por" required placeholder="Nombre del certificador"></div>
+          <div class="campo"><label>Licencia N.º *</label><input name="licencia" required placeholder="p. ej. TMA-1234"></div>` : ''}
+          <div class="campo"><label>Fecha</label><input type="date" name="fecha" value="${(()=>{ const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0,10); })()}"></div>
+        </form>`,
+      pie: `<div class="der"><button class="btn secundario" data-no>Cancelar</button>
+            <button class="btn" data-si>${esAvion ? 'Firmar y liberar' : 'Completar'}</button></div>`,
+      alCerrar: ()=>resolve(resultado),
+    });
+    v.raiz.classList.add('encima');   // por encima del panel lateral del detalle
+    v.$('[data-no]').onclick = ()=>v.cerrar();
+    v.$('[data-si]').onclick = async ()=>{
+      const form = v.$('#formCierre');
+      v.$('#cierreError').innerHTML = '';
+      if(!form.reportValidity()) return;
+      const cuerpo = Object.fromEntries([...new FormData(form).entries()].map(([k,x])=>[k, x.trim()]).filter(([k,x])=>x));
+      const boton = v.$('[data-si]');
+      boton.disabled = true; boton.innerHTML = '<span class="cargador"></span> Guardando…';
+      try{
+        resultado = await api(`/api/ot/${o.id}/completar`, {method:'POST', body:cuerpo});
+        v.cerrar();
+      }catch(err){
+        v.$('#cierreError').innerHTML = `<div class="aviso rojo"><div><b>No se completó.</b>
+          ${escapar(err.message.replace(/^./, c=>c.toUpperCase()))}.</div></div>`;
+        boton.disabled = false; boton.textContent = esAvion ? 'Firmar y liberar' : 'Completar';
+      }
+    };
+  });
+}
+
+function mostrarCierre(o, r){
+  const v = ventana({
+    titulo: r.ok === false ? 'La orden no cambió' : `${escapar(o.codigo)} completada`, ancho:'angosta',
+    cuerpo: r.ok === false ? `<div class="aviso ambar"><div>${escapar(r.motivo || '')}</div></div>` : `
+      <div class="resultado-cierre">
+        <div class="sello"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.2 4.2L19 7"/></svg></div>
+        <div class="l">Costo total del mantenimiento</div>
+        <div class="costo">${dinero(r.costo || 0)}</div>
+        <div class="det"><div><b>${r.mantenimientos ?? 0}</b>mantenimiento(s)</div><div><b>${r.piezas ?? 0}</b>pieza(s) reiniciadas</div>
+          ${r.bodega && r.bodega.n ? `<div><b>${r.bodega.n}</b>repuesto(s) de bodega</div>` : ''}</div>
+        ${r.bodega && r.bodega.faltantes && r.bodega.faltantes.length ? `<div class="aviso ambar" style="margin:14px 0 0;text-align:left"><div><b>Bodega sin existencias suficientes.</b>
+          Se descontó igual y el saldo quedó negativo: registra la entrada que falta. ${r.bodega.faltantes.map(escapar).join('; ')}</div></div>` : ''}
+        ${r.orden?.firmado_por ? `<div class="aviso verde" style="margin:16px 0 0;text-align:left"><div>Liberado por <b>${escapar(r.orden.firmado_por)}</b>${r.orden.licencia_firma ? ` · licencia ${escapar(r.orden.licencia_firma)}` : ''}</div></div>` : ''}
+        <p class="mut" style="font-size:12px;margin-top:12px">${escapar(r.motivo || '')}</p>
+      </div>`,
+    pie: `<div class="der"><button class="btn" data-ok>Listo</button></div>`,
+  });
+  v.$('[data-ok]').onclick = v.cerrar;
+}
+
+document.getElementById('btnNueva').onclick = abrirNueva;
+document.getElementById('segEstado').addEventListener('click', e=>{
+  const b = e.target.closest('button'); if(!b) return;
+  document.querySelectorAll('#segEstado button').forEach(x=>x.classList.toggle('activo', x === b));
+  pintar();
+});
+document.getElementById('fEquipo').addEventListener('change', cargar);
+document.getElementById('fBuscar').addEventListener('input', pintar);
+
+cargarCostos();
+cargarBase().then(cargar).then(()=>{
+  if(paramURL('nueva')) abrirNueva();
+  else if(paramURL('ot')) abrirDetalle(Number(paramURL('ot')));   // enlace directo, p. ej. desde el chequeo pre-vuelo
+});
+</script>
+{% endblock %}

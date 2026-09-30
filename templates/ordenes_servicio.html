@@ -1,0 +1,364 @@
+{% extends "_layout.html" %}
+{% block titulo %}Órdenes de servicio{% endblock %}
+{% block encabezado %}Órdenes de servicio{% endblock %}
+{% block subtitulo %}El administrador programa la aplicación, avisa al piloto por correo y sigue el estado de la orden hasta su finalización{% endblock %}
+
+{% block acciones %}
+<button class="btn" id="btnNueva">＋ Nueva orden de servicio</button>
+{% endblock %}
+
+{% block barra %}
+<div class="tabsbar"><div class="wrap">
+  <div class="segmento" id="segEstado">
+    <button data-e="" class="activo">Todas</button>
+    <button data-e="abiertas">En curso</button>
+    <button data-e="programada">Programadas</button>
+    <button data-e="enviada">Enviadas</button>
+    <button data-e="en_ejecucion">En ejecución</button>
+    <button data-e="finalizada">Finalizadas</button>
+  </div>
+  <div class="filters">
+    <select id="fEquipo"></select>
+    <input type="search" id="fBuscar" placeholder="Buscar por código, cliente, finca o piloto…" style="min-width:250px">
+  </div>
+</div></div>
+{% endblock %}
+
+{% block contenido %}
+<div class="kpis">
+  <div class="kpi"><div class="lbl">En curso</div><div class="val acc" id="kCurso">0</div></div>
+  <div class="kpi"><div class="lbl">Programadas hoy</div><div class="val" id="kHoy">0</div></div>
+  <div class="kpi"><div class="lbl">Hectáreas previstas</div><div class="val" id="kHa">0</div><div class="note">en órdenes abiertas</div></div>
+  <div class="kpi"><div class="lbl">Finalizadas</div><div class="val verde" id="kFin">0</div></div>
+</div>
+
+<div class="ordenes-grid" id="grid"></div>
+<div class="card vacio-rico" id="vacio" style="display:none">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M12 21s7-5.2 7-10.6A7 7 0 0 0 5 10.4C5 15.8 12 21 12 21z"/><circle cx="12" cy="10.2" r="2.6"/></svg>
+  <b>Todavía no hay órdenes de servicio</b>
+  <p>Programa una aplicación con piloto, cliente, finca, productos y aeronave (dron o avión), y el piloto recibirá el aviso por correo.</p>
+  <button class="btn" onclick="abrirNueva()">＋ Nueva orden de servicio</button>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let EQUIPOS = [], PERSONAL = [], ORDENES = [], HISTORIAL = {productos:[], clientes:[], fincas:[], zonas:[], pilotos:[]};
+
+const ESTADOS = [{v:'programada',t:'Programada'},{v:'enviada',t:'Enviada'},{v:'en_ruta',t:'En ruta'},
+                 {v:'en_ejecucion',t:'En ejecución'},{v:'finalizada',t:'Finalizada'},{v:'cancelada',t:'Cancelada'}];
+const FLUJO = ['programada','enviada','en_ruta','en_ejecucion','finalizada'];
+
+async function cargarBase(){
+  const ops = await api('/api/operaciones?limite=3000');
+  [EQUIPOS, PERSONAL] = await Promise.all([api('/api/equipos'), api('/api/personal')]);
+  const unicos = k=>[...new Set(ops.map(o=>o[k]).filter(Boolean))].sort();
+  HISTORIAL = {productos:unicos('producto'), clientes:unicos('cliente'), fincas:unicos('lote'),
+               zonas:unicos('zona'), pilotos:unicos('piloto')};
+  document.getElementById('fEquipo').innerHTML = opcionesEquipos(EQUIPOS, paramURL('equipo')||'', true);
+}
+
+async function cargar(){
+  const eq = document.getElementById('fEquipo').value;
+  ORDENES = await api('/api/os' + (eq ? `?equipo_id=${eq}` : ''));
+  pintar();
+}
+
+function pintar(){
+  const estado = document.querySelector('#segEstado button.activo').dataset.e;
+  const q = document.getElementById('fBuscar').value.trim().toLowerCase();
+  const lista = ORDENES.filter(o=>{
+    if(estado === 'abiertas' && ['finalizada','cancelada'].includes(o.estado)) return false;
+    if(estado && estado !== 'abiertas' && o.estado !== estado) return false;
+    if(q && ![o.codigo,o.cliente,o.finca,o.piloto,o.productos,o.equipo].join(' ').toLowerCase().includes(q)) return false;
+    return true;
+  });
+
+  const abiertas = ORDENES.filter(o=>!['finalizada','cancelada'].includes(o.estado));
+  document.getElementById('kCurso').textContent = abiertas.length;
+  document.getElementById('kHoy').textContent = ORDENES.filter(o=>o.fecha === hoyISO()).length;
+  document.getElementById('kHa').textContent = fmt(abiertas.reduce((a,o)=>a+(Number(o.hectareas)||0), 0), 0);
+  document.getElementById('kFin').textContent = ORDENES.filter(o=>o.estado === 'finalizada').length;
+
+  document.getElementById('vacio').style.display = ORDENES.length ? 'none' : 'block';
+  document.getElementById('grid').innerHTML = lista.map(o=>{
+    const paso = FLUJO.indexOf(o.estado);
+    const avance = o.estado === 'cancelada' ? 0 : Math.max(0, paso) / (FLUJO.length-1) * 100;
+    return `<div class="orden-card est-${o.estado}" onclick="abrirDetalle(${o.id})">
+      <div class="codigo">${escapar(o.codigo)}${o.equipo?` · ${escapar(o.equipo)}`:''}</div>
+      <div class="tit">${escapar(o.finca || o.cliente || 'Sin finca')}</div>
+      <div class="meta">
+        <span>${o.fecha ? fmtFecha(o.fecha) : 'sin fecha'}${o.hora?' · '+escapar(o.hora):''}</span>
+        ${o.piloto?`<span>· ${escapar(o.piloto)}</span>`:''}
+        ${o.hectareas?`<span>· ${fmt(o.hectareas,1)} ha</span>`:''}
+      </div>
+      ${o.productos?`<div class="meta"><span>${escapar(o.productos)}</span>
+        ${o.n_productos>1?`<span class="tag acc">${o.n_productos} productos</span>`:''}</div>`:''}
+      <div class="pie">
+        <span class="tag ${o.estado}">${escapar(o.estado_txt)}</span>
+        <div class="avance"><div class="barra"><i style="width:${avance}%"></i></div></div>
+      </div>
+    </div>`;
+  }).join('') || (ORDENES.length ? '<div class="card empty">Ninguna orden con este filtro.</div>' : '');
+}
+
+const UNIDADES = ['L','kg','g','mL','L/ha','kg/ha'];
+
+// Editor de una lista de productos: filas que se añaden y quitan sin recargar nada.
+function editorProductos(contenedor, botonAgregar, sugerencias, iniciales){
+  let n = 0;
+  function fila(datos = {}){
+    const i = n++;
+    const div = document.createElement('div');
+    div.className = 'producto-fila';
+    div.innerHTML = `
+      <input class="p-nombre" list="dlProductos" placeholder="Producto o mezcla *" value="${escapar(datos.nombre||'')}">
+      <input class="p-cantidad" type="number" step="0.01" min="0" placeholder="Cant." value="${datos.cantidad ?? ''}">
+      <select class="p-unidad">${opciones(UNIDADES, datos.unidad || 'L')}</select>
+      <input class="p-dosis" placeholder="Dosis (p. ej. 12 L/ha)" value="${escapar(datos.dosis||'')}">
+      <button type="button" class="btn-icono" title="Quitar">✕</button>`;
+    div.querySelector('button').onclick = ()=>{
+      div.remove();
+      if(!contenedor.children.length) agregar();
+    };
+    contenedor.appendChild(div);
+    return div;
+  }
+  function agregar(datos){ const f = fila(datos); f.querySelector('.p-nombre').focus(); return f; }
+  function leer(){
+    return Array.from(contenedor.querySelectorAll('.producto-fila')).map(f=>({
+      nombre: f.querySelector('.p-nombre').value.trim(),
+      cantidad: f.querySelector('.p-cantidad').value,
+      unidad: f.querySelector('.p-unidad').value,
+      dosis: f.querySelector('.p-dosis').value.trim(),
+    })).filter(p=>p.nombre);
+  }
+  if(botonAgregar) botonAgregar.onclick = ()=>agregar();
+  (iniciales || []).forEach(p=>fila(p));
+  return {agregar, leer, fila};
+}
+
+function dl(id, valores){ return `<datalist id="${id}">${valores.map(v=>`<option value="${escapar(v)}">`).join('')}</datalist>`; }
+
+// ---------- Nueva orden ----------
+function abrirNueva(){
+  const activos = EQUIPOS.filter(e=>e.estado !== 'baja');
+  const pilotos = [...new Set([...PERSONAL.filter(p=>p.rol==='piloto' && p.activo).map(p=>p.nombre), ...HISTORIAL.pilotos])];
+  const v = ventana({
+    titulo:'Nueva orden de servicio', ancho:'ancha',
+    subtitulo:'Programa la aplicación y notifica al piloto asignado',
+    cuerpo:`<form id="formOS">
+      <div class="seccion-form">
+        <div class="titulo"><span class="n">1</span> Piloto y cliente</div>
+        <div class="form-grid">
+          <div class="campo"><label>Nombre del piloto *</label>
+            <input name="piloto" id="osPiloto" list="dlPilotos" required></div>
+          <div class="campo"><label>Correo del piloto</label>
+            <input name="piloto_email" id="osEmail" type="email" placeholder="piloto@empresa.com"></div>
+          <div class="campo"><label>Cliente *</label><input name="cliente" list="dlClientes" required></div>
+          <div class="campo"><label>Finca *</label><input name="finca" list="dlFincas" required></div>
+          <div class="campo"><label>Zona</label><input name="zona" list="dlZonas"></div>
+        </div>
+      </div>
+      <div class="seccion-form">
+        <div class="titulo"><span class="n">2</span> Productos a aplicar</div>
+        <div class="pista">Añade uno o varios productos con su cantidad y dosis. Van así en el correo del piloto y en la hoja impresa.</div>
+        <div id="osProductos" class="productos-lista"></div>
+        <button type="button" class="btn secundario peq" id="osAddProducto">＋ Añadir producto</button>
+        <div class="form-grid" style="margin-top:14px">
+          <div class="campo"><label>Hectáreas previstas</label><input type="number" name="hectareas" step="0.01" min="0"></div>
+        </div>
+      </div>
+      <div class="seccion-form">
+        <div class="titulo"><span class="n">3</span> Programación</div>
+        <div class="form-grid">
+          <div class="campo"><label>Fecha de la orden *</label>
+            <input type="date" name="fecha" value="${hoyISO()}" required></div>
+          <div class="campo"><label>Hora</label><input type="time" name="hora"></div>
+          <div class="campo"><label>Aeronave que va a volar *</label>
+            <select name="equipo_id" required>${opcionesEquipos(activos, activos[0]?.id)}</select></div>
+          <div class="campo ancho"><label>Observaciones adicionales</label>
+            <textarea name="observaciones" placeholder="Accesos, obstáculos, contacto en finca, restricciones de viento…"></textarea></div>
+        </div>
+        <label class="fila-flex" style="font-size:13px;color:var(--ink2)">
+          <input type="checkbox" id="osEnviar" checked style="width:16px;height:16px;accent-color:var(--acc-d)">
+          Enviar la orden por correo al piloto al guardar
+        </label>
+      </div>
+      ${dl('dlPilotos', pilotos)}${dl('dlClientes', HISTORIAL.clientes)}${dl('dlFincas', HISTORIAL.fincas)}
+      ${dl('dlZonas', HISTORIAL.zonas)}${dl('dlProductos', HISTORIAL.productos)}
+    </form>`,
+    pie:`<div class="der"><button class="btn secundario" data-cerrar>Cancelar</button>
+         <button class="btn" data-guardar>Crear orden</button></div>`,
+  });
+  v.$('[data-cerrar]').onclick = v.cerrar;
+  const productos = editorProductos(v.$('#osProductos'), v.$('#osAddProducto'), HISTORIAL.productos);
+  productos.agregar();
+  v.$('#osPiloto').addEventListener('change', ()=>{
+    const p = PERSONAL.find(x=>x.nombre === v.$('#osPiloto').value);
+    if(p && p.email && !v.$('#osEmail').value) v.$('#osEmail').value = p.email;
+  });
+  v.$('[data-guardar]').onclick = async ()=>{
+    const form = v.$('#formOS');
+    if(!form.reportValidity()) return;
+    const cuerpo = Object.fromEntries(new FormData(form).entries());
+    cuerpo.productos_lista = productos.leer();
+    if(!cuerpo.productos_lista.length){ toast('Añade al menos un producto a la orden.'); return; }
+    cuerpo.enviar = v.$('#osEnviar').checked && !!cuerpo.piloto_email;
+    const boton = v.$('[data-guardar]');
+    boton.disabled = true; boton.innerHTML = '<span class="cargador"></span> Creando…';
+    try{
+      const r = await crearOS(cuerpo);
+      if(!r){ boton.disabled = false; boton.textContent = 'Crear orden'; return; }
+      toast(r.correo ? `${r.orden.codigo} · ${r.correo.motivo}` : `${r.orden.codigo} creada`);
+      v.cerrar(); await cargar(); abrirDetalle(r.id);
+    }catch(err){ toast(err.message); boton.disabled = false; boton.textContent = 'Crear orden'; }
+  };
+}
+
+// Crea la OS. Si el activo no está apto (409) muestra los motivos y, si el usuario puede,
+// ofrece asignarlo de todos modos reenviando con forzar:true. Devuelve null si se desiste.
+async function crearOS(cuerpo){
+  const r = await fetch('/api/os', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(cuerpo)});
+  let datos = null; try{ datos = await r.json(); }catch(e){}
+  if(r.status === 401){ location.href = '/login'; throw new Error('Sesión caducada'); }
+  if(r.status !== 409){
+    if(!r.ok) throw new Error((datos && datos.error) || `Error ${r.status}`);
+    return datos;
+  }
+  const equipo = EQUIPOS.find(e=>String(e.id) === String(cuerpo.equipo_id));
+  const forzar = await new Promise(resolve=>{
+    let decision = false;
+    const w = ventana({
+      titulo: 'No recomendamos volar este activo', ancho: 'angosta',
+      subtitulo: equipo ? `${escapar(equipo.nombre)} · ${escapar(equipo.modelo)}` : '',
+      cuerpo: `
+        <div class="aviso rojo"><div><b>${escapar((datos.error || 'No recomendamos volar este activo').replace(/^./, c=>c.toUpperCase()))}.</b>
+          Resuelve estos puntos o elige otro activo:
+          <ul style="margin:8px 0 0 18px;line-height:1.6">${(datos.motivos || []).map(m=>`<li>${escapar(m)}</li>`).join('')
+            || '<li>Sin detalle de motivos.</li>'}</ul></div></div>
+        ${datos.puede_forzar
+          ? `<p style="font-size:12.5px;color:var(--ink2);line-height:1.5">Como administrador puedes asignarlo igual, bajo tu
+             responsabilidad: el piloto recibirá la orden con este activo.</p>`
+          : `<p style="font-size:12.5px;color:var(--mut);line-height:1.5">Sólo un administrador puede asignarlo de todos modos.</p>`}`,
+      pie: `<div class="der"><button class="btn secundario" data-no>Elegir otro activo</button>
+            ${datos.puede_forzar ? '<button class="btn rojo" data-si>Asignar de todos modos</button>' : ''}</div>`,
+      alCerrar: ()=>resolve(decision),
+    });
+    w.$('[data-no]').onclick = ()=>w.cerrar();
+    const si = w.$('[data-si]');
+    if(si) si.onclick = ()=>{ decision = true; w.cerrar(); };
+  });
+  if(!forzar) return null;
+  return api('/api/os', {method:'POST', body:{...cuerpo, forzar:true}});
+}
+
+// ---------- Detalle y seguimiento ----------
+async function abrirDetalle(id){
+  const o = await api(`/api/os/${id}`);
+  const alcanzado = FLUJO.indexOf(o.estado);
+  const p = panelLateral({
+    titulo: o.codigo,
+    subtitulo: `${escapar(o.cliente||'')} · ${escapar(o.finca||'')}`,
+    cuerpo: `
+      <div class="fila-flex" style="margin-bottom:14px">
+        <span class="tag ${o.estado}">${escapar(o.estado_txt)}</span>
+        ${o.enviado_en?`<span class="mut" style="font-size:12px">enviada ${fmtFechaHora(o.enviado_en)}</span>`:''}
+      </div>
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-cab"><h3>Datos de la orden</h3></div>
+        <table><tbody>
+          <tr><td class="mut">Piloto</td><td><b>${escapar(o.piloto||'—')}</b></td></tr>
+          <tr><td class="mut">Correo</td><td>${escapar(o.piloto_email||'—')}</td></tr>
+          <tr><td class="mut">Cliente</td><td>${escapar(o.cliente||'—')}</td></tr>
+          <tr><td class="mut">Finca</td><td>${escapar(o.finca||'—')}${o.zona?` · ${escapar(o.zona)}`:''}</td></tr>
+          <tr><td class="mut">Fecha</td><td>${o.fecha?fmtFecha(o.fecha):'—'} ${escapar(o.hora||'')}</td></tr>
+          <tr><td class="mut">Dron</td><td>${escapar(o.equipo||'—')}${o.modelo?` · ${escapar(o.modelo)}`:''}</td></tr>
+          <tr><td class="mut">Hectáreas</td><td>${o.hectareas?fmt(o.hectareas,1)+' ha':'—'}</td></tr>
+        </tbody></table>
+        ${o.observaciones?`<div style="margin-top:12px;background:var(--acc-soft);border-radius:10px;padding:10px 12px;font-size:12.5px">${escapar(o.observaciones)}</div>`:''}
+      </div>
+
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-cab"><h3>Productos</h3>
+          <div class="der">${(o.productos_lista||[]).length} en la orden</div></div>
+        <div id="detProductos" class="productos-lista"></div>
+        <div class="fila-flex" style="margin-top:10px">
+          <button class="btn secundario peq" id="detAddProducto">＋ Añadir producto</button>
+          <button class="btn peq" id="detGuardarProductos">Guardar productos</button>
+        </div>
+        ${dl('dlProductos', HISTORIAL.productos)}
+      </div>
+
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-cab"><h3>Avanzar el estado</h3></div>
+        <div class="fila-flex" id="botonesEstado">
+          ${FLUJO.map((e,i)=>`<button class="pillbtn ${i<=alcanzado?'active':''}" data-e="${e}">
+            ${escapar(ESTADOS.find(x=>x.v===e).t)}</button>`).join('')}
+          <button class="pillbtn" data-e="cancelada" style="margin-left:auto">Cancelar orden</button>
+        </div>
+        <input id="notaEstado" placeholder="Nota del cambio (opcional)" style="width:100%;margin-top:10px">
+      </div>
+
+      <div class="card">
+        <div class="card-cab"><h3>Seguimiento</h3><div class="der">${o.eventos.length} evento(s)</div></div>
+        <div class="linea">${o.eventos.slice().reverse().map(ev=>`
+          <div class="hito hecho">
+            <b>${escapar(ESTADOS.find(x=>x.v===ev.estado)?.t || ev.estado)}</b>
+            <div class="cuando">${fmtFechaHora(ev.creado)}${ev.usuario?` · ${escapar(ev.usuario)}`:''}</div>
+            ${ev.nota?`<div class="nota">${escapar(ev.nota)}</div>`:''}
+          </div>`).join('')}</div>
+      </div>`,
+    pie: `<button class="btn" id="btnEnviar">Enviar por correo</button>
+          <button class="btn secundario" id="btnImprimir">Imprimir / PDF</button>
+          <button class="btn secundario rojo" id="btnBorrar" style="margin-left:auto">Eliminar</button>`,
+  });
+
+  const editor = editorProductos(p.$('#detProductos'), p.$('#detAddProducto'),
+                                 HISTORIAL.productos, o.productos_lista || []);
+  if(!(o.productos_lista||[]).length) editor.fila({});
+  p.$('#detGuardarProductos').onclick = async ()=>{
+    const lista = editor.leer();
+    if(!lista.length){ toast('La orden debe llevar al menos un producto.'); return; }
+    await api(`/api/os/${id}`, {method:'PUT', body:{productos_lista: lista}});
+    toast('Productos actualizados');
+    p.cerrar(); await cargar(); abrirDetalle(id);
+  };
+
+  p.$$('#botonesEstado button').forEach(b=>b.onclick = async ()=>{
+    const estado = b.dataset.e;
+    if(estado === o.estado) return;
+    await api(`/api/os/${id}/estado`, {method:'POST',
+      body:{estado, nota: p.$('#notaEstado').value.trim() || null}});
+    toast('Estado actualizado');
+    p.cerrar(); await cargar(); abrirDetalle(id);
+  });
+
+  p.$('#btnEnviar').onclick = async ()=>{
+    const boton = p.$('#btnEnviar');
+    boton.disabled = true; boton.innerHTML = '<span class="cargador"></span> Enviando…';
+    const r = await api(`/api/os/${id}/enviar`, {method:'POST', body:{}});
+    toast(r.motivo || (r.ok ? 'Orden enviada' : 'No se pudo enviar'));
+    p.cerrar(); await cargar(); abrirDetalle(id);
+  };
+  p.$('#btnImprimir').onclick = ()=>window.open(`/imprimir/orden-servicio/${id}`, '_blank', 'noopener');
+  p.$('#btnBorrar').onclick = async ()=>{
+    if(!await confirmar({titulo:'Eliminar orden', peligro:true, aceptar:'Eliminar',
+      mensaje:`Se eliminará <b>${escapar(o.codigo)}</b> y todo su seguimiento.`})) return;
+    await api(`/api/os/${id}`, {method:'DELETE'});
+    toast('Orden eliminada'); p.cerrar(); cargar();
+  };
+}
+
+document.getElementById('btnNueva').onclick = abrirNueva;
+document.getElementById('segEstado').addEventListener('click', e=>{
+  const b = e.target.closest('button'); if(!b) return;
+  document.querySelectorAll('#segEstado button').forEach(x=>x.classList.toggle('activo', x === b));
+  pintar();
+});
+document.getElementById('fEquipo').addEventListener('change', cargar);
+document.getElementById('fBuscar').addEventListener('input', pintar);
+
+cargarBase().then(cargar).then(()=>{ if(paramURL('nueva')) abrirNueva(); });
+</script>
+{% endblock %}

@@ -1,0 +1,395 @@
+{% extends "_layout.html" %}
+{% block titulo %}Panel de clientes{% endblock %}
+{% block encabezado %}Panel de clientes{% endblock %}
+{% block subtitulo %}Empresas que usan Hangar, sus usuarios y su actividad. Desde aquí no se ven los datos operativos de ningún cliente.{% endblock %}
+{% block acciones %}
+  <button class="btn" id="btnNuevaEmpresa">＋ Nueva empresa</button>
+{% endblock %}
+
+{% block head %}<style>#lu .item{flex-wrap:wrap} #lu .item .cuerpo{min-width:200px} #lu .item .der{width:100%;justify-content:flex-end;margin-top:6px}
+/* ---- Roles: qué puede hacer cada uno ---- */
+.adm-roles{margin-top:18px;border:1px solid var(--line);border-radius:14px;background:var(--bg);padding:4px 14px}
+.adm-roles summary{cursor:pointer;font-size:12.5px;font-weight:650;color:var(--ink2);padding:9px 0;list-style:none;display:flex;align-items:center;gap:8px}
+.adm-roles summary::-webkit-details-marker{display:none}
+.adm-roles summary::after{content:"＋";margin-left:auto;color:var(--mut);font-weight:500}
+.adm-roles[open] summary::after{content:"－"}
+.adm-roles dl{margin:0 0 10px;display:grid;grid-template-columns:max-content 1fr;gap:7px 14px;font-size:12.5px;line-height:1.45}
+.adm-roles dt{font-weight:680;color:var(--ink)}
+.adm-roles dd{margin:0;color:var(--ink2)}
+.rol-ayuda{font-size:11.5px;color:var(--mut);margin-top:5px;line-height:1.4;min-height:1.4em}
+@media(max-width:640px){.adm-roles dl{grid-template-columns:1fr}.adm-roles dd{margin-bottom:6px}}
+
+/* ---- Correo saliente de una empresa ---- */
+.cr-grid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:22px;align-items:start}
+@media(max-width:860px){.cr-grid{grid-template-columns:minmax(0,1fr)}}
+.cr-sec{font-size:10.5px;font-weight:700;color:var(--mut);letter-spacing:.09em;text-transform:uppercase;margin:0 0 10px;display:flex;align-items:center;gap:8px}
+.cr-sec::after{content:"";flex:1;height:1px;background:var(--line)}
+.cr-acciones{display:flex;flex-direction:row!important;align-items:center;gap:8px;flex-wrap:wrap;margin-top:4px}
+.cr-guias{display:flex;flex-direction:column;gap:10px}
+.cr-guia{display:flex;gap:12px;align-items:flex-start;font-size:12.5px;line-height:1.5;color:var(--ink2);border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--bg)}
+.cr-guia .n{flex:none;width:26px;height:26px;border-radius:8px;display:grid;place-items:center;font-weight:800;font-size:12px;background:var(--acc-soft);color:var(--acc-deep)}
+.cr-guia b{color:var(--ink)}
+.cr-guia code{font-size:11.5px;background:rgba(115,122,134,.12);padding:1px 5px;border-radius:5px}
+.cr-guia button{margin-top:6px}
+.cr-cola{display:flex;flex-direction:column;gap:6px;max-height:340px;overflow:auto}
+.cr-cola .item{border:1px solid var(--line);border-radius:12px;padding:9px 12px;background:var(--bg2)}
+.cr-cola .item .cuerpo{min-width:0}
+.cr-cola .item .cuerpo b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px}
+.cr-cola .err{color:var(--red);font-size:11.5px;overflow-wrap:anywhere}
+.cr-cola .item .punto.pendiente{background:var(--amber)}.cr-cola .item .punto.error{background:var(--red)}
+.cr-nota{font-size:12px;color:var(--mut);line-height:1.45;margin:8px 0 0}
+</style>{% endblock %}
+
+{% block contenido %}
+<div class="kpis" id="kpis"></div>
+
+<div class="card">
+  <div class="card-cab">
+    <h3>Empresas <span class="mut" id="nEmpresas"></span></h3>
+    <div class="der"><input type="search" id="buscar" placeholder="Buscar empresa, NIT o contacto…" style="min-width:260px"></div>
+  </div>
+  <div style="overflow-x:auto">
+  <table>
+    <thead><tr>
+      <th>Empresa</th><th>Contacto</th><th class="num">Usuarios</th><th class="num">Equipos</th><th class="num">Operaciones</th>
+      <th>Última actividad</th><th>Estado</th><th></th>
+    </tr></thead>
+    <tbody id="tabla"></tbody>
+  </table>
+  </div>
+  <div class="empty" id="vacio" style="display:none;padding:30px">Aún no hay empresas. Crea la primera con «Nueva empresa».</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Los roles los manda el servidor (GET /api/empresas/<id>/usuarios → roles); esto es sólo el
+// respaldo mientras llega la primera respuesta.
+let EMPRESAS = [], ROLES = {admin:'Administrador', tecnico:'Técnico', certificador:'Mecánico certificador', piloto:'Piloto'};
+const ROL_DESC = {
+  admin: 'Todo en su empresa: flota, operaciones, mantenimiento, órdenes, reportes y ajustes.',
+  tecnico: 'Equipos, mantenimiento y órdenes de trabajo (OT).',
+  certificador: 'Lo mismo que el técnico y, además, firma la liberación de los aviones y da por cumplidas las directivas AD/SB.',
+  piloto: 'Operaciones, chequeo pre-vuelo y órdenes de servicio.',
+};
+// Flask ordena las claves del JSON alfabéticamente; se muestran en un orden fijo.
+const ORDEN_ROLES = ['admin', 'tecnico', 'certificador', 'piloto'];
+const rolesOrdenados = () => Object.entries(ROLES).sort(([a], [b]) =>
+  (ORDEN_ROLES.indexOf(a) + 1 || 99) - (ORDEN_ROLES.indexOf(b) + 1 || 99));
+const opcionesRol = sel => rolesOrdenados().map(([k,v]) => `<option value="${k}" ${k === sel ? 'selected' : ''}>${escapar(v)}</option>`).join('');
+const ayudaRoles = () => `<details class="adm-roles" id="ayudaRoles"><summary>Qué puede hacer cada rol</summary><dl>${
+  rolesOrdenados().map(([k,v]) => `<dt>${escapar(v)}</dt><dd>${escapar(ROL_DESC[k] || '—')}</dd>`).join('')}</dl></details>`;
+
+// Mini-gráfica de tendencia (12 semanas) en SVG puro; el color lo hereda de `color`.
+function spark(serie, color){
+  if (!serie || serie.length < 2) return '';
+  const W = 92, H = 40, max = Math.max(...serie, 1), min = Math.min(...serie, 0);
+  const x = i => (i / (serie.length - 1)) * (W - 4) + 2;
+  const y = v => H - 3 - ((v - min) / (max - min || 1)) * (H - 8);
+  const linea = serie.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(' ');
+  return `<svg class="spark" viewBox="0 0 ${W} ${H}" style="color:${color}" aria-hidden="true">
+    <path class="area" d="${linea} L${x(serie.length-1).toFixed(1)} ${H} L${x(0).toFixed(1)} ${H} Z"></path>
+    <path d="${linea}" stroke="currentColor"></path>
+    <circle cx="${x(serie.length-1).toFixed(1)}" cy="${y(serie[serie.length-1]).toFixed(1)}" r="2.6" fill="currentColor"></circle></svg>`;
+}
+// Texto de variación: altas nuevas o comparación de los últimos 30 días frente a los 30 previos.
+function variacion(s, unidad){
+  if (!s) return {txt: '', cls: ''};
+  const d = s.reciente - s.anterior;
+  if (!s.reciente && !s.anterior) return {txt: 'sin movimiento en 60 días', cls: ''};
+  if (unidad === 'nuevas') return {txt: `+${s.reciente} en 30 días`, cls: s.reciente ? 'up' : ''};
+  if (unidad === 'nuevos') return {txt: `+${s.reciente} en 30 días`, cls: s.reciente ? 'up' : ''};
+  const pct = s.anterior ? Math.round(d / s.anterior * 100) : null;
+  const flecha = d > 0 ? '▲' : d < 0 ? '▼' : '=';
+  return {txt: `${flecha} ${pct === null ? `+${s.reciente}` : Math.abs(pct) + ' %'} vs. mes anterior`, cls: d > 0 ? 'up' : d < 0 ? 'dn' : ''};
+}
+function kpi(t, v, s, c, serie, color){
+  const d = variacion(serie, s);
+  const pie = d.txt ? `<div class="delta ${d.cls}">${d.txt}</div>` : `<div class="note">${s || ''}</div>`;
+  return `<div class="kpi"><div class="lbl">${t}</div><div class="val${c ? ' ' + c : ''}">${v}</div>${pie}${spark(serie && serie.serie, color)}</div>`;
+}
+
+async function cargar(){
+  const r = await api('/api/empresas');
+  EMPRESAS = r.lista; const T = r.totales || {}, S = r.series || {};
+  document.getElementById('kpis').innerHTML =
+    kpi('Empresas activas', T.empresas_activas ?? 0, 'nuevas', 'acc', S.empresas, 'var(--acc-linea,#c08600)') +
+    kpi('Usuarios', T.usuarios ?? 0, 'nuevos', '', S.usuarios, 'var(--cat-2,#1a1d24)') +
+    kpi('Equipos gestionados', T.equipos ?? 0, 'nuevos', '', S.equipos, 'var(--cat-2,#1a1d24)') +
+    kpi('Operaciones', fmt(T.operaciones, 0), 'ops', '', S.operaciones, '#0d9488');
+  pintar();
+}
+
+function pintar(){
+  const q = (document.getElementById('buscar').value || '').toLowerCase();
+  const lista = EMPRESAS.filter(e => !q || [e.nombre, e.nit, e.contacto, e.email].some(x => (x||'').toLowerCase().includes(q)));
+  document.getElementById('nEmpresas').textContent = `· ${lista.length}`;
+  document.getElementById('vacio').style.display = EMPRESAS.length ? 'none' : 'block';
+  document.getElementById('tabla').innerHTML = lista.map(e => `
+    <tr class="${e.activa ? '' : 'inactiva'}" style="${e.activa ? '' : 'opacity:.55'}">
+      <td><b>${escapar(e.nombre)}</b>${e.nit ? `<div class="mut">NIT ${escapar(e.nit)}</div>` : ''}</td>
+      <td>${escapar(e.contacto || '—')}${e.email ? `<div class="mut">${escapar(e.email)}</div>` : ''}${e.telefono ? `<div class="mut">${escapar(e.telefono)}</div>` : ''}</td>
+      <td class="num">${e.n_usuarios_activos}${e.n_usuarios !== e.n_usuarios_activos ? ` <span class="mut">/ ${e.n_usuarios}</span>` : ''}</td>
+      <td class="num">${e.n_equipos}</td>
+      <td class="num">${fmt(e.n_operaciones, 0)}${e.ot_abiertas ? `<div class="mut">${e.ot_abiertas} OT abiertas</div>` : ''}</td>
+      <td>${e.ultima_operacion ? `Vuelo ${fmtFecha(e.ultima_operacion)}` : '<span class="mut">sin vuelos</span>'}
+          <div class="mut">${e.ultimo_acceso ? `acceso ${fmtFechaHora(e.ultimo_acceso)}` : 'nadie ha entrado'}</div></td>
+      <td><span class="tag ${e.activa ? 'green' : 'gray'}">${e.activa ? 'Activa' : 'Inactiva'}</span></td>
+      <td class="acciones-fila" style="white-space:nowrap">
+        <button class="pillbtn" data-usuarios="${e.id}">Usuarios</button>
+        <button class="pillbtn" data-correo="${e.id}" title="Servidor SMTP y bandeja de salida de esta empresa">Correo saliente</button>
+        <button class="pillbtn" data-editar="${e.id}">Editar</button>
+        <button class="pillbtn" data-entrar="${e.id}" title="Ver la app como esta empresa (soporte)">Entrar</button>
+        <button class="pillbtn" data-activa="${e.id}" data-valor="${e.activa ? 0 : 1}">${e.activa ? 'Desactivar' : 'Activar'}</button>
+      </td>
+    </tr>`).join('');
+  const T = document.getElementById('tabla');
+  T.querySelectorAll('[data-usuarios]').forEach(b => b.onclick = () => usuarios(Number(b.dataset.usuarios)));
+  T.querySelectorAll('[data-correo]').forEach(b => b.onclick = () => correo(Number(b.dataset.correo)));
+  T.querySelectorAll('[data-editar]').forEach(b => b.onclick = () => formEmpresa(EMPRESAS.find(e => e.id === Number(b.dataset.editar))));
+  T.querySelectorAll('[data-entrar]').forEach(b => b.onclick = async () => {
+    await api(`/api/empresas/${b.dataset.entrar}/entrar`, {method:'POST', body:{}}); location.href = '/';
+  });
+  T.querySelectorAll('[data-activa]').forEach(b => b.onclick = async () => {
+    const e = EMPRESAS.find(x => x.id === Number(b.dataset.activa));
+    const activar = Number(b.dataset.valor) === 1;
+    if(!activar && !await confirmar({titulo:`Desactivar ${e.nombre}`, mensaje:'Ninguno de sus usuarios podrá entrar hasta que la actives de nuevo. Los datos se conservan.', aceptar:'Desactivar', peligro:true})) return;
+    try{ await api(`/api/empresas/${e.id}`, {method:'PUT', body:{activa: activar ? 1 : 0}}); toast(activar ? 'Empresa activada' : 'Empresa desactivada'); }catch(err){ toast(err.message); }
+    cargar();
+  });
+}
+document.getElementById('buscar').oninput = pintar;
+
+// ---- Crear / editar empresa ----
+function formEmpresa(e){
+  const v = ventana({
+    titulo: e ? escapar(e.nombre) : 'Nueva empresa',
+    subtitulo: e ? 'Datos de contacto del cliente' : 'El cliente y, si quieres, su primer administrador',
+    cuerpo: `<form id="fE" class="form-grid" style="margin-bottom:0" autocomplete="off">
+      <div class="campo ancho"><label>Nombre de la empresa *</label><input name="nombre" required maxlength="120" value="${escapar(e?.nombre||'')}"></div>
+      <div class="campo"><label>NIT</label><input name="nit" value="${escapar(e?.nit||'')}"></div>
+      <div class="campo"><label>Persona de contacto</label><input name="contacto" value="${escapar(e?.contacto||'')}"></div>
+      <div class="campo"><label>Correo</label><input name="email" type="email" value="${escapar(e?.email||'')}"></div>
+      <div class="campo"><label>Teléfono</label><input name="telefono" value="${escapar(e?.telefono||'')}"></div>
+      <div class="campo ancho"><label>Notas</label><textarea name="nota" rows="2">${escapar(e?.nota||'')}</textarea></div>
+      ${e ? '' : `<div class="campo ancho" style="margin-top:6px;padding-top:12px;border-top:1px solid var(--line)"><b>Primer administrador</b> <span class="mut">(opcional; también puedes crearlo después en «Usuarios»)</span></div>
+      <div class="campo"><label>Usuario</label><input name="admin_usuario" maxlength="64" autocomplete="off" placeholder="p. ej. carlos.perez"></div>
+      <div class="campo"><label>Contraseña inicial (mín. 8)</label><input name="admin_password" type="password" minlength="8" autocomplete="new-password"></div>`}
+    </form>`,
+    pie: `<div class="der"><button class="btn secundario" data-cerrar>Cancelar</button><button class="btn" data-ok>${e ? 'Guardar' : 'Crear empresa'}</button></div>`,
+  });
+  v.$('[data-cerrar]').onclick = v.cerrar;
+  v.$('[data-ok]').onclick = async () => {
+    const f = v.$('#fE'); if(!f.reportValidity()) return;
+    const d = Object.fromEntries(new FormData(f).entries());
+    try{
+      if(e) await api(`/api/empresas/${e.id}`, {method:'PUT', body:d});
+      else await api('/api/empresas', {method:'POST', body:d});
+      toast(e ? 'Empresa actualizada' : 'Empresa creada'); v.cerrar(); cargar();
+    }catch(err){ toast(err.message); }
+  };
+}
+document.getElementById('btnNuevaEmpresa').onclick = () => formEmpresa(null);
+
+// ---- Usuarios de una empresa ----
+async function usuarios(id){
+  const e = EMPRESAS.find(x => x.id === id);
+  const p = panelLateral({
+    titulo: escapar(e.nombre), subtitulo: 'Cuentas de acceso de esta empresa',
+    cuerpo: `<div class="lista" id="lu"></div>
+      <form id="fU" class="form-grid" style="margin-top:16px;margin-bottom:0" autocomplete="off">
+        <div class="campo ancho"><b>Nuevo usuario</b></div>
+        <div class="campo"><label>Usuario *</label><input name="usuario" required maxlength="64" autocomplete="off"></div>
+        <div class="campo"><label>Rol</label><select name="rol" id="rolNuevo">${opcionesRol('tecnico')}</select><div class="rol-ayuda" id="rolNuevoAyuda"></div></div>
+        <div class="campo"><label>Nombre</label><input name="nombre"></div>
+        <div class="campo"><label>Correo</label><input name="email" type="email"></div>
+        <div class="campo ancho"><label>Contraseña inicial * (mín. 8)</label><input name="password" type="password" required minlength="8" autocomplete="new-password"></div>
+        <div class="campo ancho"><button class="btn" type="submit">＋ Crear usuario</button></div>
+      </form>
+      <div id="rolesInfo">${ayudaRoles()}</div>`,
+  });
+  // Selector de rol del formulario de alta: se rehace con los roles que devuelva el servidor.
+  function selectorNuevo(){
+    const s = p.$('#rolNuevo'), actual = s.value || 'tecnico';
+    s.innerHTML = opcionesRol(ROLES[actual] ? actual : Object.keys(ROLES)[0]);
+    const ayuda = () => p.$('#rolNuevoAyuda').textContent = ROL_DESC[s.value] || '';
+    s.onchange = ayuda; ayuda();
+    const abierto = p.$('#ayudaRoles')?.open;
+    p.$('#rolesInfo').innerHTML = ayudaRoles();
+    if(abierto) p.$('#ayudaRoles').open = true;
+  }
+  selectorNuevo();
+  async function lista(){
+    const r = await api(`/api/empresas/${id}/usuarios`);
+    if(r.roles && Object.keys(r.roles).length){ ROLES = r.roles; selectorNuevo(); }
+    p.$('#lu').innerHTML = r.lista.length ? r.lista.map(u => `
+      <div class="item">
+        <span class="punto ${u.activo ? '' : 'vencido'}"></span>
+        <div class="cuerpo"><b>${escapar(u.usuario)}</b>${u.nombre ? ` · ${escapar(u.nombre)}` : ''}
+          <div class="mut">${escapar(ROLES[u.rol] || u.rol)}${u.email ? ` · ${escapar(u.email)}` : ''} · ${u.ultimo_acceso ? `último acceso ${fmtFechaHora(u.ultimo_acceso)}` : 'nunca ha entrado'}</div></div>
+        <div class="der" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
+          <select class="mini" data-rol="${u.id}" title="${escapar(ROL_DESC[u.rol] || '')}">${opcionesRol(u.rol)}</select>
+          <button class="pillbtn" data-clave="${u.id}">Clave</button>
+          <button class="pillbtn" data-activo="${u.id}" data-valor="${u.activo ? 0 : 1}">${u.activo ? 'Desactivar' : 'Activar'}</button>
+          <button class="btn-icono" data-borrar="${u.id}" title="Eliminar">✕</button>
+        </div>
+      </div>`).join('') : '<div class="empty" style="padding:22px">Esta empresa aún no tiene usuarios.</div>';
+    const g = async (uid, body, msg) => { try{ await api(`/api/admin/usuarios/${uid}`, {method:'PUT', body}); toast(msg); }catch(err){ toast(err.message); } lista(); cargar(); };
+    p.$$('[data-rol]').forEach(s => s.onchange = () => g(s.dataset.rol, {rol:s.value}, 'Rol actualizado'));
+    p.$$('[data-activo]').forEach(b => b.onclick = () => g(b.dataset.activo, {activo:Number(b.dataset.valor)}, 'Estado actualizado'));
+    p.$$('[data-clave]').forEach(b => b.onclick = () => {
+      const v = ventana({titulo:'Nueva contraseña', ancho:'angosta',
+        cuerpo:`<div class="form-grid" style="margin-bottom:0"><div class="campo ancho"><label>Contraseña (mín. 8)</label><input id="nc" type="password" minlength="8" autocomplete="new-password"></div></div>`,
+        pie:`<div class="der"><button class="btn secundario" data-cerrar>Cancelar</button><button class="btn" data-ok>Guardar</button></div>`});
+      v.$('[data-cerrar]').onclick = v.cerrar;
+      v.$('[data-ok]').onclick = async () => { const c = v.$('#nc').value; if(c.length < 8){ toast('Mínimo 8 caracteres'); return; } await g(b.dataset.clave, {password:c}, 'Contraseña restablecida'); v.cerrar(); };
+    });
+    p.$$('[data-borrar]').forEach(b => b.onclick = async () => {
+      if(!await confirmar({titulo:'Eliminar usuario', mensaje:'La persona dejará de poder entrar a Hangar.', aceptar:'Eliminar', peligro:true})) return;
+      try{ await api(`/api/admin/usuarios/${b.dataset.borrar}`, {method:'DELETE'}); toast('Usuario eliminado'); }catch(err){ toast(err.message); }
+      lista(); cargar();
+    });
+  }
+  p.$('#fU').onsubmit = async ev => {
+    ev.preventDefault();
+    try{ await api(`/api/empresas/${id}/usuarios`, {method:'POST', body:Object.fromEntries(new FormData(ev.target).entries())}); toast('Usuario creado'); ev.target.reset(); lista(); cargar(); }
+    catch(err){ toast(err.message); }
+  };
+  lista();
+}
+
+// ---- Correo saliente de una empresa ----
+// Cada empresa envía sus OT y OS desde su propio servidor SMTP. Mientras no esté configurado, los
+// correos quedan en la bandeja de salida y se pueden reintentar todos de una vez.
+const ESTADO_CORREO = {enviado:['green','Enviado'], pendiente:['acc','Pendiente'], error:['red','Error']};
+const GUIAS_SMTP = {
+  gmail: {servidor:'smtp.gmail.com', puerto:587, seguridad:'starttls'},
+  m365: {servidor:'smtp.office365.com', puerto:587, seguridad:'starttls'},
+};
+async function correo(id){
+  const e = EMPRESAS.find(x => x.id === id);
+  const v = ventana({
+    titulo: `Correo saliente · ${escapar(e.nombre)}`, ancho: 'ancha',
+    subtitulo: 'Servidor SMTP con el que esta empresa envía sus órdenes de trabajo y de servicio',
+    cuerpo: `<div class="cr-grid" id="correoEmpresa">
+      <div>
+        <div class="cr-sec">Servidor SMTP <span id="crEstado" class="tag gray" style="letter-spacing:0;text-transform:none">Cargando…</span></div>
+        <div id="crEntorno"></div>
+        <form id="fC" class="form-grid" style="margin-bottom:0" autocomplete="off">
+          <div class="campo"><label>Servidor</label><input name="servidor" placeholder="smtp.gmail.com"></div>
+          <div class="campo"><label>Puerto</label><input name="puerto" type="number" min="1" max="65535" value="587"></div>
+          <div class="campo"><label>Seguridad</label><select name="seguridad">
+            <option value="starttls">STARTTLS (587)</option><option value="ssl">SSL/TLS (465)</option><option value="ninguna">Sin cifrado</option></select></div>
+          <div class="campo"><label>Usuario</label><input name="usuario" autocomplete="off" placeholder="operaciones@empresa.com"></div>
+          <div class="campo"><label>Contraseña</label><input name="password" type="password" autocomplete="new-password" placeholder="••••••••">
+            <div class="rol-ayuda" id="crClave">Se guarda cifrada en el servidor.</div></div>
+          <div class="campo"><label>Remitente</label><input name="remitente" type="email" placeholder="operaciones@empresa.com"></div>
+          <div class="campo"><label>Nombre del remitente</label><input name="nombre_remitente"></div>
+          <div class="campo"><label>Responder a</label><input name="responder_a" type="email" placeholder="(opcional)"></div>
+          <div class="campo ancho cr-acciones">
+            <button class="btn" type="submit">Guardar configuración</button>
+            <button class="btn secundario" type="button" id="crProbar">Enviar prueba</button>
+          </div>
+        </form>
+        <div id="crAviso" style="margin-top:12px"></div>
+      </div>
+      <div>
+        <div class="cr-sec">Guías rápidas</div>
+        <div class="cr-guias">
+          <div class="cr-guia"><span class="n">G</span><div><b>Gmail / Google Workspace</b> — <code>smtp.gmail.com</code>, puerto 587, STARTTLS.
+            La contraseña debe ser una <b>contraseña de aplicación</b> (cuenta con verificación en dos pasos), no la de la cuenta.
+            <div><button class="pillbtn" type="button" data-guia="gmail">Usar estos datos</button></div></div></div>
+          <div class="cr-guia"><span class="n">M</span><div><b>Microsoft 365 / Outlook</b> — <code>smtp.office365.com</code>, puerto 587, STARTTLS,
+            con el correo completo como usuario y como remitente (el buzón debe tener SMTP autenticado habilitado).
+            <div><button class="pillbtn" type="button" data-guia="m365">Usar estos datos</button></div></div></div>
+          <div class="cr-guia"><span class="n">P</span><div><b>Servidor propio</b> — pide al proveedor del dominio el servidor, el puerto
+            y si usa SSL/TLS (465) o STARTTLS (587).</div></div>
+        </div>
+      </div>
+      <div style="grid-column:1/-1">
+        <div class="cr-sec">Bandeja de salida <span class="mut" id="crCuenta" style="letter-spacing:0;text-transform:none;font-weight:600"></span>
+          <button class="pillbtn" type="button" id="crReintentar" style="letter-spacing:0;text-transform:none">Reintentar pendientes</button></div>
+        <div class="cr-cola" id="crCola"><div class="empty" style="padding:20px"><span class="cargador oscuro"></span> Cargando…</div></div>
+      </div>
+    </div>`,
+  });
+  const f = v.$('#fC');
+  const aviso = (ok, txt) => v.$('#crAviso').innerHTML = `<div class="aviso ${ok ? 'verde' : 'rojo'}" style="margin-bottom:0"><div>${escapar(txt || '')}</div></div>`;
+
+  async function config(){
+    const cfg = await api(`/api/empresas/${id}/correo`);
+    ['servidor','puerto','seguridad','usuario','remitente','nombre_remitente','responder_a'].forEach(k => { if(f[k]) f[k].value = cfg[k] ?? ''; });
+    f.password.value = '';
+    f.password.placeholder = cfg.tiene_password ? '•••••••• (guardada)' : '••••••••';
+    v.$('#crClave').textContent = cfg.tiene_password
+      ? 'Contraseña guardada. Déjala vacía para conservarla.' : 'Se guarda cifrada en el servidor.';
+    const et = v.$('#crEstado');
+    et.className = 'tag ' + (cfg.configurado ? 'green' : 'gray');
+    et.textContent = cfg.configurado ? 'Listo para enviar' : 'Sin configurar';
+    v.$('#crEntorno').innerHTML = cfg.desde_entorno
+      ? '<div class="aviso gris" style="margin-bottom:12px"><div>Este servidor tiene variables <code>SMTP_*</code> definidas: esos valores mandan sobre lo que se guarde aquí.</div></div>' : '';
+  }
+  async function cola(){
+    let filas = [];
+    try{ filas = await api(`/api/empresas/${id}/correo/cola`); }catch(err){ toast(err.message); }
+    const pend = filas.filter(c => c.estado !== 'enviado').length;
+    v.$('#crCuenta').textContent = filas.length ? `· ${filas.length} recientes${pend ? `, ${pend} sin enviar` : ''}` : '';
+    v.$('#crReintentar').disabled = !pend;
+    v.$('#crCola').innerHTML = filas.length ? filas.map(c => {
+      const [cls, txt] = ESTADO_CORREO[c.estado] || ['gray', c.estado];
+      return `<div class="item">
+        <span class="punto ${c.estado === 'enviado' ? '' : c.estado === 'error' ? 'error' : 'pendiente'}"></span>
+        <div class="cuerpo"><b>${escapar(c.asunto || '(sin asunto)')}</b>
+          <div class="mut">Para ${escapar(c.para || '—')}${c.referencia ? ` · ${escapar(c.referencia)}` : ''} ·
+            ${c.enviado ? `enviado ${fmtFechaHora(c.enviado)}` : `creado ${fmtFechaHora(c.creado)}`}${c.intentos ? ` · ${c.intentos} ${c.intentos === 1 ? 'intento' : 'intentos'}` : ''}</div>
+          ${c.error ? `<div class="err">${escapar(String(c.error).slice(0, 160))}</div>` : ''}</div>
+        <div class="der"><span class="tag ${cls}">${escapar(txt)}</span></div>
+      </div>`;
+    }).join('') : '<div class="empty" style="padding:20px">Sin correos en la bandeja de esta empresa.</div>';
+  }
+
+  f.onsubmit = async ev => {
+    ev.preventDefault(); if(!f.reportValidity()) return;
+    const d = Object.fromEntries(new FormData(f).entries());
+    try{ await api(`/api/empresas/${id}/correo`, {method:'PUT', body:d}); toast('Configuración guardada'); await config(); }
+    catch(err){ toast(err.message); }
+  };
+  v.$$('[data-guia]').forEach(b => b.onclick = () => {
+    const g = GUIAS_SMTP[b.dataset.guia];
+    f.servidor.value = g.servidor; f.puerto.value = g.puerto; f.seguridad.value = g.seguridad;
+    toast('Datos del servidor puestos; completa usuario, contraseña y remitente');
+  });
+  v.$('#crProbar').onclick = () => {
+    const w = ventana({titulo:'Correo de prueba', ancho:'angosta',
+      cuerpo:`<div class="form-grid" style="margin-bottom:0"><div class="campo ancho"><label>Enviar a</label>
+        <input id="crDestino" type="email" placeholder="tu@correo.com" value="${escapar(e.email || '')}"></div>
+        <div class="campo ancho cr-nota">Se usa la configuración <b>guardada</b>; guarda antes los cambios del formulario.</div></div>`,
+      pie:`<div class="der"><button class="btn secundario" data-cerrar>Cancelar</button><button class="btn" data-enviar>Enviar</button></div>`});
+    w.$('[data-cerrar]').onclick = w.cerrar;
+    w.$('[data-enviar]').onclick = async () => {
+      const destino = w.$('#crDestino').value.trim();
+      if(!destino){ toast('Indica un correo de destino'); return; }
+      const b = w.$('[data-enviar]');
+      b.disabled = true; b.innerHTML = '<span class="cargador"></span> Enviando…';
+      try{
+        const r = await api(`/api/empresas/${id}/correo/probar`, {method:'POST', body:{destino}});
+        aviso(r.ok, r.ok ? (r.motivo || `Correo de prueba enviado a ${destino}.`) : (r.motivo || 'No se pudo enviar.'));
+      }catch(err){ aviso(false, err.message); }
+      w.cerrar(); cola();
+    };
+  };
+  v.$('#crReintentar').onclick = async () => {
+    const b = v.$('#crReintentar'); b.disabled = true;
+    try{
+      const r = await api(`/api/empresas/${id}/correo/reintentar`, {method:'POST', body:{}});
+      toast(r.motivo || (r.ok ? `${r.enviados ?? 0} de ${r.total ?? 0} enviados` : 'No se pudo reintentar'));
+    }catch(err){ toast(err.message); }
+    cola();
+  };
+  try{ await config(); }catch(err){ toast(err.message); }
+  cola();
+}
+
+cargar();
+</script>
+{% endblock %}

@@ -1,0 +1,121 @@
+# Exported by three-d-stage
+newmtl aluminum_anodized
+Kd 1.0000 1.0000 1.0000
+Ks 0.2000 0.2000 0.2000
+Ns 132
+d 1.0000
+
+newmtl black_plastic
+Kd 0.0137 0.0152 0.0176
+Ks 0.2000 0.2000 0.2000
+Ns 76
+d 1.0000
+
+newmtl steel_screw
+Kd 0.3231 0.3372 0.3613
+Ks 0.2000 0.2000 0.2000
+Ns 144
+d 1.0000
+
+newmtl rubber_black
+Kd 1.0000 1.0000 1.0000
+Ks 0.2000 0.2000 0.2000
+Ns 24
+d 1.0000
+
+newmtl tank_hdpe_white
+Kd 1.0000 1.0000 1.0000
+Ks 0.2000 0.2000 0.2000
+Ns 124
+d 1.0000
+
+newmtl black_gloss
+Kd 0.0056 0.0060 0.0070
+Ks 0.2000 0.2000 0.2000
+Ns 156
+d 1.0000
+
+newmtl shell_grey
+Kd 0.2270 0.2384 0.2542
+Ks 0.2000 0.2000 0.2000
+Ns 108
+d 1.0000
+
+newmtl tube_translucent
+Kd 0.8070 0.8879 0.8550
+Ks 0.2000 0.2000 0.2000
+Ns 176
+d 0.4500
+
+newmtl yellow_marker
+Kd 0.8714 0.5520 0.0097
+Ks 0.2000 0.2000 0.2000
+Ns 116
+d 1.0000
+
+newmtl red_marker
+Kd 0.6445 0.0437 0.0130
+Ks 0.2000 0.2000 0.2000
+Ns 110
+d 1.0000
+
+newmtl reflector_chrome
+Kd 0.8879 0.9047 0.9216
+Ks 0.2000 0.2000 0.2000
+Ns 188
+d 1.0000
+
+newmtl led_white
+Kd 1.0000 0.9387 0.7454
+Ks 0.2000 0.2000 0.2000
+Ns 160
+d 1.0000
+
+newmtl lens_glass
+Kd 0.0018 0.0024 0.0037
+Ks 0.2000 0.2000 0.2000
+Ns 190
+d 1.0000
+
+newmtl led_red
+Kd 1.0000 0.0685 0.0296
+Ks 0.2000 0.2000 0.2000
+Ns 150
+d 1.0000
+
+newmtl rubber_worn
+Kd 0.0232 0.0252 0.0273
+Ks 0.2000 0.2000 0.2000
+Ns 10
+d 1.0000
+
+newmtl carbon_fiber
+Kd 1.0000 1.0000 1.0000
+Ks 0.2000 0.2000 0.2000
+Ns 144
+d 1.0000
+
+newmtl led_green
+Kd 0.0723 0.8714 0.1946
+Ks 0.2000 0.2000 0.2000
+Ns 150
+d 1.0000
+
+newmtl propeller_composite
+Kd 0.7157 0.7231 0.6939
+Ks 0.2000 0.2000 0.2000
+Ns 140
+d 1.0000
+
+newmtl mat_0
+Kd 1.0000 0.8963 0.6445
+Ks 0.2000 0.2000 0.2000
+Ns 100
+d 0.0750
+
+newmtl mat_1
+Kd 1.0000 0.8963 0.6445
+Ks 0.2000 0.2000 0.2000
+Ns 100
+d 0.0750
+

@@ -1,0 +1,507 @@
+{% extends "_layout.html" %}
+{% block titulo %}Planificador de flota{% endblock %}
+{% block encabezado %}Planificador de flota{% endblock %}
+{% block subtitulo %}Vuelos, mantenimiento y disponibilidad de cada activo{% endblock %}
+
+{% block head %}
+<style>
+/* ---------- Controles ---------- */
+.pl-nav{display:inline-flex;align-items:center;gap:6px}
+.pl-nav .pillbtn{padding:7px 12px;font-size:12.5px}
+.pl-rango{font-family:var(--font-marca);font-weight:800;font-size:17px;letter-spacing:-.02em;color:var(--ink);white-space:nowrap}
+.pl-rango small{font-family:var(--font);font-weight:560;font-size:12px;color:var(--mut);margin-left:8px;letter-spacing:0}
+.pl-barra{display:flex;align-items:center;gap:10px 14px;flex-wrap:wrap;width:100%}
+.pl-barra .der{margin-left:auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.pl-barra input[type=date]{font-family:var(--font);font-size:12.5px;border:.5px solid var(--line2);border-radius:9px;padding:6px 9px;background:var(--o-sup,#fff);color:var(--ink)}
+
+/* ---------- Avisos ---------- */
+.pl-avisos{border-radius:var(--r);padding:18px 20px;margin-bottom:18px;border:1px solid;display:flex;gap:16px;align-items:flex-start}
+.pl-avisos.hay{background:linear-gradient(180deg,rgba(224,71,62,.09),rgba(224,71,62,.04));border-color:rgba(224,71,62,.35)}
+.pl-avisos.ok{background:rgba(47,143,78,.07);border-color:rgba(47,143,78,.3)}
+.pl-avisos .ico{flex:none;width:44px;height:44px;border-radius:13px;display:grid;place-items:center}
+.pl-avisos.hay .ico{background:var(--red);color:#fff}
+.pl-avisos.ok .ico{background:var(--green);color:#fff}
+.pl-avisos .ico svg{width:24px;height:24px}
+.pl-avisos h3{font-size:15.5px;font-weight:700;margin:2px 0 8px;letter-spacing:-.01em;display:flex;align-items:center;gap:8px}
+.pl-avisos.hay h3{color:var(--o-tx-rojo,#7a1f18)}.pl-avisos.ok h3{color:var(--o-tx-verde,#1d6b38);margin-bottom:2px}
+.pl-avisos .cuerpo{flex:1;min-width:0}
+.pl-avisos ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:6px 18px}
+.pl-avisos li{display:flex;gap:9px;align-items:flex-start;font-size:13px;line-height:1.45;color:var(--ink2);padding:6px 10px;border-radius:10px;background:var(--o-velo-sup,rgba(255,255,255,.7))}
+.pl-avisos li.clic{cursor:pointer}.pl-avisos li.clic:hover{background:var(--o-sup,#fff);box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.pl-avisos li .t{flex:none;font-size:10px;font-weight:750;text-transform:uppercase;letter-spacing:.05em;padding:2px 7px;border-radius:6px;margin-top:1px}
+.t.no_apto,.t.licencia{background:var(--red);color:#fff}
+.t.carga{background:var(--acc);color:var(--acc-txt)}
+.t.sin_activo{background:rgba(115,122,134,.2);color:var(--ink2)}
+.pl-avisos p{font-size:13px;color:var(--o-tx-verde,#1d6b38);margin:0}
+
+/* ---------- Gantt ---------- */
+.gantt-env{overflow-x:auto;border-radius:var(--r-s);border:.5px solid var(--line);background:var(--o-sup,#fff)}
+.gantt{display:grid;min-width:100%}
+.gantt>div{border-bottom:.5px solid var(--line);border-right:.5px solid var(--line)}
+.g-cab{position:sticky;top:0;z-index:3;background:var(--o-gris,#f6f7f8);padding:8px 6px;text-align:center;font-size:11px;color:var(--mut);font-weight:620;line-height:1.25}
+.g-cab b{display:block;font-family:var(--font-marca);font-size:16px;font-weight:800;color:var(--ink);letter-spacing:-.02em}
+.g-cab.fds{background:var(--o-gris-3,#eef0f3)}
+.g-cab.hoy{background:var(--acc);color:var(--acc-txt)}
+.g-cab.hoy b{color:var(--acc-txt)}
+.g-esq{position:sticky;left:0;top:0;z-index:5;background:var(--o-gris,#f6f7f8);padding:10px 14px;font-size:11px;font-weight:650;color:var(--mut);text-transform:uppercase;letter-spacing:.05em;display:flex;align-items:flex-end}
+.g-act{position:sticky;left:0;z-index:2;background:var(--o-sup,#fff);padding:11px 14px;display:flex;gap:11px;align-items:flex-start;min-height:74px}
+.g-act .av{flex:none;width:36px;height:36px;border-radius:11px;display:grid;place-items:center;background:var(--o-grafito,#1a1d24);color:var(--acc)}
+.g-act .av svg{width:22px;height:22px}
+.g-act .nom{font-weight:680;font-size:13.5px;color:var(--ink);line-height:1.2;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.g-act .nom a{color:inherit;text-decoration:none}.g-act .nom a:hover{color:var(--acc-ink)}
+.g-act .sub{font-size:11.5px;color:var(--mut);margin-top:3px}
+.g-act .mat{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;background:var(--acc-soft);color:var(--acc-deep);padding:1px 6px;border-radius:5px;font-weight:650}
+.g-act .motivo{font-size:11.5px;color:var(--o-tx-rojo,#a4271f);margin-top:5px;line-height:1.35;font-weight:560}
+.g-act .motivo.amb{color:var(--o-tx-ambar,#7a5400)}
+.g-dia{padding:5px 4px;display:flex;flex-direction:column;gap:4px;min-height:74px}
+.g-dia.fds{background:var(--o-gris,#f7f8f9)}
+.gantt>.lun,.gantt>div>.lun{border-left:1.5px solid var(--line2)}
+.g-dia.hoy{background:rgba(253,185,19,.09);box-shadow:inset 2px 0 0 var(--acc),inset -2px 0 0 var(--acc)}
+.fila-no_apto>.g-act{background:var(--o-suave-rojo,#fdf1f0)}
+.fila-no_apto>.g-dia{background-color:rgba(224,71,62,.045)}
+.fila-no_apto>.g-dia.fds{background-color:rgba(224,71,62,.07)}
+.fila-no_apto>.g-act::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--red)}
+.fila-observaciones>.g-act::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--amber)}
+.fila-apto>.g-act::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--green)}
+.g-grupo{grid-column:1/-1;background:var(--o-grafito,#1a1d24);color:#fff;padding:7px 14px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;position:sticky;left:0;display:flex;gap:10px;align-items:center}
+.g-grupo span{color:var(--acc)}
+
+/* Semáforo de aeronavegabilidad */
+.semaforo{display:inline-flex;gap:3px;padding:3px 5px;border-radius:980px;background:var(--o-grafito,#1a1d24);vertical-align:middle}
+.semaforo i{width:7px;height:7px;border-radius:50%;background:#3a3f4a}
+.semaforo.apto i:nth-child(3){background:#3ecf6e;box-shadow:0 0 6px #3ecf6e}
+.semaforo.observaciones i:nth-child(2){background:#fdb913;box-shadow:0 0 6px #fdb913}
+.semaforo.no_apto i:nth-child(1){background:#ff5a4f;box-shadow:0 0 6px #ff5a4f}
+.est-txt{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.est-txt.apto{color:var(--o-tx-verde,#1d6b38)}.est-txt.observaciones{color:var(--o-tx-ambar,#7a5400)}.est-txt.no_apto{color:var(--o-tx-rojo,#a4271f)}
+
+/* Bloques */
+.bl{display:block;width:100%;text-align:left;border:none;border-radius:8px;padding:5px 7px;font-family:var(--font);font-size:11.5px;line-height:1.3;cursor:pointer;transition:transform .12s,box-shadow .12s;overflow:hidden}
+.bl:hover{transform:translateY(-1px);box-shadow:0 5px 14px rgba(26,29,36,.18)}
+.bl:focus-visible{outline:2px solid var(--ink);outline-offset:1px}
+.bl .c{font-weight:750;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bl .d{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.85}
+.bl.os{background:var(--acc);color:var(--acc-txt);box-shadow:0 1px 2px rgba(197,140,0,.4)}
+.bl.os.alerta{background:repeating-linear-gradient(135deg,#fdb913 0 8px,#f5ab00 8px 16px);box-shadow:inset 0 0 0 2px var(--red)}
+.bl.ot{background:var(--o-grafito,#1a1d24);color:#fff}
+.bl.ot .c{color:var(--acc)}
+.bl.op{background:rgba(47,143,78,.13);color:var(--o-tx-verde,#1d6b38);box-shadow:inset 0 0 0 .5px rgba(47,143,78,.35)}
+.gantt.denso .bl{padding:3px 4px;font-size:10.5px;border-radius:6px;text-align:center}
+.gantt.denso .bl .d{display:none}
+.gantt.denso .g-cab{padding:6px 2px;font-size:10px}
+.gantt.denso .g-cab b{font-size:13px}
+
+.leyenda-pl{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:12px;color:var(--ink2);margin:0 0 12px}
+.leyenda-pl span{display:inline-flex;align-items:center;gap:7px}
+.leyenda-pl i{width:16px;height:11px;border-radius:4px;display:inline-block}
+
+/* ---------- Heatmap de pilotos ---------- */
+.hm-env{overflow-x:auto}
+.hm{display:grid;gap:3px;min-width:100%}
+.hm .h-cab{font-size:10.5px;color:var(--mut);text-align:center;font-weight:620;padding:4px 0}
+.hm .h-cab.hoy{color:var(--acc-deep);font-weight:800}
+.hm .h-cab.fds{color:#a3a8b1}
+.hm .h-pil{font-size:12.5px;font-weight:620;color:var(--ink);padding:0 10px 0 0;display:flex;align-items:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;position:sticky;left:0;background:var(--o-sup,#fff);z-index:1}
+.hm .h-c{height:36px;border-radius:7px;display:grid;place-items:center;font-size:11.5px;font-weight:700;font-variant-numeric:tabular-nums;position:relative;background:var(--o-gris,#f3f4f6);color:var(--ink2)}
+.hm .h-c.fds{background:var(--o-gris-3,#eceef1)}
+.hm .h-c.exceso{background:var(--red)!important;color:#fff;box-shadow:0 0 0 2px rgba(224,71,62,.25)}
+.hm .h-c .prog{position:absolute;top:3px;right:3px;min-width:14px;height:14px;padding:0 3px;border-radius:7px;background:var(--o-grafito,#1a1d24);color:var(--acc);font-size:9px;line-height:14px;font-weight:800}
+.hm .h-tot{font-size:12px;font-weight:750;display:flex;align-items:center;justify-content:flex-end;font-variant-numeric:tabular-nums;color:var(--acc-ink)}
+.hm-leyenda{display:flex;align-items:center;gap:10px;font-size:11.5px;color:var(--mut);margin-top:12px;flex-wrap:wrap}
+.hm-leyenda .esc{display:inline-flex;gap:2px}.hm-leyenda .esc i{width:22px;height:12px;border-radius:3px;display:inline-block}
+
+/* Ventana de detalle */
+.det-pl{display:grid;grid-template-columns:130px 1fr;gap:9px 14px;font-size:13.5px}
+.det-pl dt{color:var(--mut);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.03em;padding-top:2px}
+.det-pl dd{margin:0;color:var(--ink);font-weight:560}
+.cinta{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:12px;margin-bottom:16px;font-weight:700;font-size:14px}
+.cinta.os{background:var(--acc);color:var(--acc-txt)}
+.cinta.ot{background:var(--o-grafito,#1a1d24);color:#fff}.cinta.ot b{color:var(--acc)}
+.cinta.op{background:rgba(47,143,78,.14);color:var(--o-tx-verde,#1d6b38)}
+
+.kpis.pl{grid-template-columns:repeat(auto-fit,minmax(165px,1fr))}
+.kpis.pl .kpi .val{font-size:30px}
+.pagina-acciones a.btn,.ventana a.btn{text-decoration:none}
+.gantt.holgado .bl .d{white-space:normal}
+@media(max-width:720px){
+  .g-act{padding:9px 10px;gap:8px}
+  .g-act .av{width:30px;height:30px}.g-act .av svg{width:18px;height:18px}
+  .pl-avisos{padding:14px}.pl-avisos .ico{display:none}
+  .pl-avisos ul{grid-template-columns:1fr}
+  .kpis.pl{grid-template-columns:1fr 1fr;gap:10px}.kpis.pl .kpi{padding:14px}.kpis.pl .kpi .val{font-size:24px}
+  .det-pl{grid-template-columns:1fr;gap:2px}.det-pl dd{margin-bottom:8px}
+}
+</style>
+{% endblock %}
+
+{% block acciones %}
+<a class="btn secundario" href="/ordenes-trabajo?nueva=1">＋ OT</a>
+<a class="btn" href="/ordenes-servicio?nueva=1">＋ Orden de servicio</a>
+{% endblock %}
+
+{% block barra %}
+<div class="tabsbar"><div class="wrap">
+  <div class="pl-barra">
+    <div class="pl-nav">
+      <button class="pillbtn" id="bAnt" title="Período anterior">‹ Anterior</button>
+      <button class="pillbtn" id="bHoy">Hoy</button>
+      <button class="pillbtn" id="bSig" title="Período siguiente">Siguiente ›</button>
+    </div>
+    <div class="pl-rango" id="rango">—</div>
+    <div class="der">
+      <input type="date" id="fIr" title="Ir a una fecha">
+      <div class="segmento" id="segDias">
+        <button data-d="7" class="activo">7 días</button>
+        <button data-d="14">14 días</button>
+        <button data-d="28">28 días</button>
+      </div>
+      <div class="segmento" id="segTipo">
+        <button data-t="" class="activo">Todos</button>
+        <button data-t="dron">Drones</button>
+        <button data-t="avion">Aviones</button>
+      </div>
+    </div>
+  </div>
+</div></div>
+{% endblock %}
+
+{% block contenido %}
+<div id="avisos"></div>
+
+<div class="kpis pl" id="kpis"></div>
+
+<div class="card">
+  <div class="card-cab"><h3>Programación por activo</h3><div class="der" id="ganttResumen"></div></div>
+  <div class="leyenda-pl">
+    <span><i style="background:var(--acc)"></i>Orden de servicio (vuelo)</span>
+    <span><i style="background:var(--o-grafito,#1a1d24)"></i>Orden de trabajo (mantenimiento)</span>
+    <span><i style="background:rgba(47,143,78,.25);box-shadow:inset 0 0 0 .5px rgba(47,143,78,.5)"></i>Operación realizada</span>
+    <span><i style="background:repeating-linear-gradient(135deg,#fdb913 0 4px,#f5ab00 4px 8px);box-shadow:inset 0 0 0 1.5px var(--red)"></i>OS sobre activo que no recomendamos volar</span>
+    <span><i style="background:rgba(224,71,62,.12)"></i>No recomendado volar</span>
+    <span><i style="background:rgba(253,185,19,.25)"></i>Hoy</span>
+  </div>
+  <div class="gantt-env"><div class="gantt" id="gantt"></div></div>
+</div>
+
+<div class="card">
+  <div class="card-cab"><h3>Carga por piloto</h3><div class="der" id="hmResumen"></div></div>
+  <div class="hm-env"><div class="hm" id="heatmap"></div></div>
+  <div class="hm-leyenda" id="hmLeyenda"></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const IC_DRON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="5.5" r="2.8"/><circle cx="18.5" cy="5.5" r="2.8"/><circle cx="5.5" cy="18.5" r="2.8"/><circle cx="18.5" cy="18.5" r="2.8"/><path d="M7.6 7.6l2.4 2.4M16.4 7.6 14 10M7.6 16.4 10 14M16.4 16.4 14 14"/><rect x="9.6" y="9.6" width="4.8" height="4.8" rx="1.2"/></svg>`;
+const IC_AVION = `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.4c.8 0 1.3.9 1.3 2.1v3.3l5.5 3.1v1.7l-5.5-1.6v3.3l1.8 1.4v1.4L10 16.4l-3.1.7v-1.4l1.8-1.4v-3.3l-5.5 1.6v-1.7l5.5-3.1V4.5c0-1.2.5-2.1 1.3-2.1z"/></svg>`;
+const IC_ALERTA = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>`;
+const IC_OK = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>`;
+const DIAS_SEM = ['dom','lun','mar','mié','jue','vie','sáb'];
+const MESES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+const TIPO_AVISO = {no_apto:'No recomendado', licencia:'Licencia', sin_activo:'Sin activo', carga:'Carga'};
+const EST_OS = {programada:'Programada', enviada:'Enviada', en_ruta:'En ruta', en_ejecucion:'En ejecución', finalizada:'Finalizada', cancelada:'Cancelada'};
+const EST_OT = {borrador:'Borrador', programada:'Programada', enviada:'Enviada', en_proceso:'En proceso', completada:'Completada', cancelada:'Cancelada'};
+
+// Fechas locales (no UTC): en Colombia, después de las 7 p. m. toISOString ya da el día siguiente.
+const iso = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+const aFecha = s => { const [y,m,d] = s.split('-').map(Number); return new Date(y, m-1, d); };
+const sumar = (s, n) => { const d = aFecha(s); d.setDate(d.getDate()+n); return iso(d); };
+const lunes = s => { const d = aFecha(s); const w = (d.getDay()+6)%7; d.setDate(d.getDate()-w); return iso(d); };
+const HOY = iso(new Date());
+
+const EST = {
+  desde: paramURL('desde') || lunes(HOY),
+  dias: Number(paramURL('dias')) || 7,
+  tipo: paramURL('tipo') || '',
+};
+let P = null, MAX_PILOTO = 8;
+
+function sincronizarControles(){
+  document.querySelectorAll('#segDias button').forEach(b=>b.classList.toggle('activo', Number(b.dataset.d)===EST.dias));
+  document.querySelectorAll('#segTipo button').forEach(b=>b.classList.toggle('activo', b.dataset.t===EST.tipo));
+  const q = new URLSearchParams({desde:EST.desde, dias:EST.dias}); if(EST.tipo) q.set('tipo', EST.tipo);
+  history.replaceState(null, '', '?'+q.toString());
+}
+
+async function cargar(){
+  sincronizarControles();
+  const q = new URLSearchParams({desde:EST.desde, dias:EST.dias}); if(EST.tipo) q.set('tipo', EST.tipo);
+  try{
+    P = await api('/api/planificador?'+q.toString());
+  }catch(e){ toast(e.message); return; }
+  pintarRango(); pintarAvisos(); pintarKpis(); pintarGantt(); pintarHeatmap();
+}
+
+function diasRango(){ return Array.from({length:P.dias}, (_,i)=>sumar(P.desde, i)); }
+const esFds = f => { const w = aFecha(f).getDay(); return w===0 || w===6; };
+
+function pintarRango(){
+  const a = aFecha(P.desde), b = aFecha(P.hasta);
+  const txt = a.getMonth()===b.getMonth()
+    ? `${a.getDate()} – ${b.getDate()} ${MESES[b.getMonth()]} ${b.getFullYear()}`
+    : `${a.getDate()} ${MESES[a.getMonth()]} – ${b.getDate()} ${MESES[b.getMonth()]} ${b.getFullYear()}`;
+  const contiene = HOY >= P.desde && HOY <= P.hasta;
+  document.getElementById('rango').innerHTML = `${txt}<small>${contiene?'incluye hoy':(P.hasta < HOY ? 'período pasado' : 'período futuro')}</small>`;
+}
+
+function pintarAvisos(){
+  const cont = document.getElementById('avisos');
+  const av = P.avisos || [];
+  if(!av.length){
+    cont.innerHTML = `<div class="pl-avisos ok"><div class="ico">${IC_OK}</div><div class="cuerpo">
+      <h3>Sin avisos en el período</h3><p>Ninguna orden de servicio cae sobre un activo que no recomendamos volar, no hay licencias vencidas ni pilotos por encima de ${fmt(MAX_PILOTO)} h diarias.</p></div></div>`;
+    return;
+  }
+  const orden = {no_apto:0, licencia:1, carga:2, sin_activo:3};
+  const lista = [...av].sort((x,y)=>(orden[x.tipo]??9)-(orden[y.tipo]??9));
+  cont.innerHTML = `<div class="pl-avisos hay"><div class="ico">${IC_ALERTA}</div><div class="cuerpo">
+    <h3>${av.length} ${av.length===1?'aviso requiere':'avisos requieren'} atención</h3>
+    <ul>${lista.map((a,i)=>`<li class="${a.os?'clic':''}" data-os="${escapar(a.os||'')}" ${a.os?'tabindex="0" role="button"':''}>
+      <span class="t ${escapar(a.tipo)}">${TIPO_AVISO[a.tipo]||escapar(a.tipo)}</span><span>${escapar(a.texto)}</span></li>`).join('')}</ul>
+  </div></div>`;
+  cont.querySelectorAll('li.clic').forEach(li=>{
+    const abrir = ()=>{ const o = P.os.find(x=>x.codigo===li.dataset.os); if(o) detalleOS(o); };
+    li.onclick = abrir; li.onkeydown = e=>{ if(e.key==='Enter') abrir(); };
+  });
+}
+
+function pintarKpis(){
+  const eq = P.equipos;
+  const n = k => eq.filter(e=>e.estado===k).length;
+  const ha = P.operaciones.reduce((a,o)=>a+(o.ha||0),0), h = P.operaciones.reduce((a,o)=>a+(o.horas||0),0);
+  const haProg = P.os.reduce((a,o)=>a+(o.hectareas||0),0);
+  document.getElementById('kpis').innerHTML = `
+    <div class="kpi"><div class="lbl">Activos aptos</div><div class="val verde">${n('apto')}<span style="font-size:18px;color:var(--mut)"> / ${eq.length}</span></div>
+      <div class="note">${n('no_apto')} no aptos · ${n('observaciones')} con observaciones</div></div>
+    <div class="kpi"><div class="lbl">Órdenes de servicio</div><div class="val acc">${P.os.length}</div><div class="note">${fmt(haProg,0)} ha programadas</div></div>
+    <div class="kpi"><div class="lbl">Órdenes de trabajo</div><div class="val">${P.ot.length}</div><div class="note">mantenimiento en el período</div></div>
+    <div class="kpi"><div class="lbl">Horas voladas</div><div class="val">${fmt(h)}</div><div class="note">${P.operaciones.reduce((a,o)=>a+o.n,0)} operaciones registradas</div></div>
+    <div class="kpi"><div class="lbl">Hectáreas aplicadas</div><div class="val">${fmt(ha,0)}</div><div class="note">${h?fmt(ha/h,1)+' ha por hora':'sin vuelos registrados'}</div></div>
+    <div class="kpi"><div class="lbl">Avisos</div><div class="val ${P.avisos.length?'rojo':'verde'}">${P.avisos.length}</div><div class="note">${P.avisos.length?'revisa el panel superior':'todo en orden'}</div></div>`;
+}
+
+function semaforo(e){
+  return `<span class="semaforo ${e.estado}" title="${escapar(e.estado_txt||e.estado)}"><i></i><i></i><i></i></span>`;
+}
+
+function pintarGantt(){
+  const dias = diasRango();
+  const g = document.getElementById('gantt');
+  const denso = P.dias >= 28;
+  const movil = innerWidth < 720;
+  const colAct = movil ? 150 : (denso ? 210 : 250);
+  const minCol = denso ? 34 : (P.dias >= 14 ? 60 : 120);
+  g.className = 'gantt' + (denso ? ' denso' : '') + (P.dias <= 7 ? ' holgado' : '');
+  g.style.gridTemplateColumns = `${colAct}px repeat(${P.dias}, minmax(${minCol}px, 1fr))`;
+  const porDia = (lista, eqId, f) => lista.filter(x=>x.equipo_id===eqId && x.fecha===f);
+
+  let html = `<div class="g-esq">Activo</div>` + dias.map(f=>{
+    const d = aFecha(f);
+    const cls = [f===HOY?'hoy':'', esFds(f)?'fds':'', aFecha(f).getDay()===1&&f!==P.desde?'lun':''].join(' ');
+    const mes = (d.getDate()===1 || f===P.desde) ? ` ${MESES[d.getMonth()]}` : '';
+    return `<div class="g-cab ${cls}">${DIAS_SEM[d.getDay()]}${f===HOY?' · hoy':''}<b>${d.getDate()}${denso?'':mes}</b></div>`;
+  }).join('');
+
+  if(!P.equipos.length){
+    g.innerHTML = html + `<div style="grid-column:1/-1"><div class="empty">No hay activos para este filtro.</div></div>`;
+    return;
+  }
+  let tipoPrevio = null;
+  for(const e of P.equipos){
+    if(e.tipo_activo !== tipoPrevio && !EST.tipo){
+      const n = P.equipos.filter(x=>x.tipo_activo===e.tipo_activo).length;
+      html += `<div class="g-grupo">${e.tipo_activo==='avion'?'Aviones':'Drones'} <span>${n}</span></div>`;
+      tipoPrevio = e.tipo_activo;
+    }
+    const fila = [];
+    const motivos = e.motivos || [];
+    const motivoTxt = motivos.length ? escapar(motivos[0]) + (motivos.length>1 ? ` <span style="opacity:.75">+${motivos.length-1} más</span>` : '') : '';
+    fila.push(`<div class="g-act" style="position:sticky">
+      <div class="av" title="${e.tipo_activo==='avion'?'Avión':'Dron'}">${e.tipo_activo==='avion'?IC_AVION:IC_DRON}</div>
+      <div style="min-width:0">
+        <div class="nom"><a href="/flota/${e.id}">${escapar(e.nombre)}</a> ${semaforo(e)}</div>
+        <div class="sub">${e.matricula?`<span class="mat">${escapar(e.matricula)}</span> · `:''}${escapar(e.modelo||'')} · <span class="est-txt ${e.estado}">${escapar(e.estado_txt||'')}</span></div>
+        ${e.estado!=='apto' && motivoTxt ? `<div class="motivo ${e.estado==='observaciones'?'amb':''}" title="${escapar(motivos.join(' · '))}">${motivoTxt}</div>` : ''}
+      </div></div>`);
+    for(const f of dias){
+      const cls = [f===HOY?'hoy':'', esFds(f)?'fds':'', aFecha(f).getDay()===1&&f!==P.desde?'lun':''].join(' ');
+      const bloques = [];
+      porDia(P.os, e.id, f).forEach(o=>{
+        const alerta = e.estado==='no_apto' && o.estado!=='finalizada';
+        bloques.push(`<button class="bl os ${alerta?'alerta':''}" data-k="os" data-id="${o.id}"
+          title="${escapar(o.codigo)} · ${escapar(o.cliente||'')} ${escapar(o.finca||'')} · ${fmt(o.hectareas,0)} ha">
+          <span class="c">${denso ? (o.hectareas?fmt(o.hectareas,0)+' ha':'OS') : escapar(o.codigo)}${!denso && o.hora?' · '+escapar(o.hora.slice(0,5)):''}</span>
+          <span class="d">${escapar([o.cliente,o.finca].filter(Boolean).join(' / ')||'Sin cliente')}</span>
+          <span class="d">${o.hectareas?fmt(o.hectareas,0)+' ha':''}${o.piloto?' · '+escapar(o.piloto):''}</span></button>`);
+      });
+      porDia(P.ot, e.id, f).forEach(o=>{
+        bloques.push(`<button class="bl ot" data-k="ot" data-id="${o.id}" title="${escapar(o.codigo)} · ${escapar(o.titulo||'')}">
+          <span class="c">${denso?'OT':escapar(o.codigo)}</span><span class="d">${escapar(o.titulo||'')}</span></button>`);
+      });
+      porDia(P.operaciones, e.id, f).forEach(o=>{
+        bloques.push(`<button class="bl op" data-k="op" data-eq="${e.id}" data-f="${f}" title="${o.n} vuelo(s) · ${fmt(o.horas)} h · ${fmt(o.ha,0)} ha">
+          <span class="c">${fmt(o.horas)}${denso?'':' h'}</span>
+          <span class="d">${fmt(o.ha,0)} ha${P.dias<=7?` · ${o.n} ${o.n===1?'operación':'operaciones'}`:''}</span></button>`);
+      });
+      fila.push(`<div class="g-dia ${cls}">${bloques.join('')}</div>`);
+    }
+    html += `<div style="display:contents" class="fila-${e.estado}">${fila.join('')}</div>`;
+  }
+  g.innerHTML = html;
+  // display:contents no admite ::before en el hijo sticky si el padre no posiciona; se fija aquí.
+  g.querySelectorAll('.g-act').forEach(n=>n.style.position='sticky');
+  g.querySelectorAll('.bl').forEach(b=>b.onclick = ()=>{
+    if(b.dataset.k==='os') detalleOS(P.os.find(o=>o.id==b.dataset.id));
+    else if(b.dataset.k==='ot') detalleOT(P.ot.find(o=>o.id==b.dataset.id));
+    else detalleOp(P.operaciones.find(o=>o.equipo_id==b.dataset.eq && o.fecha===b.dataset.f));
+  });
+  const nAp = P.equipos.filter(e=>e.estado==='no_apto').length;
+  document.getElementById('ganttResumen').textContent =
+    `${P.equipos.length} activos · ${P.os.length} OS · ${P.ot.length} OT` + (nAp?` · ${nAp} no recomendados`:'');
+}
+
+const equipo = id => P.equipos.find(e=>e.id===id);
+function filaDet(k, v){ return v===null||v===undefined||v==='' ? '' : `<dt>${k}</dt><dd>${v}</dd>`; }
+function avisoActivo(e){
+  if(!e || e.estado==='apto') return '';
+  const cls = e.estado==='no_apto' ? 'rojo' : 'ambar';
+  return `<div class="aviso ${cls}" style="margin:16px 0 0"><div><b>${escapar(e.nombre)}: ${escapar(e.estado_txt)}.</b>
+    ${(e.motivos||[]).slice(0,5).map(escapar).join(' · ')}${(e.motivos||[]).length>5?' …':''}</div></div>`;
+}
+function nombreActivo(e){ return e ? `${escapar(e.nombre)}${e.matricula?' · '+escapar(e.matricula):''}` : '<span class="mut">Sin activo</span>'; }
+
+function detalleOS(o){
+  if(!o) return;
+  const e = equipo(o.equipo_id);
+  ventana({
+    titulo: `Orden de servicio ${escapar(o.codigo)}`, subtitulo: 'Vuelo programado',
+    cuerpo: `<div class="cinta os">${e&&e.tipo_activo==='avion'?IC_AVION.replace('<svg','<svg style="width:20px;height:20px"'):IC_DRON.replace('<svg','<svg style="width:20px;height:20px"')}
+        ${escapar([o.cliente,o.finca].filter(Boolean).join(' / ')||'Sin cliente')} · ${fmt(o.hectareas,0)} ha</div>
+      <dl class="det-pl">
+        ${filaDet('Estado', `<span class="tag acc">${EST_OS[o.estado]||escapar(o.estado)}</span>`)}
+        ${filaDet('Fecha', fmtFecha(o.fecha) + (o.hora?' · '+escapar(o.hora.slice(0,5)):''))}
+        ${filaDet('Activo', nombreActivo(e) + (e?' '+semaforo(e):''))}
+        ${filaDet('Piloto', escapar(o.piloto||'Sin asignar'))}
+        ${filaDet('Cliente', escapar(o.cliente))}
+        ${filaDet('Finca', escapar(o.finca))}
+        ${filaDet('Hectáreas', o.hectareas?fmt(o.hectareas,1)+' ha':'')}
+      </dl>${avisoActivo(e)}`,
+    pie: `<div class="der"><button class="btn secundario" data-cerrar>Cerrar</button>
+      <a class="btn" href="/ordenes-servicio?equipo=${o.equipo_id||''}">Abrir en órdenes de servicio →</a></div>`,
+    alAbrir: v=>{ v.$('[data-cerrar]').onclick = ()=>v.cerrar(); },
+  });
+}
+
+function detalleOT(o){
+  if(!o) return;
+  const e = equipo(o.equipo_id);
+  ventana({
+    titulo: `Orden de trabajo ${escapar(o.codigo)}`, subtitulo: 'Mantenimiento programado',
+    cuerpo: `<div class="cinta ot"><b>${escapar(o.codigo)}</b> ${escapar(o.titulo||'')}</div>
+      <dl class="det-pl">
+        ${filaDet('Estado', `<span class="tag gray">${EST_OT[o.estado]||escapar(o.estado)}</span>`)}
+        ${filaDet('Prioridad', o.prioridad?`<span class="tag ${o.prioridad==='alta'||o.prioridad==='urgente'?'red':'gray'}">${escapar(o.prioridad)}</span>`:'')}
+        ${filaDet('Fecha', fmtFecha(o.fecha))}
+        ${filaDet('Activo', nombreActivo(e) + (e?' '+semaforo(e):''))}
+        ${filaDet('Asignada a', escapar(o.asignado_a||'Sin asignar'))}
+      </dl>${avisoActivo(e)}`,
+    pie: `<div class="der"><button class="btn secundario" data-cerrar>Cerrar</button>
+      <a class="btn" href="/ordenes-trabajo?equipo=${o.equipo_id||''}">Abrir en órdenes de trabajo →</a></div>`,
+    alAbrir: v=>{ v.$('[data-cerrar]').onclick = ()=>v.cerrar(); },
+  });
+}
+
+function detalleOp(o){
+  if(!o) return;
+  const e = equipo(o.equipo_id);
+  ventana({
+    titulo: `Operación del ${fmtFecha(o.fecha)}`, subtitulo: e ? nombreActivo(e) : '', ancho:'angosta',
+    cuerpo: `<div class="cinta op">${fmt(o.horas)} h de vuelo · ${fmt(o.ha,0)} ha aplicadas</div>
+      <dl class="det-pl">
+        ${filaDet('Vuelos', o.n)}
+        ${filaDet('Rendimiento', o.horas?fmt(o.ha/o.horas,1)+' ha/h':'')}
+        ${filaDet('Piloto(s)', escapar(o.pilotos||'—'))}
+      </dl>`,
+    pie: `<div class="der"><button class="btn secundario" data-cerrar>Cerrar</button>
+      <a class="btn" href="/operaciones?equipo=${o.equipo_id}">Ver operaciones →</a></div>`,
+    alAbrir: v=>{ v.$('[data-cerrar]').onclick = ()=>v.cerrar(); },
+  });
+}
+
+function colorCarga(h){
+  if(!h) return '';
+  if(h > MAX_PILOTO) return '';
+  const t = Math.min(h / MAX_PILOTO, 1);
+  // Del amarillo suave al amarillo de marca; el texto siempre grafito sobre amarillo.
+  const a = 0.18 + t * 0.82;
+  return `background:rgba(253,185,19,${a.toFixed(2)});color:var(--acc-txt)`;
+}
+
+function pintarHeatmap(){
+  const dias = diasRango();
+  const hm = document.getElementById('heatmap');
+  const nombres = [...new Set([...P.pilotos.map(p=>p.piloto), ...P.os.map(o=>o.piloto).filter(Boolean)])].sort();
+  const movil = innerWidth < 720;
+  const minCol = P.dias >= 28 ? 28 : (P.dias >= 14 ? 46 : 64);
+  hm.style.gridTemplateColumns = `${movil?120:(P.dias>=28?150:190)}px repeat(${P.dias}, minmax(${minCol}px,1fr)) 58px`;
+  if(!nombres.length){
+    hm.style.gridTemplateColumns = '1fr';
+    hm.innerHTML = `<div class="empty" style="padding:26px">Sin vuelos registrados ni pilotos programados en este período.</div>`;
+    document.getElementById('hmResumen').textContent = '';
+    document.getElementById('hmLeyenda').innerHTML = '';
+    return;
+  }
+  let html = `<div></div>` + dias.map(f=>{
+    const d = aFecha(f);
+    return `<div class="h-cab ${f===HOY?'hoy':''} ${esFds(f)?'fds':''}">${P.dias>=28?DIAS_SEM[d.getDay()][0]:DIAS_SEM[d.getDay()]}<br>${d.getDate()}</div>`;
+  }).join('') + `<div class="h-cab" style="text-align:right">Total</div>`;
+  let excesos = 0;
+  for(const n of nombres){
+    let tot = 0;
+    html += `<div class="h-pil" title="${escapar(n)}">${escapar(n)}</div>`;
+    for(const f of dias){
+      const r = P.pilotos.find(p=>p.piloto===n && p.fecha===f);
+      const h = r ? r.horas : 0; tot += h || 0;
+      const prog = P.os.filter(o=>o.piloto===n && o.fecha===f).length;
+      const exceso = h > MAX_PILOTO; if(exceso) excesos++;
+      const tip = `${n} · ${fmtFecha(f)}: ${h?fmt(h)+' h voladas':'sin vuelos'}${prog?` · ${prog} OS programada(s)`:''}${exceso?` · supera ${fmt(MAX_PILOTO)} h`:''}`;
+      html += `<div class="h-c ${esFds(f)?'fds':''} ${exceso?'exceso':''}" style="${colorCarga(h)}" title="${escapar(tip)}">
+        ${h?fmt(h):''}${prog?`<span class="prog">${prog}</span>`:''}</div>`;
+    }
+    html += `<div class="h-tot">${fmt(tot)} h</div>`;
+  }
+  hm.innerHTML = html;
+  document.getElementById('hmResumen').innerHTML = excesos
+    ? `<span class="tag red">${excesos} ${excesos===1?'día':'días'} sobre ${fmt(MAX_PILOTO)} h</span>`
+    : `límite ${fmt(MAX_PILOTO)} h por piloto y día`;
+  const esc = [0.25,0.5,0.75,1].map(t=>`<i style="background:rgba(253,185,19,${(0.18+t*0.82).toFixed(2)})"></i>`).join('');
+  document.getElementById('hmLeyenda').innerHTML =
+    `<span>Horas de vuelo por día:</span><span class="esc">${esc}</span><span>hasta ${fmt(MAX_PILOTO)} h</span>
+     <span class="esc"><i style="background:var(--red)"></i></span><span>por encima del límite</span>
+     <span class="esc"><i style="background:var(--o-grafito,#1a1d24);width:14px;border-radius:7px"></i></span><span>órdenes de servicio programadas</span>`;
+}
+
+// ---------- Controles ----------
+document.getElementById('bAnt').onclick = ()=>{ EST.desde = sumar(EST.desde, -EST.dias); cargar(); };
+document.getElementById('bSig').onclick = ()=>{ EST.desde = sumar(EST.desde, EST.dias); cargar(); };
+document.getElementById('bHoy').onclick = ()=>{ EST.desde = lunes(HOY); cargar(); };
+document.getElementById('fIr').onchange = e=>{ if(e.target.value){ EST.desde = lunes(e.target.value); cargar(); } };
+document.querySelectorAll('#segDias button').forEach(b=>b.onclick = ()=>{ EST.dias = Number(b.dataset.d); cargar(); });
+document.querySelectorAll('#segTipo button').forEach(b=>b.onclick = ()=>{ EST.tipo = b.dataset.t; cargar(); });
+document.addEventListener('keydown', e=>{
+  if(document.querySelector('.velo') || /INPUT|SELECT|TEXTAREA/.test(document.activeElement?.tagName)) return;
+  if(e.key==='ArrowLeft') document.getElementById('bAnt').click();
+  if(e.key==='ArrowRight') document.getElementById('bSig').click();
+});
+redibujarGraficas(()=>{ if(P){ pintarGantt(); pintarHeatmap(); } });
+
+(async ()=>{
+  try{
+    const c = await api('/api/costos/config');
+    const v = parseFloat(c.horas_max_piloto_dia);
+    if(v > 0) MAX_PILOTO = v;
+  }catch(e){}
+  cargar();
+})();
+</script>
+{% endblock %}

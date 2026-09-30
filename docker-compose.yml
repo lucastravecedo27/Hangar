@@ -1,0 +1,69 @@
+# Hangar en producción: app (Gunicorn) + PostgreSQL + Caddy (HTTPS automático con Let's Encrypt).
+#   1) cp .env.example .env  y rellena DOMINIO, SECRET_KEY y POSTGRES_PASSWORD
+#   2) docker compose up -d --build
+#   3) abre https://TU_DOMINIO  -> la primera vez pide crear el usuario administrador
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: hangar
+      POSTGRES_USER: hangar
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?define POSTGRES_PASSWORD en .env}
+      TZ: ${TZ:-America/Bogota}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hangar -d hangar"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://hangar:${POSTGRES_PASSWORD}@db:5432/hangar
+      SECRET_KEY: ${SECRET_KEY:?define SECRET_KEY en .env}
+      HANGAR_ENTORNO: produccion
+      COOKIE_SEGURA: "1"
+      PROXIES_DELANTE: "1"
+      TZ: ${TZ:-America/Bogota}
+      SMTP_SERVIDOR: ${SMTP_SERVIDOR:-}
+      SMTP_PUERTO: ${SMTP_PUERTO:-}
+      SMTP_USUARIO: ${SMTP_USUARIO:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_REMITENTE: ${SMTP_REMITENTE:-}
+      SMTP_NOMBRE: ${SMTP_NOMBRE:-}
+      SMTP_SEGURIDAD: ${SMTP_SEGURIDAD:-}
+    volumes:
+      - appdatos:/app/datos
+    expose:
+      - "8000"
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      DOMINIO: ${DOMINIO:?define DOMINIO en .env}
+      CORREO_TLS: ${CORREO_TLS:-}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./static_shell:/srv/static_shell:ro
+      - caddydata:/data
+      - caddyconfig:/config
+
+volumes:
+  pgdata:
+  appdatos:
+  caddydata:
+  caddyconfig:

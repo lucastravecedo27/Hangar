@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+*.pyc
+datos/
+.env
+.git/
+pruebas/
+recursos/
+herramientas/
+Iniciar App.command
+*.log
+.DS_Store

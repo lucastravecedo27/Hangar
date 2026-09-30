@@ -1,0 +1,202 @@
+{% extends "_layout.html" %}
+{% block titulo %}Mantenimiento{% endblock %}
+{% block encabezado %}Mantenimiento{% endblock %}
+{% block subtitulo %}Alertas por vida útil, programación preventiva e historial{% endblock %}
+
+{% block acciones %}
+<button class="btn" id="btnRepuestos"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><circle cx="10" cy="10" r="6.6"/><path d="M10 6.4V10l2.4 1.6"/></svg> Próximos repuestos</button>
+{% endblock %}
+
+{% block contenido %}
+<div class="kpis">
+  <div class="kpi"><div class="lbl">Vencidas</div><div class="val rojo" id="kV">0</div><div class="note">Superaron su vida útil</div></div>
+  <div class="kpi"><div class="lbl">Críticas</div><div class="val ambar" id="kC">0</div><div class="note">Más del 90 % de uso</div></div>
+  <div class="kpi"><div class="lbl">Próximas</div><div class="val" id="kP">0</div><div class="note">Más del 75 % de uso</div></div>
+  <div class="kpi"><div class="lbl">Mantenimientos</div><div class="val acc" id="kM">0</div><div class="note" id="kMNota"></div></div>
+</div>
+
+<div class="card">
+  <h3>Alertas de piezas <span class="mut" id="alertasConteo"></span></h3>
+  <table>
+    <thead><tr><th>Equipo</th><th>Pieza</th><th>Módulo</th><th class="num">Uso / vida útil</th><th>Desgaste</th><th>Estado</th><th></th></tr></thead>
+    <tbody id="tablaAlertas"></tbody>
+  </table>
+  <div class="empty" id="alertasVacio" style="display:none">Sin alertas activas. Todas las piezas dentro de su vida útil.</div>
+</div>
+
+<div class="grid2">
+  <div class="card">
+    <h3>Programación preventiva <span class="mut">estimación por ritmo de vuelo</span></h3>
+    <div class="form-grid" style="margin-bottom:10px">
+      <div class="campo"><label>Equipo</label><select id="progEquipo"></select></div>
+      <div class="campo"><label>Ritmo (h vuelo / día)</label><input type="number" id="progRitmo" step="0.1" min="0" placeholder="auto"></div>
+    </div>
+    <div id="progNota" class="aviso gris" style="margin-bottom:12px"></div>
+    <div class="lista" id="programa"></div>
+  </div>
+
+  <div class="card">
+    <h3>Registrar mantenimiento</h3>
+    <form id="formMant">
+      <div class="form-grid">
+        <div class="campo"><label>Equipo *</label><select name="equipo_id" id="mEquipo" required></select></div>
+        <div class="campo"><label>Tipo</label><select name="tipo"><option value="preventivo">Preventivo</option><option value="correctivo">Correctivo</option><option value="inspeccion">Inspección</option></select></div>
+        <div class="campo ancho"><label>Pieza reemplazada (opcional — reinicia sus horas)</label><select name="componente_id" id="mComponente"><option value="">— Sin cambio de pieza —</option></select></div>
+        <div class="campo"><label>Motivo</label><select name="motivo"><option value="desgaste">Desgaste / vida útil</option><option value="daño">Daño o rotura</option><option value="preventivo">Preventivo</option><option value="inspeccion">Inspección</option><option value="otro">Otro</option></select></div>
+        <div class="campo"><label>Fecha</label><input type="date" name="fecha" id="mFecha"></div>
+        <div class="campo"><label>Costo</label><input type="number" name="costo" step="0.01" min="0"></div>
+        <div class="campo"><label>Realizado por</label><input name="realizado_por"></div>
+        <div class="campo ancho"><label>Descripción</label><textarea name="descripcion" placeholder="Qué se hizo, repuestos, observaciones…"></textarea></div>
+      </div>
+      <div class="acciones"><button class="btn" type="submit">Guardar mantenimiento</button></div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <h3>Historial de mantenimientos <span class="mut" id="histConteo"></span></h3>
+  <table>
+    <thead><tr><th>Fecha</th><th>Equipo</th><th>Tipo</th><th>Pieza</th><th>Descripción</th><th class="num">Horas equipo</th><th class="num">Costo</th><th>Por</th><th></th></tr></thead>
+    <tbody id="tablaHist"></tbody>
+  </table>
+  <div class="empty" id="histVacio" style="display:none">Sin mantenimientos registrados.</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ---- Próximos repuestos a cambiar (según el ritmo real de operación) ----
+async function abrirRepuestos(equipoId){
+  const v = ventana({
+    titulo: 'Próximos repuestos a cambiar', ancho: 'ancha',
+    subtitulo: 'Días y fecha estimados con el ritmo de vuelo de los últimos 90 días',
+    cuerpo: '<div id="repCuerpo"><div class="empty" style="padding:44px"><span class="cargador oscuro"></span> Calculando…</div></div>',
+    pie: `<div class="der"><button class="btn secundario" data-cerrar>Cerrar</button>
+          <a class="btn" href="/ordenes-trabajo?nueva=1${equipoId?`&equipo=${equipoId}`:''}">Generar orden de trabajo</a></div>`,
+  });
+  v.$('[data-cerrar]').onclick = v.cerrar;
+  const r = await api('/api/repuestos?limite=40' + (equipoId ? `&equipo_id=${equipoId}` : ''));
+  const f = r.resumen.franjas;
+  v.$('#repCuerpo').innerHTML = `<div class="repuestos-franjas">
+      <div class="franja vencido"><div class="n">${f.vencido}</div><div class="l">Vencidas</div></div>
+      <div class="franja inmediato"><div class="n">${f.inmediato}</div><div class="l">≤ 15 días</div></div>
+      <div class="franja corto"><div class="n">${f.corto}</div><div class="l">16 – 45 días</div></div>
+      <div class="franja medio"><div class="n">${f.medio}</div><div class="l">46 – 120 días</div></div>
+      <div class="franja"><div class="n">${f.lejano}</div><div class="l">Más adelante</div></div>
+    </div>` + (r.lista.length ? r.lista.map(p=>`
+      <div class="repuesto u-${p.urgencia}">
+        <div><div class="nom">${escapar(p.nombre)}</div>
+          <div class="sub">${escapar(p.equipo)} · ${escapar(p.modulo)} · ${usoPieza(p)} ·
+            ${p.h_dia ? `${fmt(p.h_dia,2)} h/día (${escapar(p.base_ritmo)})` : 'sin ritmo de vuelo'}</div></div>
+        <div class="cuando"><div class="dias">${fmtDias(p.dias_estimados)}</div>
+          <div class="fecha">${p.fecha_estimada ? fmtFecha(p.fecha_estimada) : '—'}</div></div>
+        <div class="barra ${p.nivel}"><i style="width:${Math.min(p.pct,100)}%"></i></div>
+      </div>`).join('') : '<div class="empty" style="padding:34px">Sin piezas próximas a cambio.</div>');
+}
+
+let EQUIPOS=[], ALERTAS=[], HIST=[];
+document.getElementById('mFecha').value = hoyISO();
+
+async function cargar(){
+  [EQUIPOS, ALERTAS, HIST] = await Promise.all([api('/api/equipos'), api('/api/alertas'), api('/api/mantenimientos')]);
+  const n=(k)=>ALERTAS.filter(a=>a.nivel===k).length;
+  document.getElementById('kV').textContent=n('vencido'); document.getElementById('kC').textContent=n('critico'); document.getElementById('kP').textContent=n('proximo');
+  document.getElementById('kM').textContent=HIST.length;
+  const costo=HIST.reduce((a,m)=>a+(Number(m.costo)||0),0);
+  document.getElementById('kMNota').textContent=`Costo acumulado ${fmt(costo,0)}`;
+
+  document.getElementById('alertasConteo').textContent=`· ${ALERTAS.length}`;
+  document.getElementById('alertasVacio').style.display=ALERTAS.length?'none':'block';
+  document.getElementById('tablaAlertas').innerHTML=ALERTAS.map(c=>`<tr>
+    <td><b>${escapar(c.equipo)}</b></td><td>${escapar(c.nombre)}<div style="font-size:11.5px;color:var(--mut)">${escapar(c.nota||'')}</div></td>
+    <td><span class="tag gray">${escapar(c.modulo)}</span></td>
+    <td class="num">${usoPieza(c)}</td>
+    <td>${barra(c)}<div class="pct">${c.pct}% · ${excesoPieza(c)}</div></td>
+    <td>${tagNivel(c.nivel)}</td>
+    <td style="white-space:nowrap"><button class="btn peq verde" onclick="cambioRapido(${c.equipo_id}, ${c.id}, '${escapar(c.nombre)}')">Cambiar pieza</button> <a class="btn peq secundario" href="/despiece?equipo=${c.equipo_id}&pieza=${c.clave}">Ver diagrama</a></td>
+  </tr>`).join('');
+
+  const eqActivos = EQUIPOS.filter(e=>e.estado!=='baja');
+  const sel = paramURL('equipo') || eqActivos[0]?.id || '';
+  document.getElementById('mEquipo').innerHTML = opcionesEquipos(eqActivos, sel);
+  document.getElementById('progEquipo').innerHTML = opcionesEquipos(eqActivos, sel);
+  await cargarComponentes(); await programar();
+
+  document.getElementById('histConteo').textContent=`· ${HIST.length}`;
+  document.getElementById('histVacio').style.display=HIST.length?'none':'block';
+  document.getElementById('tablaHist').innerHTML=HIST.map(m=>`<tr>
+    <td>${fmtFecha(m.fecha)}</td><td><b>${escapar(m.equipo)}</b></td><td><span class="tag ${m.tipo}">${escapar(m.tipo)}</span></td>
+    <td>${m.pieza?escapar(m.pieza):'<span style="color:var(--mut)">—</span>'}</td><td>${escapar(m.descripcion||'—')}</td>
+    <td class="num">${fmt(m.horas_al_momento)} h</td><td class="num">${m.costo!=null?fmt(m.costo,0):'—'}</td><td>${escapar(m.realizado_por||'—')}</td>
+    <td><button class="btn-icono" onclick="borrarMant(${m.id})" title="Eliminar del historial">✕</button></td>
+  </tr>`).join('');
+}
+
+async function cargarComponentes(){
+  const eq=document.getElementById('mEquipo').value; if(!eq) return;
+  const comps = await api(`/api/componentes?equipo_id=${eq}`);
+  const grupos={}; comps.forEach(c=>{(grupos[c.modulo]=grupos[c.modulo]||[]).push(c);});
+  document.getElementById('mComponente').innerHTML = `<option value="">— Sin cambio de pieza —</option>` +
+    Object.keys(grupos).sort().map(m=>`<optgroup label="${escapar(m)}">${grupos[m].map(c=>`<option value="${c.id}">${escapar(c.nombre)} · ${usoPieza(c)}${c.nivel!=='ok'?' ⚠':''}</option>`).join('')}</optgroup>`).join('');
+}
+
+async function programar(){
+  const eq=document.getElementById('progEquipo').value; if(!eq){ document.getElementById('programa').innerHTML=''; return; }
+  const [comps, ops] = await Promise.all([api(`/api/componentes?equipo_id=${eq}`), api(`/api/operaciones?equipo_id=${eq}&limite=400`)]);
+  const hoy=new Date(); const hace30=new Date(hoy); hace30.setDate(hoy.getDate()-30);
+  let ultimas = ops.filter(o=>new Date(o.fecha)>=hace30);
+  let dias=30, nota='';
+  if(ultimas.length<3 && ops.length){
+    ultimas=ops.slice(0,30);
+    const f1=new Date(ultimas[ultimas.length-1].fecha), f2=new Date(ultimas[0].fecha);
+    dias=Math.max(1, Math.round((f2-f1)/86400000)+1);
+    nota='Sin operaciones recientes: ritmo calculado con las últimas 30 operaciones registradas.';
+  }
+  const horas=ultimas.reduce((a,o)=>a+(Number(o.horas_vuelo)||0),0);
+  const ritmoAuto = ultimas.length ? horas/dias : 0;
+  const manual = Number(document.getElementById('progRitmo').value);
+  const ritmo = manual>0 ? manual : ritmoAuto;
+  document.getElementById('progRitmo').placeholder = ritmoAuto ? `auto: ${ritmoAuto.toFixed(2)}` : 'auto';
+  document.getElementById('progNota').innerHTML = ritmo
+    ? `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.4" width="14" height="12.2" rx="2.2"/><path d="M3 8.2h14M7 2.8v3M13 2.8v3"/></svg> <div>Ritmo estimado <b>${ritmo.toFixed(2)} h/día</b> (${fmt(horas)} h en ${dias} días). ${nota} Las fechas se calculan con las horas restantes de cada pieza.</div>`
+    : `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.4" width="14" height="12.2" rx="2.2"/><path d="M3 8.2h14M7 2.8v3M13 2.8v3"/></svg> <div>Sin operaciones para estimar el ritmo. Ingresa un ritmo manual (h/día) para proyectar fechas.</div>`;
+
+  const orden = comps.slice().sort((a,b)=>a.restante-b.restante).slice(0,12);
+  document.getElementById('programa').innerHTML = orden.map(c=>{
+    let fecha='—', urg='';
+    if(c.restante<=0){ fecha='Ahora'; urg='vencido'; }
+    else if(ritmo>0){ const d=new Date(hoy); d.setDate(d.getDate()+Math.ceil(c.restante/ritmo)); fecha=d.toLocaleDateString('es-CO',{day:'2-digit',month:'short',year:'numeric'}); urg=c.nivel; }
+    return `<div class="item"><span class="punto ${urg||c.nivel}"></span>
+      <div class="cuerpo"><b>${escapar(c.nombre)}</b><div class="mut">${escapar(c.modulo)} · ${restaPieza(c)} de ${vidaPieza(c)}</div></div>
+      <div class="der"><b>${fecha}</b><div style="font-size:11px;color:var(--mut)">${ritmo>0&&c.restante>0?`≈ ${Math.ceil(c.restante/ritmo)} días`:''}</div></div></div>`;
+  }).join('');
+}
+
+document.getElementById('mEquipo').addEventListener('change', cargarComponentes);
+document.getElementById('progEquipo').addEventListener('change', programar);
+document.getElementById('progRitmo').addEventListener('input', programar);
+
+document.getElementById('formMant').addEventListener('submit', async e=>{
+  e.preventDefault();
+  const cuerpo=Object.fromEntries(new FormData(e.target).entries());
+  try{ await api('/api/mantenimientos',{method:'POST',body:cuerpo}); toast('Mantenimiento guardado'); e.target.reset(); document.getElementById('mFecha').value=hoyISO(); cargar(); }
+  catch(err){ toast(err.message); }
+});
+
+async function cambioRapido(equipo_id, componente_id, nombre){
+  if(!await confirmar({titulo:'Registrar cambio de pieza', aceptar:'Registrar cambio',
+    mensaje:`Se anota el cambio de <b>${escapar(nombre)}</b> y sus horas de uso vuelven a cero.`})) return;
+  await api('/api/mantenimientos',{method:'POST',body:{equipo_id, componente_id, tipo:'preventivo',
+    motivo:'desgaste', descripcion:`Cambio de ${nombre}`}});
+  toast('Cambio registrado'); cargar();
+}
+// El botón hereda el equipo elegido en el programador de mantenimiento, si hay uno.
+document.getElementById('btnRepuestos').onclick = ()=>
+  abrirRepuestos(document.getElementById('progEquipo').value || '');
+
+async function borrarMant(id){
+  if(!await confirmar({titulo:'Eliminar del historial', peligro:true, aceptar:'Eliminar',
+    mensaje:'Se borra el registro del historial. Las horas de la pieza no se revierten.'})) return; await api(`/api/mantenimientos/${id}`,{method:'DELETE'}); toast('Eliminado'); cargar(); }
+cargar();
+</script>
+{% endblock %}

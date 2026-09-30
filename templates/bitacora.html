@@ -1,0 +1,162 @@
+{% extends "_layout.html" %}
+{% block titulo %}Bitácora de reparaciones{% endblock %}
+{% block encabezado %}Bitácora de reparaciones{% endblock %}
+{% block subtitulo %}Todo lo reparado o cambiado en la flota, con las horas que llevaba cada pieza al sustituirla y de qué orden de trabajo salió{% endblock %}
+
+{% block acciones %}
+<a class="btn secundario" href="{{ url_for('mantenimiento') }}">Registrar una reparación</a>
+{% endblock %}
+
+{% block barra %}
+<div class="tabsbar"><div class="wrap">
+  <div class="segmento" id="segMotivo">
+    <button data-m="" class="activo">Todas</button>
+    <button data-m="daño">Por daño</button>
+    <button data-m="desgaste">Por desgaste</button>
+    <button data-m="preventivo">Preventivas</button>
+  </div>
+  <div class="filters">
+    <select id="fEquipo"></select>
+    <input type="date" id="fDesde" title="Desde">
+    <input type="date" id="fHasta" title="Hasta">
+    <label class="fila-flex" style="font-size:12.5px;color:var(--ink2);gap:6px">
+      <input type="checkbox" id="fSoloPiezas" style="width:16px;height:16px;accent-color:var(--acc-d)">
+      Sólo cambios de pieza
+    </label>
+    <input type="search" id="fBuscar" placeholder="Buscar pieza, código, descripción u orden…" style="min-width:220px">
+  </div>
+</div></div>
+{% endblock %}
+
+{% block contenido %}
+<div class="kpis">
+  <div class="kpi"><div class="lbl">Intervenciones</div><div class="val acc" id="kTotal">0</div><div class="note" id="kTotalNota"></div></div>
+  <div class="kpi"><div class="lbl">Piezas cambiadas</div><div class="val" id="kPiezas">0</div><div class="note">con reinicio de horas</div></div>
+  <div class="kpi"><div class="lbl">Por daño o rotura</div><div class="val rojo" id="kDano">0</div><div class="note">cambios no previstos por desgaste</div></div>
+  <div class="kpi"><div class="lbl">Cambios adelantados</div><div class="val ambar" id="kAdel">0</div><div class="note">antes del 75 % de su vida útil</div></div>
+</div>
+
+<div class="card">
+  <div class="card-cab"><h3>Reparaciones <span class="mut" id="conteo"></span></h3>
+    <span class="pista-clic der">Toca una fila para ver el detalle</span></div>
+  <table>
+    <thead><tr>
+      <th>Fecha</th><th>Equipo</th><th>Pieza</th><th>Motivo</th>
+      <th class="num">Horas de la pieza</th><th class="num">Horas del equipo</th>
+      <th>Trabajo</th><th>Orden</th><th>Por</th><th class="num">Costo</th>
+    </tr></thead>
+    <tbody id="tabla"></tbody>
+  </table>
+  <div class="empty" id="vacio" style="display:none">Todavía no hay reparaciones con estos filtros.</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let FILAS = [], EQUIPOS = [];
+
+async function cargarBase(){
+  EQUIPOS = await api('/api/equipos');
+  document.getElementById('fEquipo').innerHTML = opcionesEquipos(EQUIPOS, paramURL('equipo')||'', true);
+}
+
+function parametros(){
+  const p = new URLSearchParams();
+  const eq = document.getElementById('fEquipo').value;
+  const motivo = document.querySelector('#segMotivo button.activo').dataset.m;
+  if(eq) p.set('equipo_id', eq);
+  if(motivo) p.set('motivo', motivo);
+  if(document.getElementById('fDesde').value) p.set('desde', document.getElementById('fDesde').value);
+  if(document.getElementById('fHasta').value) p.set('hasta', document.getElementById('fHasta').value);
+  if(document.getElementById('fSoloPiezas').checked) p.set('solo_piezas', '1');
+  return p.toString();
+}
+
+async function cargar(){
+  const r = await api('/api/bitacora?' + parametros());
+  FILAS = r.lista;
+  document.getElementById('kTotal').textContent = r.resumen.total;
+  document.getElementById('kTotalNota').textContent = r.resumen.costo ? `Costo acumulado ${fmt(r.resumen.costo,0)}` : 'en toda la flota';
+  document.getElementById('kPiezas').textContent = r.resumen.piezas_cambiadas;
+  document.getElementById('kDano').textContent = r.resumen.por_dano;
+  document.getElementById('kAdel').textContent = r.resumen.adelantados;
+  pintar();
+}
+
+function pintar(){
+  const q = document.getElementById('fBuscar').value.trim().toLowerCase();
+  const lista = FILAS.filter(f=>!q ||
+    [f.pieza, f.nombre_pieza, f.codigo_pieza, f.modulo, f.descripcion, f.orden_codigo, f.equipo, f.realizado_por]
+      .join(' ').toLowerCase().includes(q));
+  document.getElementById('conteo').textContent = `· ${lista.length}`;
+  document.getElementById('vacio').style.display = lista.length ? 'none' : 'block';
+  document.getElementById('tabla').innerHTML = lista.map(f=>`
+    <tr class="clicable" onclick="abrirDetalle(${f.id})">
+      <td style="white-space:nowrap">${fmtFecha(f.fecha)}</td>
+      <td><b>${escapar(f.equipo)}</b></td>
+      <td>${(f.nombre_pieza || f.pieza)
+              ? `${escapar(f.nombre_pieza || f.pieza)}
+                 <div style="font-size:11.5px;color:var(--mut)">${escapar(f.modulo||'')}${f.codigo_pieza?` · <span class="bp-codigo">${escapar(f.codigo_pieza)}</span>`:''}</div>
+                 ${f.nombre_pieza && f.pieza && f.nombre_pieza !== f.pieza
+                    ? `<div style="font-size:11.5px;color:var(--mut)">horas reiniciadas: ${escapar(f.pieza)}</div>` : ''}`
+              : '<span class="mut">sin cambio de pieza</span>'}</td>
+      <td><span class="tag ${f.motivo==='daño'?'vencido':(f.motivo==='desgaste'?'proximo':'gray')}">${escapar(f.motivo_txt)}</span></td>
+      <td class="num">${f.horas_pieza!=null ? `${fmt(f.horas_pieza)} h` : '—'}
+        ${f.pct_vida!=null ? `<div style="font-size:11.5px;color:var(--mut)">${f.pct_vida} % de su vida${f.adelantado?' · adelantado':''}</div>` : ''}</td>
+      <td class="num">${fmt(f.horas_al_momento)} h</td>
+      <td>${escapar(f.descripcion||'—')}</td>
+      <td>${f.orden_codigo ? escapar(f.orden_codigo) : '<span class="mut">manual</span>'}</td>
+      <td>${escapar(f.realizado_por||'—')}</td>
+      <td class="num">${f.costo!=null ? fmt(f.costo,0) : '—'}</td>
+    </tr>`).join('');
+}
+
+function abrirDetalle(id){
+  const f = FILAS.find(x=>x.id === id);
+  if(!f) return;
+  panelLateral({
+    titulo: escapar(f.pieza || 'Reparación'),
+    subtitulo: `${escapar(f.equipo)} · ${fmtFecha(f.fecha)}`,
+    cuerpo: `
+      <div class="fila-flex" style="margin-bottom:14px">
+        <span class="tag ${f.motivo==='daño'?'vencido':(f.motivo==='desgaste'?'proximo':'gray')}">${escapar(f.motivo_txt)}</span>
+        <span class="tag gray">${escapar((f.tipo||'').replace(/^./,c=>c.toUpperCase()))}</span>
+        ${f.adelantado ? '<span class="tag critico">Cambio adelantado</span>' : ''}
+      </div>
+      <div class="card">
+        <table><tbody>
+          <tr><td class="mut">Equipo</td><td><b>${escapar(f.equipo)} · ${escapar(f.modelo||'')}</b></td></tr>
+          <tr><td class="mut">Pieza cambiada</td><td>${escapar(f.nombre_pieza || f.pieza || '— sin cambio de pieza —')}</td></tr>
+          ${f.codigo_pieza?`<tr><td class="mut">Código de pieza</td><td><span class="bp-codigo">${escapar(f.codigo_pieza)}</span></td></tr>`:''}
+          <tr><td class="mut">Módulo</td><td>${escapar(f.modulo||'—')}</td></tr>
+          ${f.pieza && f.nombre_pieza && f.nombre_pieza !== f.pieza
+            ? `<tr><td class="mut">Horas reiniciadas de</td><td>${escapar(f.pieza)}</td></tr>` : ''}
+          <tr><td class="mut">Horas de la pieza al cambiarla</td>
+              <td>${f.horas_pieza!=null ? `${fmt(f.horas_pieza)} h de ${fmt(f.vida_util_horas,0)} h` : '—'}
+                  ${f.pct_vida!=null ? ` · ${f.pct_vida} %` : ''}</td></tr>
+          <tr><td class="mut">Horas del equipo</td><td>${fmt(f.horas_al_momento)} h</td></tr>
+          <tr><td class="mut">Orden de trabajo</td><td>${f.orden_codigo ? escapar(f.orden_codigo) : 'registro manual'}</td></tr>
+          <tr><td class="mut">Realizado por</td><td>${escapar(f.realizado_por||'—')}</td></tr>
+          <tr><td class="mut">Costo</td><td>${f.costo!=null ? fmt(f.costo,0) : '—'}</td></tr>
+          <tr><td class="mut">Registrado</td><td>${fmtFechaHora(f.creado)}</td></tr>
+        </tbody></table>
+        ${f.descripcion ? `<div style="margin-top:12px;background:var(--acc-soft);border-radius:10px;padding:10px 12px;font-size:12.5px">${escapar(f.descripcion)}</div>` : ''}
+        ${f.horas_pieza!=null ? `<div class="pista" style="margin-top:12px;margin-bottom:0">Tras este cambio el contador
+          de la pieza quedó en cero y volvió a sumar horas con cada vuelo del equipo.</div>` : ''}
+      </div>`,
+    pie: `<a class="btn secundario" href="/mantenimiento?equipo=${f.equipo_id}">Ver mantenimiento del equipo</a>`,
+  });
+}
+
+document.getElementById('segMotivo').addEventListener('click', e=>{
+  const b = e.target.closest('button'); if(!b) return;
+  document.querySelectorAll('#segMotivo button').forEach(x=>x.classList.toggle('activo', x === b));
+  cargar();
+});
+['fEquipo','fDesde','fHasta','fSoloPiezas'].forEach(id=>
+  document.getElementById(id).addEventListener('change', cargar));
+document.getElementById('fBuscar').addEventListener('input', pintar);
+
+cargarBase().then(cargar);
+</script>
+{% endblock %}

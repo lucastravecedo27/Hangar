@@ -1,0 +1,337 @@
+# Exported by three-d-stage
+newmtl Acero cadmiado
+Kd 0.4851 0.5029 0.5271
+Ks 0.2000 0.2000 0.2000
+Ns 130
+d 1.0000
+
+newmtl Latón
+Kd 0.5520 0.3231 0.0423
+Ks 0.2000 0.2000 0.2000
+Ns 130
+d 1.0000
+
+newmtl Negro mate
+Kd 0.0080 0.0086 0.0103
+Ks 0.2000 0.2000 0.2000
+Ns 60
+d 1.0000
+
+newmtl Pintura amarillo agrícola
+Kd 0.8148 0.4508 0.0123
+Ks 0.2000 0.2000 0.2000
+Ns 132
+d 1.0000
+
+newmtl Caucho negro
+Kd 0.0123 0.0130 0.0144
+Ks 0.2000 0.2000 0.2000
+Ns 24
+d 1.0000
+
+newmtl Pintura blanca
+Kd 0.8796 0.8550 0.7913
+Ks 0.2000 0.2000 0.2000
+Ns 132
+d 1.0000
+
+newmtl Aluminio desnudo
+Kd 0.6240 0.6514 0.6724
+Ks 0.2000 0.2000 0.2000
+Ns 140
+d 1.0000
+
+newmtl Lente transparente
+Kd 0.8550 0.8963 0.9131
+Ks 0.2000 0.2000 0.2000
+Ns 192
+d 0.1000
+
+newmtl Lente transparente_0
+Kd 0.8550 0.8963 0.9131
+Ks 0.2000 0.2000 0.2000
+Ns 192
+d 0.1000
+
+newmtl Lente roja
+Kd 0.6308 0.0168 0.0116
+Ks 0.2000 0.2000 0.2000
+Ns 192
+d 0.1000
+
+newmtl Lente transparente_1
+Kd 0.8550 0.8963 0.9131
+Ks 0.2000 0.2000 0.2000
+Ns 192
+d 0.1000
+
+newmtl Lente verde
+Kd 0.0137 0.3231 0.0452
+Ks 0.2000 0.2000 0.2000
+Ns 192
+d 0.1000
+
+newmtl Aluminio fundido
+Kd 0.3231 0.3325 0.3140
+Ks 0.2000 0.2000 0.2000
+Ns 100
+d 1.0000
+
+newmtl Imprimación de cromato de zinc
+Kd 0.3231 0.3813 0.1022
+Ks 0.2000 0.2000 0.2000
+Ns 60
+d 1.0000
+
+newmtl Metacrilato de cabina
+Kd 0.2122 0.3231 0.3813
+Ks 0.2000 0.2000 0.2000
+Ns 192
+d 0.1000
+
+newmtl Metacrilato polarizado
+Kd 0.1095 0.2122 0.1878
+Ks 0.2000 0.2000 0.2000
+Ns 192
+d 0.1000
+
+newmtl Vinilo negro acolchado
+Kd 0.0060 0.0065 0.0075
+Ks 0.2000 0.2000 0.2000
+Ns 116
+d 1.0000
+
+newmtl Tapicería
+Kd 0.0685 0.0723 0.0802
+Ks 0.2000 0.2000 0.2000
+Ns 20
+d 1.0000
+
+newmtl Pintura crema del panel
+Kd 0.7758 0.7231 0.5841
+Ks 0.2000 0.2000 0.2000
+Ns 132
+d 1.0000
+
+newmtl Plástico negro brillante
+Kd 0.0037 0.0037 0.0040
+Ks 0.2000 0.2000 0.2000
+Ns 150
+d 1.0000
+
+newmtl Bisel de instrumento
+Kd 0.0103 0.0110 0.0123
+Ks 0.2000 0.2000 0.2000
+Ns 130
+d 1.0000
+
+newmtl Esfera spray
+Kd 1.0000 1.0000 1.0000
+Ks 0.2000 0.2000 0.2000
+Ns 150
+d 1.0000
+
+newmtl Esfera mp
+Kd 1.0000 1.0000 1.0000
+Ks 0.2000 0.2000 0.2000
+Ns 150
+d 1.0000
+
+newmtl Esfera amp
+Kd 1.0000 1.0000 1.0000
+Ks 0.2000 0.2000 0.2000
+Ns 150
+d 1.0000
+
+newmtl Esfera press
+Kd 1.0000 1.0000 1.0000
+Ks 0.2000 0.2000 0.2000
+Ns 150
+d 1.0000
+
+newmtl Lente roja_2
+Kd 0.6308 0.0168 0.0116
+Ks 0.2000 0.2000 0.2000
+Ns 192
+d 0.1000
+
+newmtl Esfera asi
+Kd 1.0000 1.0000 1.0000
+Ks 0.2000 0.2000 0.2000
+Ns 150
+d 1.0000
+
+newmtl Esfera alt
+Kd 1.0000 1.0000 1.0000
+Ks 0.2000 0.2000 0.2000
+Ns 150
+d 1.0000
+
+newmtl Esfera alt_0
+Kd 1.0000 1.0000 1.0000
+Ks 0.2000 0.2000 0.2000
+Ns 150
+d 1.0000
+
+newmtl Esfera tc
+Kd 1.0000 1.0000 1.0000
+Ks 0.2000 0.2000 0.2000
+Ns 150
+d 1.0000
+
+newmtl Esfera tc_1
+Kd 1.0000 1.0000 1.0000
+Ks 0.2000 0.2000 0.2000
+Ns 150
+d 1.0000
+
+newmtl Esfera cht
+Kd 1.0000 1.0000 1.0000
+Ks 0.2000 0.2000 0.2000
+Ns 150
+d 1.0000
+
+newmtl Esfera fuel
+Kd 1.0000 1.0000 1.0000
+Ks 0.2000 0.2000 0.2000
+Ns 150
+d 1.0000
+
+newmtl Esfera fuel_2
+Kd 1.0000 1.0000 1.0000
+Ks 0.2000 0.2000 0.2000
+Ns 150
+d 1.0000
+
+newmtl Botón rojo
+Kd 0.5711 0.0137 0.0103
+Ks 0.2000 0.2000 0.2000
+Ns 130
+d 1.0000
+
+newmtl Plástico naranja
+Kd 0.7454 0.1221 0.0110
+Ks 0.2000 0.2000 0.2000
+Ns 120
+d 1.0000
+
+newmtl Cinta de arnés
+Kd 0.0284 0.1095 0.2542
+Ks 0.2000 0.2000 0.2000
+Ns 40
+d 1.0000
+
+newmtl Esfera oil t
+Kd 1.0000 1.0000 1.0000
+Ks 0.2000 0.2000 0.2000
+Ns 150
+d 1.0000
+
+newmtl Esfera tach
+Kd 1.0000 1.0000 1.0000
+Ks 0.2000 0.2000 0.2000
+Ns 150
+d 1.0000
+
+newmtl Tubo pintado blanco
+Kd 0.8550 0.8550 0.8228
+Ks 0.2000 0.2000 0.2000
+Ns 110
+d 1.0000
+
+newmtl Manguera trenzada
+Kd 0.2705 0.2789 0.2874
+Ks 0.2000 0.2000 0.2000
+Ns 100
+d 1.0000
+
+newmtl Hélice negro mate, puntas pintadas
+Kd 1.0000 1.0000 1.0000
+Ks 0.2000 0.2000 0.2000
+Ns 44
+d 1.0000
+
+newmtl Motor gris Continental
+Kd 0.1195 0.1329 0.1470
+Ks 0.2000 0.2000 0.2000
+Ns 110
+d 1.0000
+
+newmtl Aluminio fundido_3
+Kd 0.3864 0.4072 0.4233
+Ks 0.2000 0.2000 0.2000
+Ns 120
+d 1.0000
+
+newmtl Negro magneto
+Kd 0.0130 0.0137 0.0152
+Ks 0.2000 0.2000 0.2000
+Ns 80
+d 1.0000
+
+newmtl Bronce latón
+Kd 0.4342 0.2664 0.0953
+Ks 0.2000 0.2000 0.2000
+Ns 130
+d 1.0000
+
+newmtl Cable de encendido blindado
+Kd 0.3231 0.3231 0.2874
+Ks 0.2000 0.2000 0.2000
+Ns 130
+d 1.0000
+
+newmtl Pomo azul
+Kd 0.0232 0.0908 0.3916
+Ks 0.2000 0.2000 0.2000
+Ns 120
+d 1.0000
+
+newmtl Esfera amp_4
+Kd 1.0000 1.0000 1.0000
+Ks 0.2000 0.2000 0.2000
+Ns 150
+d 1.0000
+
+newmtl Esfera alt_5
+Kd 1.0000 1.0000 1.0000
+Ks 0.2000 0.2000 0.2000
+Ns 150
+d 1.0000
+
+newmtl Esfera alt_6
+Kd 1.0000 1.0000 1.0000
+Ks 0.2000 0.2000 0.2000
+Ns 150
+d 1.0000
+
+newmtl Esfera tc_7
+Kd 1.0000 1.0000 1.0000
+Ks 0.2000 0.2000 0.2000
+Ns 150
+d 1.0000
+
+newmtl Esfera tc_8
+Kd 1.0000 1.0000 1.0000
+Ks 0.2000 0.2000 0.2000
+Ns 150
+d 1.0000
+
+newmtl Esfera cht_9
+Kd 1.0000 1.0000 1.0000
+Ks 0.2000 0.2000 0.2000
+Ns 150
+d 1.0000
+
+newmtl Esfera fuel_10
+Kd 1.0000 1.0000 1.0000
+Ks 0.2000 0.2000 0.2000
+Ns 150
+d 1.0000
+
+newmtl Esfera fuel_11
+Kd 1.0000 1.0000 1.0000
+Ks 0.2000 0.2000 0.2000
+Ns 150
+d 1.0000
+

@@ -1,0 +1,855 @@
+{% extends "_layout.html" %}
+{% block titulo %}Operaciones{% endblock %}
+{% block encabezado %}Registro de operaciones{% endblock %}
+{% block subtitulo %}Cada operación suma horas de vuelo al equipo y desgaste a sus piezas. Edita cualquier celda de la tabla: se guarda sola.{% endblock %}
+
+{% block head %}
+<style>
+  /* Marca del tipo de activo en el historial */
+  .tipo-activo{display:inline-flex;align-items:center;gap:4px;margin-left:6px;padding:1px 7px 1px 5px;border-radius:980px;
+    font-size:10.5px;font-weight:640;vertical-align:1px;white-space:nowrap}
+  .tipo-activo svg{width:12px;height:12px}
+  .tipo-activo.avion{background:var(--acc);color:var(--acc-txt)}
+  .tipo-activo.dron{background:rgba(115,122,134,.14);color:var(--ink2)}
+  td.celda-equipo{padding:9px 11px;white-space:nowrap}
+  td.celda-equipo .nom{display:flex;align-items:center;gap:0}
+  td.celda-equipo .tipo-activo{vertical-align:0}
+  td.celda-equipo .sub{font-size:10.5px;color:var(--mut);margin-top:2px;font-variant-numeric:tabular-nums}
+
+  /* Formulario de nueva operación que se adapta al activo */
+  .activo-elegido{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:14px;margin-bottom:14px;
+    background:rgba(115,122,134,.07);border:.5px solid var(--line2);font-size:12.5px;color:var(--ink2)}
+  .activo-elegido.avion{background:var(--acc-soft);border-color:rgba(192,134,0,.35)}
+  .activo-elegido .ic{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;flex:none;
+    background:var(--o-sup,#fff);border:.5px solid var(--line2);color:var(--ink)}
+  .activo-elegido.avion .ic{background:var(--acc);border-color:transparent;color:var(--acc-txt)}
+  .activo-elegido .ic svg{width:20px;height:20px}
+  .activo-elegido b{color:var(--ink);font-weight:680}
+  .activo-elegido .lect{margin-left:auto;text-align:right;font-variant-numeric:tabular-nums;line-height:1.35}
+  .activo-elegido .lect span{display:block;font-size:10.5px;color:var(--mut);text-transform:uppercase;letter-spacing:.04em}
+
+  .medidor-par{display:grid;grid-template-columns:1fr 1fr auto;gap:10px 12px;align-items:end;margin-bottom:12px}
+  .medidor-par .campo{display:flex;flex-direction:column;gap:5px}
+  .medidor-par label{font-size:11px;font-weight:640;color:var(--mut);text-transform:uppercase;letter-spacing:.03em}
+  .medidor-par input{font-family:var(--font);font-size:13px;color:var(--ink);background:var(--o-sup,#fff);border:.5px solid var(--line2);
+    border-radius:9px;padding:8px 11px;outline:none;width:100%;font-variant-numeric:tabular-nums}
+  .medidor-par input:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(253,185,19,.2)}
+  .medidor-par input.mal{border-color:var(--red);box-shadow:0 0 0 3px rgba(224,71,62,.15)}
+  .horas-vivo{width:136px;padding:6px 12px;border-radius:12px;background:var(--o-sup,#fff);border:.5px solid var(--line2);text-align:right}
+  .horas-vivo .l{font-size:10px;font-weight:680;color:var(--mut);text-transform:uppercase;letter-spacing:.04em}
+  .horas-vivo .v{font-family:var(--font-marca);font-size:20px;font-weight:800;color:var(--acc-ink);
+    font-variant-numeric:tabular-nums;line-height:1.15}
+  .horas-vivo.mal{border-color:rgba(224,71,62,.45);background:rgba(224,71,62,.06)}
+  .horas-vivo.mal .v{color:var(--red);font-size:13px;line-height:1.9}
+  @media(max-width:560px){.medidor-par{grid-template-columns:1fr 1fr}.horas-vivo{grid-column:1/-1;width:auto}}
+
+  details.plegable{border:.5px solid var(--line2);border-radius:14px;margin-bottom:18px;background:var(--o-sup,#fff)}
+  details.plegable > summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;padding:12px 14px;
+    font-size:11px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.06em}
+  details.plegable > summary::-webkit-details-marker{display:none}
+  details.plegable > summary .n{width:20px;height:20px;border-radius:50%;background:var(--acc);color:var(--acc-txt);
+    display:grid;place-items:center;font-size:10.5px;letter-spacing:0}
+  details.plegable > summary .flecha{margin-left:auto;transition:transform .18s;font-size:14px;color:var(--mut)}
+  details.plegable[open] > summary .flecha{transform:rotate(90deg)}
+  details.plegable > summary .resumen{text-transform:none;letter-spacing:0;font-weight:560;font-size:12px;color:var(--ink2)}
+  details.plegable .dentro{padding:0 14px 4px}
+  .ventana-clima{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+  .ventana-clima .chip{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:980px;font-size:12px;
+    background:rgba(115,122,134,.1);color:var(--ink2);font-variant-numeric:tabular-nums}
+  .ventana-clima .chip.ok{background:rgba(47,143,78,.12);color:var(--o-tx-verde,#1d6b38)}
+  .ventana-clima .chip.fuera{background:rgba(224,71,62,.12);color:var(--o-tx-rojo,#8f231b);font-weight:640}
+  .ventana-clima .chip i{width:7px;height:7px;border-radius:50%;background:currentColor;display:inline-block}
+  .form-grid input.mal{border-color:var(--red);box-shadow:0 0 0 3px rgba(224,71,62,.15)}
+/* Productos de bodega usados en la operación (se descuentan del inventario: /bodega) */
+.op-bodega{margin-top:4px;border:.5px dashed var(--line2);border-radius:14px;padding:10px 12px}
+.op-bodega .cab{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink2);flex-wrap:wrap}
+.op-bodega .cab b{color:var(--ink)}
+.op-bodega .cab svg{width:16px;height:16px;flex:none}
+.op-prod{display:grid;grid-template-columns:minmax(0,1.5fr) 100px 110px minmax(0,1.3fr) auto auto;gap:8px;align-items:center;margin-top:8px}
+.op-prod select,.op-prod input[type=number]{width:100%;padding:6px 9px;font-size:12.5px}
+.op-prod .t{font-size:12px;color:var(--ink2);font-variant-numeric:tabular-nums}
+.op-prod .t.falta{color:var(--o-tx-rojo,#a4271f);font-weight:650}
+.op-prod label{font-size:12px;color:var(--mut);display:flex;gap:5px;align-items:center;white-space:nowrap}
+@media(max-width:760px){.op-prod{grid-template-columns:1fr 1fr}}
+</style>
+{% endblock %}
+
+{% block acciones %}
+<button class="btn secundario" id="btnRepuestos">
+  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><circle cx="10" cy="10" r="6.6"/><path d="M10 6.4V10l2.4 1.6"/></svg>
+  Próximos repuestos
+</button>
+<button class="btn secundario" id="btnExcel">
+  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M11.4 2.6H6a1.6 1.6 0 0 0-1.6 1.6v11.6A1.6 1.6 0 0 0 6 17.4h8a1.6 1.6 0 0 0 1.6-1.6V6.8z"/><path d="M11.4 2.6v4.2h4.2"/><path d="M7.6 10.4l4.8 4.2M12.4 10.4l-4.8 4.2"/></svg>
+  Excel
+</button>
+<button class="btn" id="btnNueva">＋ Nueva operación</button>
+{% endblock %}
+
+{% block barra %}
+<div class="tabsbar"><div class="wrap">
+  <div class="filters" style="margin-left:0">
+    <select id="fEquipo"></select>
+    <label class="mut" style="font-size:12px">Desde</label><input type="date" id="fDesde">
+    <label class="mut" style="font-size:12px">Hasta</label><input type="date" id="fHasta">
+    <input type="search" id="fBuscar" placeholder="Buscar finca, cliente, producto, piloto…" style="min-width:250px">
+    <button class="pillbtn" id="btnLimpiar">Limpiar</button>
+    <span class="estado-guardado" id="estadoGuardado" style="margin-left:auto"><i></i> Guardado automático activo</span>
+  </div>
+</div></div>
+{% endblock %}
+
+{% block contenido %}
+<div class="kpis">
+  <div class="kpi"><div class="lbl">Operaciones</div><div class="val acc" id="kN">0</div><div class="note" id="kNNota"></div></div>
+  <div class="kpi"><div class="lbl">Horas de vuelo</div><div class="val" id="kH">0</div><div class="note" id="kHNota"></div></div>
+  <div class="kpi"><div class="lbl">Hectáreas</div><div class="val" id="kHa">0</div><div class="note" id="kHaNota"></div></div>
+  <div class="kpi"><div class="lbl">Litros aplicados</div><div class="val" id="kL">0</div><div class="note" id="kLNota"></div></div>
+  <div class="kpi"><div class="lbl">Despegues · aterrizajes</div><div class="val" id="kD">0</div><div class="note" id="kDNota"></div></div>
+</div>
+
+<div class="card">
+  <div class="card-cab">
+    <h3>Actividad del período</h3>
+    <div class="der" id="rangoTxt"></div>
+  </div>
+  <div class="lienzo-g" id="gActividad" style="height:200px"></div>
+  <div id="legActividad"></div>
+</div>
+
+<div class="card">
+  <div class="card-cab">
+    <h3>Historial <span class="mut" id="conteo"></span></h3>
+    <div class="der">Haz clic en cualquier celda para corregirla · Esc deshace · Enter confirma</div>
+  </div>
+  <div class="tabla-envoltura">
+    <table class="editable">
+      <thead><tr>
+        <th style="width:118px">Fecha</th><th style="width:150px">Activo</th>
+        <th class="num" style="width:96px">Vuelo (h)</th><th class="num" style="width:96px">Total (h)</th>
+        <th class="num" style="width:82px" title="Despegues (dron) o aterrizajes (avión)">Desp./Aterr.</th><th class="num" style="width:92px">Ha</th>
+        <th class="num" style="width:92px">Litros</th><th style="width:150px">Producto</th>
+        <th style="width:130px">Piloto</th><th style="width:150px">Cliente</th>
+        <th style="width:130px">Zona</th><th style="width:150px">Finca / lote</th>
+        <th style="width:180px">Nota</th><th style="width:44px"></th>
+      </tr></thead>
+      <tbody id="tabla"></tbody>
+    </table>
+  </div>
+  <div class="vacio-rico" id="vacio" style="display:none">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 19h16M7 19V9m5 10V5m5 14v-6"/></svg>
+    <b>Sin operaciones para este filtro</b>
+    <p>Registra una operación a mano o importa la plantilla de Excel con toda la jornada de una vez.</p>
+    <div class="fila-flex" style="justify-content:center">
+      <button class="btn" onclick="abrirNueva()">＋ Nueva operación</button>
+      <button class="btn secundario" onclick="abrirExcel()">Importar Excel</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let EQUIPOS = [], OPS = [], FILAS = [];
+
+const CAMPOS_TEXTO = ['producto','piloto','cliente','zona','lote','nota'];
+
+// Fecha de hoy en la hora local: hoyISO() usa UTC y en Colombia, después de las 7 p. m.,
+// devolvía el día siguiente, que el servidor rechaza por ser fecha futura.
+function hoyLocal(){
+  const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  return d.toISOString().slice(0,10);
+}
+
+const IC_AVION = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 15.5v-1.8l-8-4.7V4.2C13 3.5 12.6 3 12 3s-1 .5-1 1.2V9l-8 4.7v1.8l8-2.3v4.9l-2.2 1.6V21l3.2-.9 3.2.9v-1.3L13 18.1v-4.9z"/></svg>`;
+const IC_DRON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="5.5" cy="5.5" r="2.5"/><circle cx="18.5" cy="5.5" r="2.5"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/><path d="M7.5 7.5l3 3m6-3l-3 3m-6 6l3-3m6 3l-3-3"/><rect x="10" y="10" width="4" height="4" rx="1"/></svg>`;
+function tipoDe(o){ const e = EQUIPOS.find(x=>x.id === o.equipo_id); return e ? e.tipo_activo : 'dron'; }
+function marcaTipo(t){
+  return t === 'avion' ? `<span class="tipo-activo avion" title="Avión">${IC_AVION}Avión</span>`
+                       : `<span class="tipo-activo dron" title="Dron">${IC_DRON}Dron</span>`;
+}
+
+// Ventana operativa de aplicación (Ajustes → costos). Sin configurar, valores de referencia.
+let VENTANA = {viento:15, temp:32, humedad:50};
+async function cargarVentana(){
+  try{
+    const c = await api('/api/costos/config');
+    const n = (v, d)=>{ const x = parseFloat(v); return isFinite(x) ? x : d; };
+    VENTANA = {viento: n(c.ventana_viento_max, 15), temp: n(c.ventana_temp_max, 32), humedad: n(c.ventana_humedad_min, 50)};
+  }catch(e){ /* se quedan los valores de referencia */ }
+}
+
+let PILOTOS = [];
+// Insumos de la bodega con sus existencias por ubicación, para descontar lo aplicado.
+const BODEGA = {insumos: null};
+const IC_BODEGA = `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2.8 8 10 3.4 17.2 8v8.6H2.8z"/><path d="M5.8 16.6v-6h8.4v6M5.8 12.6h8.4M5.8 14.6h8.4"/></svg>`;
+async function cargarBodega(){
+  if(BODEGA.insumos) return;
+  try{ BODEGA.insumos = (await api('/api/bodega/items?clase=insumo')).filter(i=>i.activo); }catch(e){ BODEGA.insumos = []; }
+}
+async function cargarEquipos(){
+  EQUIPOS = await api('/api/equipos');
+  // Pilotos del directorio: enlazan la operación con su licencia para el libro de vuelo (RAC).
+  try{ const r = await api('/api/personal?rol=piloto&inactivos=0'); PILOTOS = Array.isArray(r) ? r : (r.lista || r.personal || []); }catch(e){ PILOTOS = []; }
+  const activos = EQUIPOS.filter(e=>e.estado!=='baja');
+  document.getElementById('fEquipo').innerHTML = opcionesEquipos(EQUIPOS, paramURL('equipo')||'', true);
+  return activos;
+}
+
+function paramsFiltro(){
+  const p = new URLSearchParams();
+  const eq = document.getElementById('fEquipo').value;
+  const d = document.getElementById('fDesde').value, h = document.getElementById('fHasta').value;
+  if(eq) p.set('equipo_id', eq); if(d) p.set('desde', d); if(h) p.set('hasta', h);
+  return p;
+}
+
+async function cargar(){
+  const eq = document.getElementById('fEquipo').value;
+  OPS = await api('/api/operaciones' + (eq ? `?equipo_id=${eq}&limite=5000` : '?limite=5000'));
+  pintar();
+}
+
+function enRango(o){
+  const d = document.getElementById('fDesde').value, h = document.getElementById('fHasta').value;
+  if(d && o.fecha < d) return false;
+  if(h && o.fecha > h) return false;
+  return true;
+}
+
+function pintar(){
+  const q = document.getElementById('fBuscar').value.trim().toLowerCase();
+  FILAS = OPS.filter(o=>enRango(o) && (!q ||
+    [o.lote,o.cliente,o.producto,o.piloto,o.zona,o.nota,o.equipo].join(' ').toLowerCase().includes(q)));
+
+  const sum = k=>FILAS.reduce((a,o)=>a+(Number(o[k])||0), 0);
+  const horas = sum('horas_vuelo'), ha = sum('hectareas'), litros = sum('litros');
+  document.getElementById('kN').textContent = FILAS.length;
+  document.getElementById('kNNota').textContent = `${new Set(FILAS.map(o=>o.equipo)).size} equipo(s) · ${new Set(FILAS.map(o=>o.fecha)).size} día(s)`;
+  document.getElementById('kH').textContent = fmt(horas);
+  document.getElementById('kHNota').textContent = `${fmt(sum('tiempo_total'))} h de operación total`;
+  document.getElementById('kHa').textContent = fmt(ha, 0);
+  document.getElementById('kHaNota').textContent = horas ? `${fmt(ha/horas,1)} ha por hora de vuelo` : '';
+  document.getElementById('kL').textContent = fmt(litros, 0);
+  document.getElementById('kLNota').textContent = ha ? `${fmt(litros/ha,1)} L/ha promedio` : '';
+  const ciclos = sum('despegues') + sum('aterrizajes');
+  document.getElementById('kD').textContent = fmt(ciclos, 0);
+  document.getElementById('kDNota').textContent = FILAS.length ? `${fmt(ciclos/FILAS.length,1)} por operación` : '';
+  document.getElementById('conteo').textContent = `· ${FILAS.length}`;
+  document.getElementById('vacio').style.display = FILAS.length ? 'none' : 'block';
+
+  pintarTabla();
+  pintarGrafica();
+}
+
+function celda(o, campo, tipo, extra=''){
+  const v = o[campo] ?? '';
+  return `<input class="celda" data-id="${o.id}" data-campo="${campo}" type="${tipo}"
+            value="${escapar(v)}" ${extra}>`;
+}
+
+function pintarTabla(){
+  document.getElementById('tabla').innerHTML = FILAS.map(o=>`<tr data-id="${o.id}">
+    <td>${celda(o,'fecha','date')}</td>
+    <td class="celda-equipo"><div class="nom"><b>${escapar(o.equipo)}</b>${marcaTipo(tipoDe(o))}</div>
+      ${tipoDe(o)==='avion' && o.hobbs_fin!=null ? `<div class="sub" title="Hobbs inicial → final">Hobbs ${fmt(o.hobbs_ini,1)} → ${fmt(o.hobbs_fin,1)}</div>` : ''}</td>
+    <td class="num">${celda(o,'horas_vuelo','number','step="0.01" min="0.01"')}</td>
+    <td class="num">${celda(o,'tiempo_total','number','step="0.01" min="0"')}</td>
+    <td class="num">${tipoDe(o)==='avion'
+      ? celda(o,'aterrizajes','number','step="1" min="0" title="Aterrizajes"')
+      : celda(o,'despegues','number','step="1" min="0" title="Despegues"')}</td>
+    <td class="num">${celda(o,'hectareas','number','step="0.01" min="0"')}</td>
+    <td class="num">${celda(o,'litros','number','step="1" min="0"')}</td>
+    <td>${celda(o,'producto','text','list="productos"')}</td>
+    <td>${celda(o,'piloto','text','list="pilotos"')}</td>
+    <td>${celda(o,'cliente','text','list="clientes"')}</td>
+    <td>${celda(o,'zona','text','list="zonas"')}</td>
+    <td>${celda(o,'lote','text','list="fincas"')}</td>
+    <td>${celda(o,'nota','text')}</td>
+    <td class="acciones-fila"><button class="btn-icono" title="Eliminar (resta las horas)"
+      onclick="borrar(${o.id})">✕</button></td>
+  </tr>`).join('');
+  refrescarSugerencias();
+}
+
+function refrescarSugerencias(){
+  let dl = document.getElementById('datalists');
+  if(!dl){ dl = document.createElement('div'); dl.id = 'datalists'; document.body.appendChild(dl); }
+  const lista = k=>[...new Set(OPS.map(o=>o[k]).filter(Boolean))].sort();
+  dl.innerHTML = [['productos','producto'],['pilotos','piloto'],['clientes','cliente'],
+                  ['zonas','zona'],['fincas','lote'],['pistas','pista']]
+    .map(([id,k])=>`<datalist id="${id}">${lista(k).map(v=>`<option value="${escapar(v)}">`).join('')}</datalist>`).join('');
+}
+
+function pintarGrafica(){
+  // Serie diaria agregada; con más de 90 días se agrupa por mes para que se lea.
+  const porDia = {};
+  FILAS.forEach(o=>{
+    const d = porDia[o.fecha] || (porDia[o.fecha] = {horas:0, ha:0});
+    d.horas += Number(o.horas_vuelo)||0; d.ha += Number(o.hectareas)||0;
+  });
+  let claves = Object.keys(porDia).sort();
+  let datos = claves.map(k=>({x:k, clave:k, ...porDia[k]}));
+  const porMeses = claves.length > 90;
+  if(porMeses){
+    const acumulado = {};
+    datos.forEach(d=>{
+      const m = d.x.slice(0,7);
+      const acc = acumulado[m] || (acumulado[m] = {horas:0, ha:0});
+      acc.horas += d.horas; acc.ha += d.ha;
+    });
+    datos = Object.keys(acumulado).sort().map(k=>({x:k, clave:k, ...acumulado[k]}));
+  } else {
+    datos = datos.map(d=>({...d, x: fmtFecha(d.clave).slice(0,5)}));
+  }
+  document.getElementById('rangoTxt').textContent = claves.length
+    ? `${fmtFecha(claves[0])} → ${fmtFecha(claves[claves.length-1])}` : '';
+  graficoLinea('gActividad', [
+    {nombre:'Horas de vuelo', unidad:'h', color:PALETA_G[0], datos: datos.map(d=>({x:d.x, y:d.horas}))},
+    {nombre:'Hectáreas', unidad:'ha', eje:'derecha', color:PALETA_G[1], datos: datos.map(d=>({x:d.x, y:d.ha}))},
+  ], {alto:200, vacio:'Sin operaciones en el período seleccionado.',
+      // Pinchar un punto abre ese día (o ese mes) con todo su detalle.
+      alClic: d=>detalleFecha(datos[d.indice].clave, porMeses)});
+  leyendaGrafica('legActividad', [{nombre:'Horas de vuelo', color:PALETA_G[0]},
+                                  {nombre:'Hectáreas', color:PALETA_G[1]}]);
+}
+
+
+// Detalle de un día o mes concreto al pinchar la gráfica de actividad.
+function detalleFecha(clave, esMes){
+  const filas = OPS.filter(o => esMes ? o.fecha.startsWith(clave) : o.fecha === clave);
+  const sum = k=>filas.reduce((a,o)=>a+(Number(o[k])||0), 0);
+  const horas = sum('horas_vuelo'), ha = sum('hectareas'), litros = sum('litros');
+  const titulo = esMes ? `Mes ${clave}` : fmtFecha(clave);
+  const agrupar = (campo)=>{
+    const m = {};
+    filas.forEach(o=>{ const k = o[campo] || '—';
+      const d = m[k] || (m[k] = {horas:0, ha:0, n:0}); d.horas += Number(o.horas_vuelo)||0;
+      d.ha += Number(o.hectareas)||0; d.n++; });
+    return Object.entries(m).sort((a,b)=>b[1].horas-a[1].horas);
+  };
+  const bloque = (campo, titulo)=>{
+    const filasG = agrupar(campo);
+    return `<div><h4>${titulo}</h4><div class="g-ranking">${filasG.map(([k,d])=>`
+      <div class="g-fila"><div class="g-etq" title="${escapar(k)}">${escapar(k)}</div>
+        <div class="g-track"><i style="width:${d.horas/Math.max(horas,0.001)*100}%;background:${PALETA_G[0]}"></i></div>
+        <div class="g-val">${fmt(d.horas)} h<span class="g-det">${fmt(d.ha,0)} ha · ${d.n} op.</span></div></div>`).join('')}</div></div>`;
+  };
+
+  const v = ventana({titulo, ancho:'ancha', subtitulo:`${filas.length} operación(es) registradas`,
+    cuerpo:`
+      <div class="desglose-kpis">
+        <div class="k"><div class="l">Operaciones</div><div class="v">${filas.length}</div></div>
+        <div class="k"><div class="l">Horas de vuelo</div><div class="v">${fmt(horas)}</div></div>
+        <div class="k"><div class="l">Hectáreas</div><div class="v">${fmt(ha,0)}</div>
+          <div class="n">${horas?fmt(ha/horas,1)+' ha/h':''}</div></div>
+        <div class="k"><div class="l">Litros</div><div class="v">${fmt(litros,0)}</div>
+          <div class="n">${ha?fmt(litros/ha,1)+' L/ha':''}</div></div>
+        <div class="k"><div class="l">Despegues</div><div class="v">${fmt(sum('despegues'),0)}</div></div>
+        <div class="k"><div class="l">Equipos</div><div class="v">${new Set(filas.map(o=>o.equipo)).size}</div></div>
+      </div>
+      <div class="desglose-cols" style="margin-bottom:18px">
+        ${bloque('equipo','Por equipo')}${bloque('piloto','Por piloto')}
+        ${bloque('producto','Por producto')}${bloque('lote','Por finca')}
+      </div>
+      <div class="card-cab"><h3>Operaciones</h3></div>
+      <div class="tabla-envoltura" style="max-height:320px;overflow:auto">
+        <table><thead><tr><th>Fecha</th><th>Equipo</th><th>Finca / cliente</th><th>Producto</th>
+          <th class="num">Vuelo</th><th class="num">Ha</th><th class="num">L</th><th>Piloto</th><th>Nota</th></tr></thead>
+          <tbody>${filas.map(o=>`<tr>
+            <td>${fmtFecha(o.fecha)}</td><td>${escapar(o.equipo)}</td>
+            <td>${escapar(o.lote||'—')}<div class="mut" style="font-size:11.5px">${escapar(o.cliente||'')}</div></td>
+            <td>${escapar(o.producto||'—')}</td><td class="num">${fmt(o.horas_vuelo,2)}</td>
+            <td class="num">${fmt(o.hectareas,1)}</td><td class="num">${fmt(o.litros,0)}</td>
+            <td>${escapar(o.piloto||'—')}</td><td>${escapar(o.nota||'')}</td></tr>`).join('')}</tbody></table>
+      </div>`,
+    pie:`<div class="der"><button class="btn secundario" data-filtrar>Filtrar la tabla por esto</button>
+         <button class="btn secundario" data-cerrar>Cerrar</button></div>`});
+  v.$('[data-cerrar]').onclick = v.cerrar;
+  v.$('[data-filtrar]').onclick = ()=>{
+    const desde = esMes ? clave + '-01' : clave;
+    const hasta = esMes ? clave + '-31' : clave;
+    document.getElementById('fDesde').value = desde;
+    document.getElementById('fHasta').value = hasta;
+    v.cerrar(); pintar();
+  };
+}
+
+// ---- Guardado automático de la tabla ----
+edicionEnLinea(document.getElementById('tabla'), {
+  url: id=>`/api/operaciones/${id}`,
+  validar: (campo, valor)=>{
+    if(campo === 'horas_vuelo' && !(Number(String(valor).replace(',','.')) > 0))
+      return 'Las horas de vuelo deben ser mayores a 0.';
+    if(campo === 'fecha' && !valor) return 'La fecha no puede quedar vacía.';
+    if(campo === 'fecha' && valor > hoyLocal()) return 'La fecha de la operación no puede ser futura.';
+    return null;
+  },
+  alGuardar: (r, celda)=>{
+    const op = OPS.find(o=>String(o.id) === celda.dataset.id);
+    if(op && r.operacion) Object.assign(op, r.operacion);
+    const est = document.getElementById('estadoGuardado');
+    est.className = 'estado-guardado';
+    est.innerHTML = `<i></i> Guardado · ${new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'})}`;
+    // Cambiar horas altera el desgaste: los KPI y la gráfica se recalculan al vuelo.
+    pintarKpisYGrafica();
+  },
+  alError: ()=>{
+    const est = document.getElementById('estadoGuardado');
+    est.className = 'estado-guardado error';
+    est.innerHTML = '<i></i> No se pudo guardar el último cambio';
+  },
+});
+
+function pintarKpisYGrafica(){
+  const filasVisibles = FILAS;
+  FILAS = filasVisibles.map(f=>OPS.find(o=>o.id === f.id) || f);
+  const sum = k=>FILAS.reduce((a,o)=>a+(Number(o[k])||0), 0);
+  document.getElementById('kH').textContent = fmt(sum('horas_vuelo'));
+  document.getElementById('kHa').textContent = fmt(sum('hectareas'), 0);
+  document.getElementById('kL').textContent = fmt(sum('litros'), 0);
+  document.getElementById('kD').textContent = fmt(sum('despegues') + sum('aterrizajes'), 0);
+  pintarGrafica();
+}
+
+async function borrar(id){
+  const op = OPS.find(o=>o.id === id);
+  if(!await confirmar({titulo:'Eliminar operación', peligro:true, aceptar:'Eliminar',
+      mensaje:`Se eliminará la operación del <b>${fmtFecha(op.fecha)}</b> de <b>${escapar(op.equipo)}</b> y se
+               recalculará el uso de las piezas que la volaron.`})) return;
+  await api(`/api/operaciones/${id}`, {method:'DELETE'});
+  toast('Operación eliminada');
+  cargar();
+}
+
+// ---- Ventana: nueva operación ----
+// El formulario cambia según el activo: un dron se registra con horas de vuelo y despegues;
+// un avión con las lecturas de Hobbs y Tach (inicial/final), aterrizajes, arranques y combustible.
+function abrirNueva(){
+  const activos = EQUIPOS.filter(e=>e.estado !== 'baja');
+  const pre = paramURL('equipo') || document.getElementById('fEquipo').value || activos[0]?.id;
+  const v = ventana({
+    titulo: 'Nueva operación', subtitulo: 'Las horas suman desgaste a todas las piezas del activo',
+    ancho: 'ancha',
+    cuerpo: `<form id="formOp" novalidate>
+      <div id="opError"></div>
+      <div class="seccion-form">
+        <div class="titulo"><span class="n">1</span> Activo y jornada</div>
+        <div class="form-grid">
+          <div class="campo"><label>Activo *</label><select name="equipo_id" id="opEquipo" required>${opcionesEquipos(activos, pre)}</select></div>
+          <div class="campo"><label>Fecha</label><input type="date" name="fecha" id="opFecha" value="${hoyLocal()}" max="${hoyLocal()}"></div>
+        </div>
+        <div id="opActivo"></div>
+        <div id="opTipo"></div>
+      </div>
+      <div class="seccion-form">
+        <div class="titulo"><span class="n">2</span> Aplicación</div>
+        <div class="form-grid">
+          <div class="campo"><label>Hectáreas aplicadas</label><input type="number" name="hectareas" step="0.01" min="0" data-calc></div>
+          <div class="campo"><label>Litros totales</label><input type="number" name="litros" step="1" min="0" data-calc></div>
+          <div class="campo"><label>Producto / mezcla</label><input name="producto" list="productos"></div>
+        </div>
+        <div class="op-bodega" id="opBodega"></div>
+      </div>
+      <details class="plegable" id="opCond">
+        <summary><span class="n">3</span> Aplicación y condiciones <span class="resumen" id="opCondResumen"></span><span class="flecha">›</span></summary>
+        <div class="dentro">
+          <div class="form-grid">
+            <div class="campo"><label>Ha programadas</label><input type="number" name="ha_programadas" step="0.01" min="0" data-calc></div>
+            <div class="campo"><label>Dosis objetivo (L/ha)</label><input type="number" name="dosis_objetivo" step="0.1" min="0" data-calc></div>
+            <div class="campo"><label>Temperatura (°C)</label><input type="number" name="temperatura" step="0.1" data-clima></div>
+            <div class="campo"><label>Humedad (%)</label><input type="number" name="humedad" step="1" min="0" max="100" data-clima></div>
+            <div class="campo"><label>Viento (km/h)</label><input type="number" name="viento" step="0.1" min="0" data-clima></div>
+            <div class="campo"><label>Velocidad (km/h)</label><input type="number" name="velocidad" step="0.1" min="0"></div>
+            <div class="campo"><label>Altura (m)</label><input type="number" name="altura" step="0.1" min="0"></div>
+          </div>
+          <div class="ventana-clima" id="opClima"></div>
+          <div id="opCondAviso"></div>
+        </div>
+      </details>
+      <div class="seccion-form">
+        <div class="titulo"><span class="n">4</span> Dónde y quién</div>
+        <div class="form-grid">
+          <div class="campo"><label>Piloto (directorio)</label><select name="personal_id" id="opPersonal"><option value="">— escribe el nombre al lado —</option>${PILOTOS.map(p=>`<option value="${p.id}">${escapar(p.nombre)}${p.licencia?' · '+escapar(p.licencia):''}</option>`).join('')}</select></div>
+          <div class="campo"><label>Piloto (texto)</label><input name="piloto" list="pilotos" id="opPiloto"></div>
+          <div class="campo"><label>Cliente</label><input name="cliente" list="clientes"></div>
+          <div class="campo"><label>Zona</label><input name="zona" list="zonas"></div>
+          <div class="campo"><label>Finca / lote</label><input name="lote" list="fincas"></div>
+          <div class="campo ancho"><label>Nota</label><input name="nota" placeholder="Clima, incidencias, observaciones…"></div>
+        </div>
+      </div>
+      <details class="plegable" id="opLibro">
+        <summary><span class="n">5</span> Libro de vuelo · RAC 91.1410 / 100.005 <span class="resumen" id="opLibroResumen">· para el entregable a la Aerocivil</span><span class="flecha">›</span></summary>
+        <div class="dentro">
+          <div class="form-grid">
+            <div class="campo"><label>Hora de salida</label><input type="time" name="hora_salida"></div>
+            <div class="campo"><label>Hora de llegada</label><input type="time" name="hora_llegada"></div>
+            <div class="campo"><label>Origen</label><input name="origen" list="pistas" placeholder="Pista / aeródromo"></div>
+            <div class="campo"><label>Destino</label><input name="destino" list="pistas" placeholder="Pista / aeródromo"></div>
+            <div class="campo"><label>Propósito del vuelo</label><select name="proposito"><option>Aplicación aérea</option><option>Traslado</option><option>Vuelo de prueba / mantenimiento</option><option>Entrenamiento</option><option>Otro</option></select></div>
+          </div>
+        </div>
+      </details>
+    </form>`,
+    pie: `<span class="mut" style="font-size:12px">Puedes registrar varias seguidas sin cerrar la ventana.</span>
+          <div class="der"><button class="btn secundario" data-cerrar>Cerrar</button>
+          <button class="btn" data-guardar>Registrar operación</button></div>`,
+  });
+  v.$('[data-cerrar]').onclick = v.cerrar;
+  const form = v.$('#formOp');
+  const campo = n=>form.querySelector(`[name="${n}"]`);
+  const num = n=>{ const c = campo(n); if(!c || c.value === '') return null; const x = parseFloat(c.value); return isFinite(x) ? x : null; };
+  const equipoSel = ()=>EQUIPOS.find(e=>String(e.id) === String(v.$('#opEquipo').value));
+
+  function mostrarError(msg){
+    v.$('#opError').innerHTML = msg ? `<div class="aviso rojo"><div><b>No se registró la operación.</b> ${escapar(msg)}</div></div>` : '';
+    if(msg) v.$('#opError').scrollIntoView({block:'nearest'});
+  }
+
+  function pintarTipo(){
+    const eq = equipoSel();
+    const avion = eq?.tipo_activo === 'avion';
+    const c = eq?.contadores || {};
+    v.$('#opActivo').innerHTML = eq ? `
+      <div class="activo-elegido ${avion?'avion':''}">
+        <div class="ic">${avion ? IC_AVION : IC_DRON}</div>
+        <div><b>${escapar(eq.nombre)}</b>${eq.matricula && eq.matricula !== eq.nombre ? ' · '+escapar(eq.matricula) : ''}<br>
+          ${escapar(eq.modelo)} · ${avion ? 'Avión' : 'Dron'}${eq.aeronavegable?.estado === 'no_apto'
+            ? ' · <span style="color:var(--red);font-weight:640">no recomendamos volarlo</span>' : ''}</div>
+        <div class="lect">${avion
+          ? `<span>Lectura actual</span>Hobbs <b>${fmt(c.hobbs,1)}</b> · Tach <b>${fmt(c.tach,1)}</b>`
+          : `<span>Acumulado</span><b>${fmt(eq.horas_totales,1)}</b> h · ${fmt(c.despegues,0)} desp.`}</div>
+      </div>` : '';
+
+    v.$('#opTipo').innerHTML = avion ? `
+      <div class="medidor-par">
+        <div class="campo"><label>Hobbs inicial *</label><input type="number" name="hobbs_ini" step="0.1" min="0" value="${c.hobbs ?? ''}" data-med></div>
+        <div class="campo"><label>Hobbs final *</label><input type="number" name="hobbs_fin" step="0.1" min="0" data-med></div>
+        <div class="horas-vivo" id="vivoHobbs"><div class="l">Horas Hobbs</div><div class="v">—</div></div>
+      </div>
+      <div class="medidor-par">
+        <div class="campo"><label>Tach inicial</label><input type="number" name="tach_ini" step="0.01" min="0" value="${c.tach ?? ''}" data-med></div>
+        <div class="campo"><label>Tach final</label><input type="number" name="tach_fin" step="0.01" min="0" data-med></div>
+        <div class="horas-vivo" id="vivoTach"><div class="l">Horas Tach</div><div class="v">—</div></div>
+      </div>
+      <div class="form-grid">
+        <div class="campo"><label>Aterrizajes</label><input type="number" name="aterrizajes" step="1" min="0"></div>
+        <div class="campo"><label>Arranques</label><input type="number" name="arranques" step="1" min="0"></div>
+        <div class="campo"><label>Combustible consumido (gal)</label><input type="number" name="combustible_gal" step="0.1" min="0" title="Lo que gastó el vuelo. Los tanqueos se registran en Combustible y se concilian con este dato."></div>
+        <div class="campo"><label>Pista</label><input name="pista" list="pistas" placeholder="Pista de operación"></div>
+        <div class="campo"><label>Tiempo de traslado (h)</label><input type="number" name="tiempo_traslado" step="0.1" min="0"></div>
+        <div class="campo"><label>Tiempo total (h)</label><input type="number" name="tiempo_total" step="0.01" min="0"></div>
+      </div>
+      <div class="pista">Las horas de vuelo salen del Hobbs (final − inicial). El inicial viene con la lectura actual del avión.</div>`
+    : `
+      <div class="form-grid">
+        <div class="campo"><label>Horas de vuelo *</label><input type="number" name="horas_vuelo" step="0.01" min="0.01" required placeholder="2.5"></div>
+        <div class="campo"><label>Tiempo total (h)</label><input type="number" name="tiempo_total" step="0.01" min="0"></div>
+        <div class="campo"><label>Despegues</label><input type="number" name="despegues" step="1" min="0"></div>
+      </div>`;
+    v.$$('#opTipo [data-med]').forEach(i=>i.addEventListener('input', medidores));
+    medidores();
+  }
+
+  // Horas en vivo = final − inicial; en rojo si el final es menor.
+  function medidores(){
+    const par = (ini, fin, id)=>{
+      const caja = v.$('#'+id); if(!caja) return true;
+      const a = num(ini), b = num(fin);
+      const mal = a != null && b != null && b < a;
+      caja.classList.toggle('mal', mal);
+      campo(fin).classList.toggle('mal', mal);
+      caja.querySelector('.v').textContent = (a != null && b != null) ? (mal ? 'final < inicial' : fmt(b - a, 2) + ' h') : '—';
+      return !mal;
+    };
+    const okH = par('hobbs_ini','hobbs_fin','vivoHobbs');
+    const okT = par('tach_ini','tach_fin','vivoTach');
+    return okH && okT;
+  }
+
+  // Condiciones: chips contra la ventana operativa y dosis real frente a la objetivo.
+  function condiciones(){
+    const t = num('temperatura'), h = num('humedad'), w = num('viento');
+    const fuera = [];
+    const chip = (valor, etiqueta, unidad, limiteTxt, esFuera)=>{
+      if(valor == null) return `<span class="chip"><i></i>${etiqueta}: ${limiteTxt}</span>`;
+      if(esFuera) fuera.push(`${etiqueta.toLowerCase()} ${fmt(valor,1)} ${unidad} (${limiteTxt})`);
+      return `<span class="chip ${esFuera?'fuera':'ok'}"><i></i>${etiqueta} ${fmt(valor,1)} ${unidad} · ${limiteTxt}</span>`;
+    };
+    v.$('#opClima').innerHTML =
+      chip(w, 'Viento', 'km/h', `máx. ${fmt(VENTANA.viento,0)} km/h`, w != null && w > VENTANA.viento) +
+      chip(t, 'Temperatura', '°C', `máx. ${fmt(VENTANA.temp,0)} °C`, t != null && t > VENTANA.temp) +
+      chip(h, 'Humedad', '%', `mín. ${fmt(VENTANA.humedad,0)} %`, h != null && h < VENTANA.humedad);
+    ['viento','temperatura','humedad'].forEach(n=>campo(n).classList.remove('mal'));
+    if(w != null && w > VENTANA.viento) campo('viento').classList.add('mal');
+    if(t != null && t > VENTANA.temp) campo('temperatura').classList.add('mal');
+    if(h != null && h < VENTANA.humedad) campo('humedad').classList.add('mal');
+
+    const ha = num('hectareas'), L = num('litros'), obj = num('dosis_objetivo'), prog = num('ha_programadas');
+    const extra = [];
+    if(ha && L){
+      const real = L / ha;
+      const desvio = obj ? (real - obj) / obj * 100 : null;
+      extra.push(`Dosis real <b>${fmt(real,1)} L/ha</b>${desvio != null ? ` · desvío <b>${desvio>0?'+':''}${fmt(desvio,1)} %</b>` : ''}`);
+    }
+    if(ha && prog) extra.push(`Cumplimiento <b>${fmt(ha/prog*100,0)} %</b> de lo programado`);
+    v.$('#opCondAviso').innerHTML =
+      (fuera.length ? `<div class="aviso rojo"><div><b>Fuera de la ventana de aplicación:</b> ${fuera.join(' · ')}.
+        La operación se registra igual, pero queda marcada en los indicadores.</div></div>` : '') +
+      (extra.length ? `<div class="aviso gris"><div>${extra.join(' · ')}</div></div>` : '');
+    v.$('#opCondResumen').innerHTML = fuera.length
+      ? `<span style="color:var(--red)">· ${fuera.length} fuera de ventana</span>`
+      : (t != null || h != null || w != null ? '· dentro de la ventana' : '· opcional');
+    if(fuera.length) v.$('#opCond').open = true;
+  }
+
+  v.$('#opPersonal').onchange = e=>{ const p = PILOTOS.find(x=>String(x.id)===e.target.value); if(p) v.$('#opPiloto').value = p.nombre; };
+  // Los aviones llevan libro de a bordo: la sección se abre sola.
+  const abrirLibro = ()=>{ if(equipoSel()?.tipo_activo === 'avion') v.$('#opLibro').open = true; };
+  v.$('#opEquipo').addEventListener('change', abrirLibro); abrirLibro();
+  v.$('#opEquipo').onchange = ()=>{ mostrarError(''); pintarTipo(); abrirLibro(); };
+  form.addEventListener('input', e=>{ if(e.target.matches('[data-clima],[data-calc]')) condiciones(); });
+  v.$('#opFecha').addEventListener('input', ()=>{
+    const f = v.$('#opFecha');
+    f.classList.toggle('mal', f.value > hoyLocal());
+  });
+  pintarTipo(); condiciones();
+
+  // ---- Productos de bodega: cantidad teórica = ha × dosis; se descuentan al registrar ----
+  const BOD = {filas: []};
+  const insumo = id=>(BODEGA.insumos||[]).find(i=>String(i.id)===String(id));
+  function filaBodega(f, j){
+    const it = insumo(f.item_id);
+    const conStock = it ? it.existencias.filter(e=>e.cantidad>0) : [];
+    return `<div class="op-prod" data-j="${j}">
+      <select data-b="item_id"><option value="">— producto de bodega —</option>${(BODEGA.insumos||[]).map(i=>`<option value="${i.id}" ${String(f.item_id)===String(i.id)?'selected':''}>${escapar(i.nombre)} (${escapar(i.unidad)})</option>`).join('')}</select>
+      <input type="number" step="any" min="0" data-b="dosis_ha" placeholder="dosis/ha" value="${f.dosis_ha ?? ''}">
+      <span class="t" data-t></span>
+      <select data-b="ubicacion_id">${conStock.map(e=>`<option value="${e.ubicacion_id}" ${String(f.ubicacion_id)===String(e.ubicacion_id)?'selected':''}>${escapar(e.ubicacion)} · hay ${fmt(e.cantidad,2)}</option>`).join('') || '<option value="">sin existencias</option>'}</select>
+      <label><input type="checkbox" data-b="descontar" ${f.descontar!==false?'checked':''}> descontar</label>
+      <button type="button" class="btn-icono" data-quitar title="Quitar">✕</button></div>`;
+  }
+  function pintarBodega(){
+    const c = v.$('#opBodega'); if(!c) return;
+    if(!(BODEGA.insumos||[]).length){
+      c.innerHTML = `<div class="cab">${IC_BODEGA}<span>¿Salió producto de bodega? Crea tus insumos en <a href="/bodega?tab=insumos">Bodega</a> y aquí se descontarán solos.</span></div>`; return; }
+    c.innerHTML = `<div class="cab">${IC_BODEGA}<b>Productos de bodega</b><span class="mut">cantidad = hectáreas × dosis · se descuenta al registrar (o concilia después en Bodega)</span>
+        <button type="button" class="btn secundario peq" data-mas style="margin-left:auto">+ producto</button></div>
+      ${BOD.filas.map(filaBodega).join('')}`;
+    c.querySelector('[data-mas]').onclick = ()=>{ BOD.filas.push({descontar:true}); pintarBodega(); };
+    c.querySelectorAll('[data-quitar]').forEach(b=>b.onclick=()=>{ BOD.filas.splice(Number(b.closest('.op-prod').dataset.j),1); pintarBodega(); });
+    c.querySelectorAll('.op-prod').forEach(fila=>{
+      const f = BOD.filas[Number(fila.dataset.j)];
+      fila.querySelectorAll('[data-b]').forEach(el=>el.onchange = el.oninput = ()=>{
+        const k = el.dataset.b; f[k] = el.type==='checkbox' ? el.checked : el.value;
+        if(k==='item_id'){ const it = insumo(el.value); f.dosis_ha = it && it.dosis_ha ? it.dosis_ha : f.dosis_ha;
+          const mejor = it && it.existencias.slice().sort((a,b)=>b.cantidad-a.cantidad)[0]; f.ubicacion_id = mejor ? mejor.ubicacion_id : null; pintarBodega(); }
+        else calcBodega();
+      });
+    });
+    calcBodega();
+  }
+  function calcBodega(){
+    const ha = num('hectareas');
+    v.$$('#opBodega .op-prod').forEach(fila=>{
+      const f = BOD.filas[Number(fila.dataset.j)], it = insumo(f.item_id), t = fila.querySelector('[data-t]');
+      const d = parseFloat(f.dosis_ha), q = ha && !isNaN(d) ? ha*d : null;
+      const hay = it ? ((it.existencias.find(e=>String(e.ubicacion_id)===String(f.ubicacion_id))||{}).cantidad || 0) : 0;
+      t.textContent = q!=null ? `= ${fmt(q,2)} ${it?it.unidad:''}` : (ha ? '' : 'faltan las ha');
+      t.classList.toggle('falta', !!(q!=null && f.descontar!==false && it && q > hay));
+      if(q!=null && it && q > hay && f.descontar!==false) t.textContent += ` (hay ${fmt(hay,2)})`;
+    });
+  }
+  // El texto del producto («SEEKER + DITHANE») propone las filas si aún no hay ninguna.
+  campo('producto').addEventListener('change', ()=>{
+    if(BOD.filas.some(f=>f.item_id) || !(BODEGA.insumos||[]).length) return;
+    const norm = t=>String(t||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+    campo('producto').value.split(/\+|,|\/|;| y /).map(norm).filter(Boolean).forEach(parte=>{
+      const it = BODEGA.insumos.find(i=>{ const n = norm(i.nombre); return n===parte || n.startsWith(parte+' ') || parte.startsWith(n+' ') || (parte.length>=4 && n.includes(parte)); });
+      if(it && !BOD.filas.some(f=>String(f.item_id)===String(it.id))){
+        const mejor = it.existencias.slice().sort((a,b)=>b.cantidad-a.cantidad)[0];
+        BOD.filas.push({item_id:it.id, dosis_ha:it.dosis_ha ?? '', ubicacion_id: mejor ? mejor.ubicacion_id : null, descontar:true});
+      }
+    });
+    pintarBodega();
+  });
+  form.addEventListener('input', e=>{ if(e.target.name==='hectareas') calcBodega(); });
+  cargarBodega().then(pintarBodega);
+
+  const guardar = async ()=>{
+    mostrarError('');
+    const eq = equipoSel();
+    const avion = eq?.tipo_activo === 'avion';
+    const fecha = v.$('#opFecha').value;
+    if(fecha && fecha > hoyLocal()){ v.$('#opFecha').classList.add('mal'); mostrarError('La fecha de la operación no puede ser futura.'); return; }
+    if(avion){
+      if(num('hobbs_ini') == null || num('hobbs_fin') == null){ mostrarError('Anota el Hobbs inicial y el final: de ahí salen las horas de vuelo.'); campo('hobbs_fin').focus(); return; }
+      if(!medidores()){ mostrarError('La lectura final no puede ser menor que la inicial.'); return; }
+      if(num('hobbs_fin') - num('hobbs_ini') <= 0){ mostrarError('El Hobbs final debe ser mayor que el inicial.'); campo('hobbs_fin').focus(); return; }
+    } else if(!(num('horas_vuelo') > 0)){
+      mostrarError('Las horas de vuelo deben ser mayores a 0.'); campo('horas_vuelo').focus(); return;
+    }
+    const cuerpo = Object.fromEntries([...new FormData(form).entries()].filter(([k,val])=>val !== ''));
+    const boton = v.$('[data-guardar]');
+    boton.disabled = true;
+    try{
+      const nueva = await api('/api/operaciones', {method:'POST', body:cuerpo});
+      const productos = BOD.filas.filter(f=>f.item_id);
+      let txtBodega = '';
+      if(productos.length){
+        try{
+          const r = await api('/api/bodega/aplicaciones', {method:'POST', body:{operacion_id:nueva.id, productos}});
+          txtBodega = r.descontados ? ` · ${r.descontados} producto(s) descontados de bodega` : ' · productos anotados';
+          BOD.filas = []; pintarBodega(); BODEGA.insumos = null; cargarBodega().then(pintarBodega);
+        }catch(e){
+          mostrarError(`La operación SÍ se registró, pero los productos no se descontaron de bodega: ${e.message}. Concílialos en Bodega › Control de consumo.`);
+        }
+      }
+      toast((avion ? `Operación registrada · ${fmt(num('hobbs_fin')-num('hobbs_ini'),2)} h de Hobbs sumadas`
+                   : 'Operación registrada · horas sumadas al equipo') + txtBodega);
+      // Para la siguiente del mismo activo, la lectura final pasa a ser la inicial.
+      const hFin = num('hobbs_fin'), tFin = num('tach_fin');
+      EQUIPOS = await api('/api/equipos');
+      const id = cuerpo.equipo_id;
+      form.reset();
+      v.$('#opFecha').value = fecha || hoyLocal();
+      v.$('#opEquipo').value = id;
+      pintarTipo();
+      if(avion){
+        if(hFin != null) campo('hobbs_ini').value = hFin;
+        if(tFin != null) campo('tach_ini').value = tFin;
+        medidores(); campo('hobbs_fin').focus();
+      } else campo('horas_vuelo').focus();
+      condiciones();
+      await cargar();
+    }catch(err){
+      mostrarError(err.message.replace(/^./, c=>c.toUpperCase()) + (/futura/.test(err.message) ? '' : '.'));
+      if(/fecha/.test(err.message)) v.$('#opFecha').classList.add('mal');
+    }finally{ boton.disabled = false; }
+  };
+  v.$('[data-guardar]').onclick = guardar;
+  form.addEventListener('submit', e=>{ e.preventDefault(); guardar(); });
+}
+
+// ---- Ventana: Excel ----
+function abrirExcel(){
+  const v = ventana({
+    titulo: 'Excel de operaciones', subtitulo: 'Descarga con los datos al día, corrige o añade, y vuelve a subir',
+    cuerpo: `
+      <div class="pasos">
+        <div class="paso"><span class="n">1</span><div>Descarga el archivo: viene <b>con todas las operaciones registradas hasta hoy</b>, no en blanco. Es el mismo que se sube a Drive, así que sirve de copia fiel.</div></div>
+        <div class="paso"><span class="n">2</span><div>Llénala en Excel. La columna <b>ID</b> no se toca: con ID la fila actualiza esa operación, vacía crea una nueva.</div></div>
+        <div class="paso"><span class="n">3</span><div>Sube el mismo archivo aquí abajo. Nada se borra: solo se crea y se actualiza.</div></div>
+      </div>
+      <div class="fila-flex" style="margin-bottom:18px">
+        <button class="btn secundario" data-plantilla>↓ Descargar todo</button>
+        <button class="btn secundario" data-exportar>↓ Descargar sólo lo filtrado</button>
+      </div>
+      <div class="soltar" id="zonaSoltar">
+        <input type="file" id="archivoExcel" accept=".xlsx,.xlsm" hidden>
+        <b>Arrastra aquí el archivo .xlsx</b>
+        <span>o haz clic para elegirlo</span>
+      </div>
+      <label class="fila-flex" style="margin-top:12px;font-size:12.5px;color:var(--ink2)">
+        <input type="checkbox" id="crearEquipos" style="width:16px;height:16px;accent-color:var(--acc-d)">
+        Crear en Inventario los equipos que no existan
+      </label>
+      <div id="informe" style="margin-top:14px"></div>`,
+    pie: `<div class="der"><button class="btn secundario" data-cerrar>Cerrar</button></div>`,
+  });
+  v.$('[data-cerrar]').onclick = v.cerrar;
+  v.$('[data-plantilla]').onclick = ()=>descargar('/api/operaciones/plantilla.xlsx');
+  v.$('[data-exportar]').onclick = ()=>descargar('/api/operaciones/exportar.xlsx?' + paramsFiltro().toString());
+
+  const zona = v.$('#zonaSoltar'), entrada = v.$('#archivoExcel');
+  zona.onclick = ()=>entrada.click();
+  zona.ondragover = e=>{ e.preventDefault(); zona.classList.add('encima'); };
+  zona.ondragleave = ()=>zona.classList.remove('encima');
+  zona.ondrop = e=>{ e.preventDefault(); zona.classList.remove('encima');
+                     if(e.dataTransfer.files[0]) subir(e.dataTransfer.files[0]); };
+  entrada.onchange = ()=>{ if(entrada.files[0]) subir(entrada.files[0]); };
+
+  async function subir(archivo){
+    const informe = v.$('#informe');
+    informe.innerHTML = `<div class="aviso gris"><span class="cargador oscuro"></span> Leyendo ${escapar(archivo.name)}…</div>`;
+    const datos = new FormData();
+    datos.append('archivo', archivo);
+    datos.append('crear_equipos', v.$('#crearEquipos').checked ? '1' : '0');
+    const r = await fetch('/api/operaciones/importar', {method:'POST', body:datos});
+    const res = await r.json().catch(()=>({ok:false, error:'Respuesta no válida del servidor.'}));
+    if(!res.ok){
+      informe.innerHTML = `<div class="aviso rojo"><b>No se pudo importar.</b> ${escapar(res.error||'')}</div>`;
+      return;
+    }
+    const errores = (res.errores||[]).slice(0, 12);
+    informe.innerHTML = `
+      <div class="aviso verde"><div><b>Importación terminada.</b> ${escapar(res.mensaje||'')}
+        ${res.equipos_nuevos?.length ? `<br>Equipos creados: ${res.equipos_nuevos.map(escapar).join(', ')}.` : ''}</div></div>
+      ${errores.length ? `<div class="aviso ambar"><div><b>Filas no importadas</b>
+        <ul style="margin:6px 0 0 18px">${errores.map(e=>`<li>Fila ${e.fila}: ${escapar(e.motivo)}</li>`).join('')}</ul>
+        ${res.errores.length > errores.length ? `<div class="mut" style="margin-top:4px">…y ${res.errores.length-errores.length} más.</div>` : ''}
+      </div></div>` : ''}`;
+    toast(res.mensaje || 'Importación terminada');
+    await cargar();
+  }
+}
+
+// ---- Ventana: próximos repuestos ----
+async function abrirRepuestos(){
+  const eq = document.getElementById('fEquipo').value;
+  const v = ventana({
+    titulo: 'Próximos repuestos a cambiar',
+    subtitulo: 'Calculado con el ritmo real de vuelo de los últimos 90 días',
+    ancho: 'ancha',
+    cuerpo: `<div id="repCuerpo"><div class="empty" style="padding:40px"><span class="cargador oscuro"></span> Calculando…</div></div>`,
+    pie: `<div class="der"><button class="btn secundario" data-cerrar>Cerrar</button>
+          <a class="btn" href="/ordenes-trabajo?nueva=1${eq?`&equipo=${eq}`:''}">Generar orden de trabajo</a></div>`,
+  });
+  v.$('[data-cerrar]').onclick = v.cerrar;
+  const r = await api('/api/repuestos?limite=30' + (eq ? `&equipo_id=${eq}` : ''));
+  v.$('#repCuerpo').innerHTML = pintarRepuestos(r);
+}
+
+function pintarRepuestos(r){
+  const f = r.resumen.franjas;
+  const franjas = `<div class="repuestos-franjas">
+    <div class="franja vencido"><div class="n">${f.vencido}</div><div class="l">Vencidas</div></div>
+    <div class="franja inmediato"><div class="n">${f.inmediato}</div><div class="l">≤ 15 días</div></div>
+    <div class="franja corto"><div class="n">${f.corto}</div><div class="l">16 – 45 días</div></div>
+    <div class="franja medio"><div class="n">${f.medio}</div><div class="l">46 – 120 días</div></div>
+    <div class="franja"><div class="n">${f.lejano}</div><div class="l">Más adelante</div></div>
+  </div>`;
+  if(!r.lista.length) return franjas + '<div class="empty">Sin piezas próximas a cambio.</div>';
+  return franjas + r.lista.map(p=>`
+    <div class="repuesto u-${p.urgencia}">
+      <div>
+        <div class="nom">${escapar(p.nombre)}</div>
+        <div class="sub">${escapar(p.equipo)} · ${escapar(p.modulo)} ·
+          ${usoPieza(p)} · ${p.h_dia ? `${fmt(p.h_dia,2)} h/día` : 'sin ritmo'}</div>
+      </div>
+      <div class="cuando">
+        <div class="dias">${fmtDias(p.dias_estimados)}</div>
+        <div class="fecha">${p.fecha_estimada ? fmtFecha(p.fecha_estimada) : '—'}</div>
+      </div>
+      <div class="barra ${p.nivel}"><i style="width:${Math.min(p.pct,100)}%"></i></div>
+    </div>`).join('');
+}
+
+// ---- Enganches ----
+document.getElementById('btnNueva').onclick = abrirNueva;
+document.getElementById('btnExcel').onclick = abrirExcel;
+document.getElementById('btnRepuestos').onclick = abrirRepuestos;
+document.getElementById('fEquipo').addEventListener('change', cargar);
+['fDesde','fHasta'].forEach(id=>document.getElementById(id).addEventListener('change', pintar));
+document.getElementById('fBuscar').addEventListener('input', pintar);
+document.getElementById('btnLimpiar').onclick = ()=>{
+  ['fDesde','fHasta','fBuscar'].forEach(id=>document.getElementById(id).value = '');
+  document.getElementById('fEquipo').value = '';
+  cargar();
+};
+redibujarGraficas(pintarGrafica);
+
+cargarVentana();
+cargarEquipos().then(cargar).then(()=>{ if(paramURL("nueva")) abrirNueva(); });
+</script>
+{% endblock %}

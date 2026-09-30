@@ -1,0 +1,103 @@
+{% extends "_layout.html" %}
+{% block titulo %}Actividades{% endblock %}
+{% block encabezado %}Control y programación de actividades{% endblock %}
+{% block subtitulo %}Tareas, recordatorios y pendientes de la operación{% endblock %}
+
+{% block barra %}
+<div class="tabsbar"><div class="wrap">
+  <div class="filters" style="margin-left:0">
+    <button class="pillbtn active" data-filtro="todos">Todas</button>
+    <button class="pillbtn" data-filtro="pendiente">Pendientes</button>
+    <button class="pillbtn" data-filtro="vencidas">Vencidas</button>
+    <button class="pillbtn" data-filtro="completado">Completadas</button>
+  </div>
+</div></div>
+{% endblock %}
+
+{% block contenido %}
+<div class="kpis">
+  <div class="kpi"><div class="lbl">Total</div><div class="val acc" id="kpiTotal">0</div></div>
+  <div class="kpi"><div class="lbl">Pendientes</div><div class="val" id="kpiPend">0</div></div>
+  <div class="kpi"><div class="lbl">Vencidas</div><div class="val rojo" id="kpiVenc">0</div></div>
+  <div class="kpi"><div class="lbl">Completadas</div><div class="val verde" id="kpiComp">0</div></div>
+</div>
+
+<div class="card">
+  <h3>Nueva actividad</h3>
+  <form class="form-rapido" id="formNuevo">
+    <div class="campo" style="flex:2;min-width:220px"><label>Título</label><input type="text" name="titulo" required placeholder="¿Qué hay que hacer?"></div>
+    <div class="campo"><label>Categoría</label>
+      <select name="categoria"><option>Mantenimiento</option><option>Operación</option><option>Compra de repuestos</option><option>Calibración</option><option>Capacitación</option><option>Administrativo</option><option>General</option></select>
+    </div>
+    <div class="campo"><label>Equipo</label><select name="equipo_id" id="selEquipo"><option value="">— Ninguno —</option></select></div>
+    <div class="campo"><label>Vence</label><input type="date" name="vence"></div>
+    <button class="btn" type="submit">＋ Agregar</button>
+  </form>
+</div>
+
+<div class="card">
+  <h3>Actividades <span class="mut" id="conteo"></span></h3>
+  <table>
+    <thead><tr><th>Actividad</th><th>Categoría</th><th>Equipo</th><th>Vence</th><th>Estado</th><th></th></tr></thead>
+    <tbody id="tabla"></tbody>
+  </table>
+  <div class="empty" id="vacio" style="display:none">Sin actividades para este filtro.</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let FILTRO='todos', DATOS=[];
+
+async function cargarEquipos(){
+  const eq = await api('/api/equipos');
+  document.getElementById('selEquipo').innerHTML = `<option value="">— Ninguno —</option>` + eq.map(e=>`<option value="${e.id}">${escapar(e.nombre)}</option>`).join('');
+}
+
+async function cargar(){ DATOS = await api('/api/registros'); pintar(); }
+
+function pintar(){
+  const hoy=hoyISO();
+  const vencida=d=>d.estado==='pendiente' && d.vence && d.vence<hoy;
+  const filtrados = DATOS.filter(d => FILTRO==='todos' || (FILTRO==='vencidas' ? vencida(d) : d.estado===FILTRO));
+  document.getElementById('kpiTotal').textContent = DATOS.length;
+  document.getElementById('kpiPend').textContent = DATOS.filter(d=>d.estado==='pendiente').length;
+  document.getElementById('kpiVenc').textContent = DATOS.filter(vencida).length;
+  document.getElementById('kpiComp').textContent = DATOS.filter(d=>d.estado==='completado').length;
+  document.getElementById('conteo').textContent = `· ${filtrados.length} de ${DATOS.length}`;
+  document.getElementById('vacio').style.display = filtrados.length ? 'none' : 'block';
+  document.getElementById('tabla').innerHTML = filtrados.map(d => `
+    <tr>
+      <td><b>${escapar(d.titulo)}</b>${d.nota ? `<div style="font-size:12px;color:var(--mut)">${escapar(d.nota)}</div>` : ''}</td>
+      <td><span class="tag gray">${escapar(d.categoria)}</span></td>
+      <td>${d.equipo?escapar(d.equipo):'<span style="color:var(--mut)">—</span>'}</td>
+      <td>${d.vence ? `<span class="${vencida(d)?'tag vencido':''}">${fmtFecha(d.vence)}</span>` : '—'}</td>
+      <td><span class="tag ${d.estado==='completado'?'green':'acc'}" style="cursor:pointer" onclick="alternar(${d.id}, '${d.estado}')">${d.estado==='completado' ? '✓ Completada' : '○ Pendiente'}</span></td>
+      <td><button class="btn-icono" onclick="borrar(${d.id})" title="Eliminar">✕</button></td>
+    </tr>`).join('');
+}
+
+document.querySelectorAll('[data-filtro]').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('[data-filtro]').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active'); FILTRO = b.dataset.filtro; pintar();
+}));
+
+document.getElementById('formNuevo').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const f = new FormData(e.target);
+  try{
+    await api('/api/registros',{method:'POST',body:{titulo:f.get('titulo'), categoria:f.get('categoria'), vence:f.get('vence')||null, equipo_id:f.get('equipo_id')||null}});
+    e.target.reset(); toast('Actividad agregada'); cargar();
+  }catch(err){ toast(err.message); }
+});
+
+async function alternar(id, estadoActual){
+  await api(`/api/registros/${id}`,{method:'PUT',body:{estado: estadoActual==='completado'?'pendiente':'completado'}}); cargar();
+}
+async function borrar(id){
+  if(!await confirmar({titulo:'Eliminar actividad', peligro:true, aceptar:'Eliminar',
+    mensaje:'La actividad se borra del control y programación.'})) return; await api(`/api/registros/${id}`,{method:'DELETE'}); toast('Eliminada'); cargar(); }
+
+cargarEquipos(); cargar();
+</script>
+{% endblock %}

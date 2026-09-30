@@ -1,0 +1,4654 @@
+[
+ {
+  "clave": "tanque_1",
+  "nombre": "Tanque de aspersión (1)",
+  "nombre_zh": "水箱组件1",
+  "sistema": "Aeronave y aspersión",
+  "zona": "Tanque de aspersión",
+  "imagen": "tanque_1.jpeg",
+  "piezas_catalogo": [
+   "spray_tank",
+   "level_sensor",
+   "vent_valve",
+   "hose_connector"
+  ],
+  "partes": [
+   {
+    "n": 1,
+    "codigo": "YC.ST.AS000022",
+    "nombre_en": "Plastic-Coated Steel Wire Rope",
+    "nombre_zh": "包塑钢丝绳",
+    "auxiliar": false,
+    "nombre_es": "Cable de acero plastificado"
+   },
+   {
+    "n": 2,
+    "codigo": "YC.JG.QX003883",
+    "nombre_en": "Aluminum Clamp",
+    "nombre_zh": "铝夹",
+    "auxiliar": false,
+    "nombre_es": "Abrazadera de aluminio"
+   },
+   {
+    "n": 3,
+    "codigo": "YC.JG.ZS006111",
+    "nombre_en": "Spray Tank Inlet Filter",
+    "nombre_zh": "水箱入水口滤网",
+    "auxiliar": false,
+    "nombre_es": "Filtro de entrada de tanque de aspersión"
+   },
+   {
+    "n": 4,
+    "codigo": "YC.SJ.S00717",
+    "nombre_en": "Vent Trap",
+    "nombre_zh": "透气阀",
+    "auxiliar": false,
+    "nombre_es": "Trampilla de respiradero"
+   },
+   {
+    "n": 5,
+    "codigo": "YC.JG.MY001721",
+    "nombre_en": "Dosing Part Rubber Cover",
+    "nombre_zh": "加药枪密封盖",
+    "auxiliar": false,
+    "nombre_es": "Cubierta de goma de pieza de dosificación"
+   },
+   {
+    "n": 6,
+    "codigo": "YC.WJ.L01234",
+    "nombre_en": "Screw M40-HC080080-68-85",
+    "nombre_zh": "螺丝 M40-HC080080-68-85",
+    "auxiliar": false,
+    "nombre_es": "Tornillo M40-HC080080-68-85"
+   },
+   {
+    "n": 8,
+    "codigo": "YC.JG.MY001723",
+    "nombre_en": "Liquid Level Gauge Gasket",
+    "nombre_zh": "液位计密封垫",
+    "auxiliar": false,
+    "nombre_es": "Junta del medidor de nivel de líquido"
+   },
+   {
+    "n": 7,
+    "codigo": "BC.AG.SS001122",
+    "nombre_en": "Liquid Level Gauge Module",
+    "nombre_zh": "液位计组件",
+    "auxiliar": false,
+    "nombre_es": "Módulo de medidor de nivel de líquido"
+   },
+   {
+    "n": 9,
+    "codigo": "YC.JG.JS000085",
+    "nombre_en": "Liquid Level Gauge External Hose",
+    "nombre_zh": "液位计外部软管",
+    "auxiliar": false,
+    "nombre_es": "Manguera externa de medidor de nivel de líquido"
+   },
+   {
+    "n": 10,
+    "codigo": "YC.XC.XX001397",
+    "nombre_en": "Liquid Level Gauge Signal Cable",
+    "nombre_zh": "液位计线",
+    "auxiliar": false,
+    "nombre_es": "Cable de señal de medidor de nivel de líquido"
+   },
+   {
+    "n": 11,
+    "codigo": "BC.AG.SS001121",
+    "nombre_en": "Liquid Level Gauge Hose Module",
+    "nombre_zh": "液位计软管组件",
+    "auxiliar": false,
+    "nombre_es": "Módulo de manguera de medidor de nivel de líquido"
+   },
+   {
+    "n": 12,
+    "codigo": "YC.JG.ZS006843",
+    "nombre_en": "Liquid Level Gauge External Hose Rubber Stopper",
+    "nombre_zh": "液位计外部收口",
+    "auxiliar": false,
+    "nombre_es": "Tapón de goma de manguera externa de medidor de nivel de líquido"
+   },
+   {
+    "n": 13,
+    "codigo": "BC.AG.SS001030",
+    "nombre_en": "Spraying Payload Module",
+    "nombre_zh": "喷洒负载模块",
+    "auxiliar": false,
+    "nombre_es": "Módulo de carga útil de aspersión"
+   },
+   {
+    "n": 14,
+    "codigo": "YC.WJ.L01234",
+    "nombre_en": "Screw M40-HC080080-68-85",
+    "nombre_zh": "螺丝 M40-HC080080-68-85",
+    "auxiliar": false,
+    "nombre_es": "Tornillo M40-HC080080-68-85"
+   },
+   {
+    "n": 15,
+    "codigo": "YC.JG.MY001832",
+    "nombre_en": "Socket Rubber Stopper",
+    "nombre_zh": "负载母头胶塞",
+    "auxiliar": false,
+    "nombre_es": "Tapón de goma de la toma"
+   },
+   {
+    "n": 16,
+    "codigo": "YC.JG.MY001801",
+    "nombre_en": "Liquid Level Gauge Base Sealing Ring",
+    "nombre_zh": "液位计底座密封圈",
+    "auxiliar": false,
+    "nombre_es": "Anillo de sellado de base de medidor de nivel de líquido"
+   },
+   {
+    "n": 17,
+    "codigo": "YC.JG.ZS004726",
+    "nombre_en": "Liquid Level Gauge Nut",
+    "nombre_zh": "液位计安装螺母",
+    "auxiliar": false,
+    "nombre_es": "Tuerca de medidor de nivel de líquido"
+   },
+   {
+    "n": 18,
+    "codigo": "YC.JG.ZS006114",
+    "nombre_en": "Liquid Level Gauge Base",
+    "nombre_zh": "液位计底座",
+    "auxiliar": false,
+    "nombre_es": "Base de medidor de nivel de líquido"
+   },
+   {
+    "n": 19,
+    "codigo": "YC.WJ.L01234",
+    "nombre_en": "Screw M40-HC080080-68-85",
+    "nombre_zh": "螺丝 M40-HC080080-68-85",
+    "auxiliar": false,
+    "nombre_es": "Tornillo M40-HC080080-68-85"
+   },
+   {
+    "n": 20,
+    "codigo": "YC.JG.ZS006360",
+    "nombre_en": "Impeller Pump Bracket",
+    "nombre_zh": "叶轮泵支架",
+    "auxiliar": false,
+    "nombre_es": "Soporte de bomba de impulsor"
+   },
+   {
+    "n": 21,
+    "codigo": "YC.XC.DD000798",
+    "nombre_en": "Payload Adapter Cable",
+    "nombre_zh": "负载转接线",
+    "auxiliar": false,
+    "nombre_es": "Cable de adaptador de carga útil"
+   },
+   {
+    "n": 22,
+    "codigo": "YC.WJ.L01234",
+    "nombre_en": "Screw M40-HC080080-68-85",
+    "nombre_zh": "螺丝 M40-HC080080-68-85",
+    "auxiliar": false,
+    "nombre_es": "Tornillo M40-HC080080-68-85"
+   },
+   {
+    "n": 23,
+    "codigo": "YC.JG.ZS006360",
+    "nombre_en": "Impeller Pump Bracket",
+    "nombre_zh": "叶轮泵支架",
+    "auxiliar": false,
+    "nombre_es": "Soporte de bomba de impulsor"
+   },
+   {
+    "n": 24,
+    "codigo": "YC.JG.ZS005453",
+    "nombre_en": "Spray Tank Y-tee Part Nut",
+    "nombre_zh": "水箱三通螺母",
+    "auxiliar": false,
+    "nombre_es": "Tuerca de pieza de pieza en Y de tanque de aspersión"
+   },
+   {
+    "n": 25,
+    "codigo": "YC.ST.LL000668",
+    "nombre_en": "Screw (M40-HC00600060-120030-0003-N)",
+    "nombre_zh": "螺丝 M40-HC00600060-120030-0003-N",
+    "auxiliar": false,
+    "nombre_es": "Tornillo (M40-HC00600060-120030-0003-N)"
+   },
+   {
+    "n": 26,
+    "codigo": "YC.JG.MY001727",
+    "nombre_en": "Spray Tank Rear Support Pad",
+    "nombre_zh": "水箱后支撑垫",
+    "auxiliar": false,
+    "nombre_es": "Almohadilla de soporte trasero de tanque de aspersión"
+   },
+   {
+    "n": 27,
+    "codigo": "YC.SJ.J01186",
+    "nombre_en": "Filter Rubber Ring",
+    "nombre_zh": "滤网橡胶圈",
+    "auxiliar": false,
+    "nombre_es": "Anillo de goma de filtro"
+   },
+   {
+    "n": 28,
+    "codigo": "YC.JG.MY000687",
+    "nombre_en": "Spray Tank Y-tee Part Sealing Ring",
+    "nombre_zh": "水箱三通密封圈",
+    "auxiliar": false,
+    "nombre_es": "Anillo de sellado de pieza de pieza en Y de tanque de aspersión"
+   },
+   {
+    "n": 29,
+    "codigo": "YC.JG.ZS005454",
+    "nombre_en": "Liquid Level Gauge Hose Module",
+    "nombre_zh": "50目滤网",
+    "auxiliar": false,
+    "nombre_es": "Módulo de manguera de medidor de nivel de líquido"
+   },
+   {
+    "n": 30,
+    "codigo": "YC.ST.LL000668",
+    "nombre_en": "Screw (M40-HC00600060-120030-0003-N)",
+    "nombre_zh": "螺丝 M40-HC00600060-120030-0003-N",
+    "auxiliar": false,
+    "nombre_es": "Tornillo (M40-HC00600060-120030-0003-N)"
+   },
+   {
+    "n": 31,
+    "codigo": "YC.ST.LL000698",
+    "nombre_en": "Screw (M25-HCW00960040-055020-5103-Y)",
+    "nombre_zh": "螺丝 M25-HCW00960040-055020-5103-Y",
+    "auxiliar": false,
+    "nombre_es": "Tornillo (M25-HCW00960040-055020-5103-Y)"
+   },
+   {
+    "n": 32,
+    "codigo": "YC.JG.MY001728",
+    "nombre_en": "Spray Tank Side Support Pad",
+    "nombre_zh": "水箱侧边支撑垫",
+    "auxiliar": false,
+    "nombre_es": "Almohadilla de soporte lateral de tanque de aspersión"
+   },
+   {
+    "n": 33,
+    "codigo": "YC.XC.XX001395",
+    "nombre_en": "Delivery Pump Flow Meter Cable",
+    "nombre_zh": "水泵流量计线",
+    "auxiliar": false,
+    "nombre_es": "Cable de medidor de caudal de bomba de suministro"
+   },
+   {
+    "n": 34,
+    "codigo": "YC.JG.ZS002232",
+    "nombre_en": "Spray Tank Y-tee Part",
+    "nombre_zh": "水箱三通",
+    "auxiliar": false,
+    "nombre_es": "Pieza de pieza en Y de tanque de aspersión"
+   },
+   {
+    "n": 35,
+    "codigo": "YC.JG.MY000687",
+    "nombre_en": "Spray Tank Y-tee Part Sealing Ring",
+    "nombre_zh": "水箱三通密封圈",
+    "auxiliar": false,
+    "nombre_es": "Anillo de sellado de pieza de pieza en Y de tanque de aspersión"
+   },
+   {
+    "n": 36,
+    "codigo": "YC.JG.MY000845",
+    "nombre_en": "Damping Rubber Pad",
+    "nombre_zh": "防松胶垫",
+    "auxiliar": false,
+    "nombre_es": "Almohadilla de goma de amortiguación"
+   },
+   {
+    "n": 37,
+    "codigo": "YC.JG.ZS002233",
+    "nombre_en": "Water Outlet Rotation Cover",
+    "nombre_zh": "出水口旋盖",
+    "auxiliar": false,
+    "nombre_es": "Cubierta de rotación de salida de agua"
+   },
+   {
+    "n": 38,
+    "codigo": "YC.JG.MY001720",
+    "nombre_en": "Spray Tank Cover Sealing Ring",
+    "nombre_zh": "水箱盖密封圈",
+    "auxiliar": false,
+    "nombre_es": "Anillo de sellado de cubierta de tanque de aspersión"
+   },
+   {
+    "n": 39,
+    "codigo": "YC.JG.ZS006110",
+    "nombre_en": "Spray Tank Cover",
+    "nombre_zh": "水箱盖",
+    "auxiliar": false,
+    "nombre_es": "Cubierta de tanque de aspersión"
+   },
+   {
+    "n": 40,
+    "codigo": "YC.JG.MY000678",
+    "nombre_en": "Spray Tank Cover Waterproof Permeability Film",
+    "nombre_zh": "水箱盖防水透气膜片",
+    "auxiliar": false,
+    "nombre_es": "Lámina de permeabilidad impermeable de cubierta de tanque de aspersión"
+   },
+   {
+    "n": 41,
+    "codigo": "YC.JG.ZS002250",
+    "nombre_en": "Dosing Part Rubber Cover",
+    "nombre_zh": "水箱盖防水透气盖",
+    "auxiliar": false,
+    "nombre_es": "Cubierta de goma de pieza de dosificación"
+   }
+  ]
+ },
+ {
+  "clave": "tanque_2",
+  "nombre": "Tanque de aspersión (2)",
+  "nombre_zh": "水箱组件1 (2)",
+  "sistema": "Aeronave y aspersión",
+  "zona": "Tanque de aspersión",
+  "imagen": "tanque_2.jpeg",
+  "piezas_catalogo": [
+   "spray_tank",
+   "hose"
+  ],
+  "partes": [
+   {
+    "n": 1,
+    "codigo": "YC.JG.ZS006458",
+    "nombre_en": "Spray Tank (70L)",
+    "nombre_zh": "水箱（70L）",
+    "auxiliar": false,
+    "nombre_es": "Tanque de aspersión (70L)"
+   }
+  ]
+ },
+ {
+  "clave": "bomba",
+  "nombre": "Bomba de impulsor",
+  "nombre_zh": "叶轮泵组件",
+  "sistema": "Aeronave y aspersión",
+  "zona": "Bomba de aspersión",
+  "imagen": "bomba.jpeg",
+  "piezas_catalogo": [
+   "delivery_pump_kit",
+   "pump_motor"
+  ],
+  "partes": [
+   {
+    "n": 1,
+    "codigo": "YC.JG.ZS006175",
+    "nombre_en": "Impeller Pump Curving Connector",
+    "nombre_zh": "叶轮泵弯头",
+    "auxiliar": false,
+    "nombre_es": "Conector curvado de bomba de impulsor"
+   },
+   {
+    "n": 2,
+    "codigo": "YC.JG.MY001830",
+    "nombre_en": "Curving Connector Sealing Ring",
+    "nombre_zh": "弯头密封圈",
+    "auxiliar": false,
+    "nombre_es": "Anillo de sellado de conector curvado"
+   },
+   {
+    "n": 3,
+    "codigo": "YC.JG.ZS006166",
+    "nombre_en": "Pump Shell",
+    "nombre_zh": "泵壳",
+    "auxiliar": false,
+    "nombre_es": "Carcasa de bomba"
+   },
+   {
+    "n": 4,
+    "codigo": "YC.JG.MY001053",
+    "nombre_en": "Y-tee Part Sealing Pad",
+    "nombre_zh": "三通密封垫",
+    "auxiliar": false,
+    "nombre_es": "Almohadilla de sellado de pieza de pieza en Y"
+   },
+   {
+    "n": 5,
+    "codigo": "YC.JG.ZS002233",
+    "nombre_en": "Water Outlet Rotation Cover",
+    "nombre_zh": "出水口旋盖",
+    "auxiliar": false,
+    "nombre_es": "Cubierta de rotación de salida de agua"
+   },
+   {
+    "n": 6,
+    "codigo": "YC.JG.MY001828",
+    "nombre_en": "Motor Sealing Ring (OD= 46.8 mm)",
+    "nombre_zh": "电机密封圈（外径46.8mm）",
+    "auxiliar": false,
+    "nombre_es": "Anillo de sellado de motor (OD=46.8 mm)"
+   },
+   {
+    "n": 7,
+    "codigo": "YC.JG.MY001327",
+    "nombre_en": "Ceramic Rubber Pad",
+    "nombre_zh": "陶瓷胶垫",
+    "auxiliar": false,
+    "nombre_es": "Almohadilla de goma cerámica"
+   },
+   {
+    "n": 8,
+    "codigo": "YC.JG.FM000157",
+    "nombre_en": "Ceramic Gasket",
+    "nombre_zh": "陶瓷垫片",
+    "auxiliar": false,
+    "nombre_es": "Empaque cerámico"
+   },
+   {
+    "n": 9,
+    "codigo": "YC.JG.MY001052",
+    "nombre_en": "Pump Sealing Ring",
+    "nombre_zh": "泵壳密封圈",
+    "auxiliar": false,
+    "nombre_es": "Anillo de sellado de bomba"
+   },
+   {
+    "n": 10,
+    "codigo": "YC.ST.LL000717",
+    "nombre_en": "Screw (M25-HC00500050-050020-5104-N)",
+    "nombre_zh": "螺丝 M25-HC00500050-050020-5104-N",
+    "auxiliar": false,
+    "nombre_es": "Tornillo (M25-HC00500050-050020-5104-N)"
+   },
+   {
+    "n": 11,
+    "codigo": "YC.JG.MY001315",
+    "nombre_en": "Sealing Ring (OD=31.4 mm)",
+    "nombre_zh": "密封圈（外径31.4mm）",
+    "auxiliar": false,
+    "nombre_es": "Anillo de sellado (OD=31.4 mm)"
+   },
+   {
+    "n": 12,
+    "codigo": "YC.JG.ZS006167",
+    "nombre_en": "Spacing Sleeve",
+    "nombre_zh": "隔离套",
+    "auxiliar": false,
+    "nombre_es": "Manguito de separación"
+   },
+   {
+    "n": 13,
+    "codigo": "BC.AG.SS001033",
+    "nombre_en": "Impeller Pump Motor",
+    "nombre_zh": "叶轮泵电机",
+    "auxiliar": false,
+    "nombre_es": "Motor de bomba de impulsor"
+   }
+  ]
+ },
+ {
+  "clave": "caudalimetro",
+  "nombre": "Caudalímetro",
+  "nombre_zh": "流量计组件",
+  "sistema": "Aeronave y aspersión",
+  "zona": "Caudalímetro",
+  "imagen": "caudalimetro.jpeg",
+  "piezas_catalogo": [
+   "flowmeter"
+  ],
+  "partes": [
+   {
+    "n": 1,
+    "codigo": "YC.JG.ZS006171",
+    "nombre_en": "Thumb Nut",
+    "nombre_zh": "手拧螺母",
+    "auxiliar": false,
+    "nombre_es": "Tuerca manual"
+   },
+   {
+    "n": 2,
+    "codigo": "YC.JG.ZS006172",
+    "nombre_en": "Hose Y-tee Part",
+    "nombre_zh": "管路三通",
+    "auxiliar": false,
+    "nombre_es": "Pieza de pieza en Y de manguera"
+   },
+   {
+    "n": 3,
+    "codigo": "YC.JG.ZS006115",
+    "nombre_en": "Single Connector Rubber Stopper",
+    "nombre_zh": "单通胶塞",
+    "auxiliar": false,
+    "nombre_es": "Tapón de goma de conector simple"
+   },
+   {
+    "n": 4,
+    "codigo": "YC.JG.TT000285",
+    "nombre_en": "One-Way Valve Spring",
+    "nombre_zh": "单向阀弹簧",
+    "auxiliar": false,
+    "nombre_es": "Resorte de válvula antirretorno"
+   },
+   {
+    "n": 5,
+    "codigo": "YC.JG.MY001775",
+    "nombre_en": "Valve Core Sealing Ring",
+    "nombre_zh": "阀芯密封圈",
+    "auxiliar": false,
+    "nombre_es": "Anillo de sellado de núcleo de válvula"
+   },
+   {
+    "n": 6,
+    "codigo": "YC.JG.MY001774",
+    "nombre_en": "One-Way Valve Sealing Ring",
+    "nombre_zh": "单向阀密封圈",
+    "auxiliar": false,
+    "nombre_es": "Anillo de sellado de válvula antirretorno"
+   },
+   {
+    "n": 7,
+    "codigo": "YC.JG.ZS006170",
+    "nombre_en": "One-Way Valve",
+    "nombre_zh": "单向阀阀体",
+    "auxiliar": false,
+    "nombre_es": "Válvula antirretorno"
+   },
+   {
+    "n": 8,
+    "codigo": "YC.JG.JS000069",
+    "nombre_en": "Flow Meter Water Outlet Hose",
+    "nombre_zh": "流量计出水口管 （长）",
+    "auxiliar": false,
+    "nombre_es": "Manguera de salida de agua de medidor de caudal"
+   },
+   {
+    "n": 9,
+    "codigo": "YC.JG.ZS006171",
+    "nombre_en": "Thumb Nut",
+    "nombre_zh": "手拧螺母",
+    "auxiliar": false,
+    "nombre_es": "Tuerca manual"
+   },
+   {
+    "n": 10,
+    "codigo": "YC.JG.ZS006165",
+    "nombre_en": "Hose Nut",
+    "nombre_zh": "水管螺母",
+    "auxiliar": false,
+    "nombre_es": "Tuerca de manguera"
+   },
+   {
+    "n": 11,
+    "codigo": "YC.JG.ZS006199",
+    "nombre_en": "Flow Meter Adapter",
+    "nombre_zh": "流量计转接头",
+    "auxiliar": false,
+    "nombre_es": "Adaptador de medidor de caudal"
+   },
+   {
+    "n": 12,
+    "codigo": "YC.JG.MY001790",
+    "nombre_en": "Flow Meter Adapter Sealing Ring",
+    "nombre_zh": "流量计转接头密封圈",
+    "auxiliar": false,
+    "nombre_es": "Anillo de sellado de adaptador de medidor de caudal"
+   },
+   {
+    "n": 13,
+    "codigo": "BC.AG.SS001031",
+    "nombre_en": "Flow Meter Module",
+    "nombre_zh": "流量计组件",
+    "auxiliar": false,
+    "nombre_es": "Módulo de medidor de caudal"
+   },
+   {
+    "n": 14,
+    "codigo": "YC.JG.ZS004712",
+    "nombre_en": "Flow Meter Bracket",
+    "nombre_zh": "流量计支架",
+    "auxiliar": false,
+    "nombre_es": "Soporte de medidor de caudal"
+   },
+   {
+    "n": 15,
+    "codigo": "YC.WJ.L01234",
+    "nombre_en": "Screw (M40-HC080080-68-85)",
+    "nombre_zh": "螺丝 M40-HC080080-68-85",
+    "auxiliar": false,
+    "nombre_es": "Tornillo (M40-HC080080-68-85)"
+   },
+   {
+    "n": 16,
+    "codigo": "YC.JG.MY001790",
+    "nombre_en": "Flow Meter Adapter Sealing Ring",
+    "nombre_zh": "流量计转接头密封圈",
+    "auxiliar": false,
+    "nombre_es": "Anillo de sellado de adaptador de medidor de caudal"
+   },
+   {
+    "n": 17,
+    "codigo": "YC.JG.ZS006199",
+    "nombre_en": "Flow Meter Adapter",
+    "nombre_zh": "流量计转接头",
+    "auxiliar": false,
+    "nombre_es": "Adaptador de medidor de caudal"
+   },
+   {
+    "n": 18,
+    "codigo": "YC.JG.ZS006165",
+    "nombre_en": "Hose Nut",
+    "nombre_zh": "水管螺母",
+    "auxiliar": false,
+    "nombre_es": "Tuerca de manguera"
+   },
+   {
+    "n": 19,
+    "codigo": "YC.JG.JS000072",
+    "nombre_en": "Flow Meter Water Inlet Hose",
+    "nombre_zh": "流量计入水口管 （短）",
+    "auxiliar": false,
+    "nombre_es": "Manguera de entrada de agua de medidor de caudal"
+   },
+   {
+    "n": 20,
+    "codigo": "YC.JG.ZS006171",
+    "nombre_en": "Thumb Nut",
+    "nombre_zh": "手拧螺母",
+    "auxiliar": false,
+    "nombre_es": "Tuerca manual"
+   }
+  ]
+ },
+ {
+  "clave": "lanza",
+  "nombre": "Lanza de aspersión",
+  "nombre_zh": "喷杆",
+  "sistema": "Aeronave y aspersión",
+  "zona": "Lanza y aspersor",
+  "imagen": "lanza.jpeg",
+  "piezas_catalogo": [
+   "centrifugal_module",
+   "hose"
+  ],
+  "partes": [
+   {
+    "n": 1,
+    "codigo": "YC.JG.ZS006218",
+    "nombre_en": "Sprinkler Thumb Nut",
+    "nombre_zh": "喷头手拧螺母",
+    "auxiliar": false,
+    "nombre_es": "Tuerca manual de aspersor"
+   },
+   {
+    "n": 2,
+    "codigo": "YC.JG.ZS006219",
+    "nombre_en": "Centrifugal Sprinkler Lower Disk",
+    "nombre_zh": "离心喷头下甩盘",
+    "auxiliar": false,
+    "nombre_es": "Disco inferior de aspersor centrífugo"
+   },
+   {
+    "n": 3,
+    "codigo": "YC.XC.XX001394",
+    "nombre_en": "Centrifugal Sprinkler Adapter Cable",
+    "nombre_zh": "离心喷头转接线",
+    "auxiliar": false,
+    "nombre_es": "Cable de adaptador de aspersor centrífugo"
+   },
+   {
+    "n": 4,
+    "codigo": "YC.WJ.L01549",
+    "nombre_en": "M25-HC060060-45-85",
+    "nombre_zh": "M25-HC060060-45-85",
+    "auxiliar": false,
+    "nombre_es": "M25-HC060060-45-85"
+   },
+   {
+    "n": 5,
+    "codigo": "YC.JG.ZS007737",
+    "nombre_en": "Centrifugal Sprinkler Upper Disk",
+    "nombre_zh": "离心喷头上甩盘",
+    "auxiliar": false,
+    "nombre_es": "Disco superior de aspersor centrífugo"
+   },
+   {
+    "n": 6,
+    "codigo": "YC.JG.JS000067",
+    "nombre_en": "Sprinkler Soft Hose",
+    "nombre_zh": "喷头软管",
+    "auxiliar": false,
+    "nombre_es": "Manguera flexible de aspersor"
+   },
+   {
+    "n": 7,
+    "codigo": "YC.JG.ZS006216",
+    "nombre_en": "Sprinkler Funnel",
+    "nombre_zh": "喷头漏斗",
+    "auxiliar": false,
+    "nombre_es": "Embudo de aspersor"
+   },
+   {
+    "n": 8,
+    "codigo": "YC.JG.MY001829",
+    "nombre_en": "Sprinkler Inner Sealing Ring (OD=23.6 mm)",
+    "nombre_zh": "喷头内密封圈（外径23.6mm）",
+    "auxiliar": false,
+    "nombre_es": "Anillo de sellado interior de aspersor (OD=23.6 mm)"
+   },
+   {
+    "n": 9,
+    "codigo": "YC.JG.ZS006215",
+    "nombre_en": "Sprinkler Funnel Bracket",
+    "nombre_zh": "喷头漏斗支架",
+    "auxiliar": false,
+    "nombre_es": "Soporte de embudo de aspersor"
+   },
+   {
+    "n": 10,
+    "codigo": "YC.WJ.L01549",
+    "nombre_en": "M25-HC060060-45-85",
+    "nombre_zh": "M25-HC060060-45-85",
+    "auxiliar": false,
+    "nombre_es": "M25-HC060060-45-85"
+   },
+   {
+    "n": 11,
+    "codigo": "YC.JG.MY001829",
+    "nombre_en": "Sprinkler Inner Sealing Ring (OD=23.6 mm)",
+    "nombre_zh": "喷头内密封圈（外径23.6mm）",
+    "auxiliar": false,
+    "nombre_es": "Anillo de sellado interior de aspersor (OD=23.6 mm)"
+   },
+   {
+    "n": 12,
+    "codigo": "YC.JG.MY001052",
+    "nombre_en": "Pump Sealing Ring",
+    "nombre_zh": "泵壳密封圈",
+    "auxiliar": false,
+    "nombre_es": "Anillo de sellado de bomba"
+   },
+   {
+    "n": 13,
+    "codigo": "BC.AG.SS001028",
+    "nombre_en": "Centrifugal Motor",
+    "nombre_zh": "离心电机",
+    "auxiliar": false,
+    "nombre_es": "Motor centrífugo"
+   },
+   {
+    "n": 14,
+    "codigo": "YC.JG.MY001828",
+    "nombre_en": "Motor Sealing Ring (OD= 46.8 mm)",
+    "nombre_zh": "电机密封圈（外径46.8mm）",
+    "auxiliar": false,
+    "nombre_es": "Anillo de sellado de motor (OD=46.8 mm)"
+   },
+   {
+    "n": 15,
+    "codigo": "BC.AG.SS001073",
+    "nombre_en": "Solenoid Valve Module",
+    "nombre_zh": "电磁阀组件",
+    "auxiliar": false,
+    "nombre_es": "Módulo de válvula solenoide"
+   },
+   {
+    "n": 16,
+    "codigo": "YC.WJ.LL000232",
+    "nombre_en": "M40-HC01000100-072028-5103-N_01",
+    "nombre_zh": "M40-HC01000100-072028-5103-N_01",
+    "auxiliar": false,
+    "nombre_es": "M40-HC01000100-072028-5103-N 01"
+   },
+   {
+    "n": 17,
+    "codigo": "YC.JG.ZS007536",
+    "nombre_en": "Mist Spray Lance Shell",
+    "nombre_zh": "弥雾喷杆外壳",
+    "auxiliar": false,
+    "nombre_es": "Carcasa de lanza de aspersión de niebla"
+   },
+   {
+    "n": 18,
+    "codigo": "YC.WJ.LL000232",
+    "nombre_en": "M40-HC01000100-072028-5103-N_01",
+    "nombre_zh": "M40-HC01000100-072028-5103-N_01",
+    "auxiliar": false,
+    "nombre_es": "M40-HC01000100-072028-5103-N 01"
+   }
+  ]
+ },
+ {
+  "clave": "placa_distribucion",
+  "nombre": "Placa de distribución principal",
+  "nombre_zh": "分线模块",
+  "sistema": "Aeronave y aspersión",
+  "zona": "Electrónica y potencia",
+  "imagen": "placa_distribucion.jpeg",
+  "piezas_catalogo": [
+   "cable_board",
+   "payload_adapter",
+   "power_module",
+   "internal_wiring"
+  ],
+  "partes": [
+   {
+    "n": 1,
+    "codigo": "BC.AG.SS001137",
+    "nombre_en": "Aerial-Electronics Module (Overseas)",
+    "nombre_zh": "航电模块（海外）",
+    "auxiliar": false,
+    "nombre_es": "Módulo de electrónica aérea (de exportación)"
+   },
+   {
+    "n": 2,
+    "codigo": "YC.JG.MY000699",
+    "nombre_en": "Barometer Module Sealing Ring",
+    "nombre_zh": "气压计组件密封圈",
+    "auxiliar": false,
+    "nombre_es": "Anillo de sellado de módulo de barómetro"
+   },
+   {
+    "n": 3,
+    "codigo": "BC.AG.PP000520",
+    "nombre_en": "Barometer Board",
+    "nombre_zh": "气压计板",
+    "auxiliar": false,
+    "nombre_es": "Placa de barómetro"
+   },
+   {
+    "n": 4,
+    "codigo": "YC.WJ.LL000396",
+    "nombre_en": "T20-PC00400040-040010-0323-N",
+    "nombre_zh": "螺丝 T20-PC00400040-040010-0323-N",
+    "auxiliar": false,
+    "nombre_es": "T20-PC00400040-040010-0323-N"
+   },
+   {
+    "n": 5,
+    "codigo": "YC.PM.QT000137",
+    "nombre_en": "Avionics_Barometer Protection Foam",
+    "nombre_zh": "气压计保护海绵",
+    "auxiliar": false,
+    "nombre_es": "Espuma de protección de barómetro de aviónica"
+   },
+   {
+    "n": 6,
+    "codigo": "YC.WJ.L00868",
+    "nombre_en": "Screw M30-HC080080-55-85",
+    "nombre_zh": "螺丝 M30-HC080080-55-85",
+    "auxiliar": false,
+    "nombre_es": "Tornillo M30-HC080080-55-85"
+   },
+   {
+    "n": 7,
+    "codigo": "YC.JG.ZS002301",
+    "nombre_en": "Barometer Outer Shell",
+    "nombre_zh": "气压计外壳",
+    "auxiliar": false,
+    "nombre_es": "Carcasa exterior de barómetro"
+   },
+   {
+    "n": 8,
+    "codigo": "YC.QT.QT000167",
+    "nombre_en": "Barometer Waterproof Permeability Film",
+    "nombre_zh": "气压计防水透气膜",
+    "auxiliar": false,
+    "nombre_es": "Lámina de permeabilidad impermeable de barómetro"
+   },
+   {
+    "n": 9,
+    "codigo": "YC.ST.LL000122",
+    "nombre_en": "Screw M25-HC00780040-040020-5108-N",
+    "nombre_zh": "螺丝 M25-HC00780040-040020-5108-N",
+    "auxiliar": false,
+    "nombre_es": "Tornillo M25-HC00780040-040020-5108-N"
+   },
+   {
+    "n": 10,
+    "codigo": "YC.JG.MY001349",
+    "nombre_en": "Barometer Curve Connector",
+    "nombre_zh": "气压计弯头",
+    "auxiliar": false,
+    "nombre_es": "Conector curvo de barómetro"
+   },
+   {
+    "n": 11,
+    "codigo": "YC.JG.MQ002463",
+    "nombre_en": "Thermally Conductive Pad (125.35 x 27.7 mm)",
+    "nombre_zh": "导热垫（125.35*27.7mm）",
+    "auxiliar": false,
+    "nombre_es": "Almohadilla termoconductora (125.35 x 27.7 mm)"
+   },
+   {
+    "n": 12,
+    "codigo": "YC.WJ.LL000235",
+    "nombre_en": "Screw M20-HPW00600060-055016-5103-Y",
+    "nombre_zh": "M20-HPW00600060-065016-5103-Y_02",
+    "auxiliar": false,
+    "nombre_es": "Tornillo M20-HPW00600060-055016-5103-Y"
+   },
+   {
+    "n": 13,
+    "codigo": "YC.ST.LL000122",
+    "nombre_en": "Screw M25-HC00780040-040020-5108-N",
+    "nombre_zh": "M25-HC00780040-040020-5108-N",
+    "auxiliar": false,
+    "nombre_es": "Tornillo M25-HC00780040-040020-5108-N"
+   },
+   {
+    "n": 14,
+    "codigo": "YC.JG.MY000389",
+    "nombre_en": "Type-C Port Waterproof Cover",
+    "nombre_zh": "Type C防水盖",
+    "auxiliar": false,
+    "nombre_es": "Cubierta impermeable de puerto USB-C"
+   },
+   {
+    "n": 15,
+    "codigo": "YC.JG.MQ002623",
+    "nombre_en": "Thermally Conductive Pad (53.1 x 12.9 mm)",
+    "nombre_zh": "导热垫（53.1*12.9mm）",
+    "auxiliar": false,
+    "nombre_es": "Almohadilla termoconductora (53.1 x 12.9 mm)"
+   },
+   {
+    "n": 16,
+    "codigo": "YC.JG.QX002311",
+    "nombre_en": "Damping Pad A",
+    "nombre_zh": "减振垫A",
+    "auxiliar": false,
+    "nombre_es": "A de almohadilla de amortiguación"
+   },
+   {
+    "n": 17,
+    "codigo": "YC.JG.QX002312",
+    "nombre_en": "Damping Pad B",
+    "nombre_zh": "减振垫B",
+    "auxiliar": false,
+    "nombre_es": "B de almohadilla de amortiguación"
+   },
+   {
+    "n": 18,
+    "codigo": "YC.ST.LL000226",
+    "nombre_en": "M30-HC01450080-100020-5103-Y",
+    "nombre_zh": "M30-HC01450080-100020-5103-Y",
+    "auxiliar": false,
+    "nombre_es": "M30-HC01450080-100020-5103-Y"
+   },
+   {
+    "n": 19,
+    "codigo": "BC.AG.SS001024",
+    "nombre_en": "Cable Distribution Board Module",
+    "nombre_zh": "分线板模块",
+    "auxiliar": false,
+    "nombre_es": "Módulo de placa de distribución de cable"
+   },
+   {
+    "n": 20,
+    "codigo": "YC.SJ.S00717",
+    "nombre_en": "Vent Trap",
+    "nombre_zh": "透气阀",
+    "auxiliar": false,
+    "nombre_es": "Trampilla de respiradero"
+   },
+   {
+    "n": 21,
+    "codigo": "YC.JG.MY001348",
+    "nombre_en": "Aerial-Electronics Module Sealing Ring",
+    "nombre_zh": "航电密封圈",
+    "auxiliar": false,
+    "nombre_es": "Anillo de sellado de módulo de electrónica aérea"
+   }
+  ]
+ },
+ {
+  "clave": "marco_delantero_1",
+  "nombre": "Marco delantero (1)",
+  "nombre_zh": "前框1",
+  "sistema": "Aeronave y aspersión",
+  "zona": "Marco delantero",
+  "imagen": "marco_delantero_1.jpeg",
+  "piezas_catalogo": [
+   "frame",
+   "vision_binocular",
+   "fpv_module",
+   "sdr_antenna"
+  ],
+  "partes": [
+   {
+    "n": 1,
+    "codigo": "YC.JG.ZS004469",
+    "nombre_en": "Front Cover of Front Shell",
+    "nombre_zh": "前壳前盖",
+    "auxiliar": false,
+    "nombre_es": "Cubierta delantera de carcasa delantera"
+   },
+   {
+    "n": 2,
+    "codigo": "YC.WJ.L00868",
+    "nombre_en": "Screw M30-HC080080-55-85",
+    "nombre_zh": "螺丝 M30-HC080080-55-85",
+    "auxiliar": false,
+    "nombre_es": "Tornillo M30-HC080080-55-85"
+   },
+   {
+    "n": 3,
+    "codigo": "YC.DZ.AA000462",
+    "nombre_en": "SDR Antenna (Front)",
+    "nombre_zh": "SDR天线（前）",
+    "auxiliar": false,
+    "nombre_es": "Antena de SDR (delantera)"
+   },
+   {
+    "n": 4,
+    "codigo": "YC.WJ.L00868",
+    "nombre_en": "Screw M30-HC080080-55-85",
+    "nombre_zh": "螺丝 M30-HC080080-55-85",
+    "auxiliar": false,
+    "nombre_es": "Tornillo M30-HC080080-55-85"
+   },
+   {
+    "n": 5,
+    "codigo": "YC.JG.ZS004470",
+    "nombre_en": "Front Shell Module",
+    "nombre_zh": "前壳主体",
+    "auxiliar": false,
+    "nombre_es": "Módulo de carcasa delantera"
+   },
+   {
+    "n": 6,
+    "codigo": "BC.AG.SS001034",
+    "nombre_en": "RTK Antenna Module",
+    "nombre_zh": "RTK天线组件",
+    "auxiliar": false,
+    "nombre_es": "Módulo de antena de RTK"
+   },
+   {
+    "n": 7,
+    "codigo": "YC.JG.MY001073",
+    "nombre_en": "RTK Rubber Ring",
+    "nombre_zh": "RTK支撑胶圈",
+    "auxiliar": false,
+    "nombre_es": "Anillo de goma de RTK"
+   },
+   {
+    "n": 8,
+    "codigo": "YC.JG.MY001387",
+    "nombre_en": "Power Distribution Board Cable Sealing Ring",
+    "nombre_zh": "分电过线密封圈",
+    "auxiliar": false,
+    "nombre_es": "Anillo de sellado de cable de placa de distribución de potencia"
+   },
+   {
+    "n": 9,
+    "codigo": "YC.WJ.L00871",
+    "nombre_en": "Screw M30-HC100100-55-85",
+    "nombre_zh": "螺丝 M30-HC100100-55-85",
+    "auxiliar": false,
+    "nombre_es": "Tornillo M30-HC100100-55-85"
+   },
+   {
+    "n": 10,
+    "codigo": "YC.JG.MY001846",
+    "nombre_en": "Cable Rubber Seal",
+    "nombre_zh": "过线胶圈",
+    "auxiliar": false,
+    "nombre_es": "Retén de goma de cable"
+   },
+   {
+    "n": 11,
+    "codigo": "YC.WJ.L00868",
+    "nombre_en": "Screw M30-HC080080-55-85",
+    "nombre_zh": "螺丝 M30-HC080080-55-85",
+    "auxiliar": false,
+    "nombre_es": "Tornillo M30-HC080080-55-85"
+   },
+   {
+    "n": 12,
+    "codigo": "YC.JG.ZS004612",
+    "nombre_en": "Power Distribution Board Upper Cover",
+    "nombre_zh": "分电上盖",
+    "auxiliar": false,
+    "nombre_es": "Cubierta superior de placa de distribución de potencia"
+   },
+   {
+    "n": 13,
+    "codigo": "YC.JG.MY001079",
+    "nombre_en": "Front Shell Sealing Stopper",
+    "nombre_zh": "前壳密封塞",
+    "auxiliar": false,
+    "nombre_es": "Tapón de sellado de carcasa delantera"
+   },
+   {
+    "n": 14,
+    "codigo": "YC.JG.ZS006145",
+    "nombre_en": "Front Shell Bottom Plate",
+    "nombre_zh": "前壳底板",
+    "auxiliar": false,
+    "nombre_es": "Placa inferior de carcasa delantera"
+   },
+   {
+    "n": 15,
+    "codigo": "YC.JG.MY001846",
+    "nombre_en": "Cable Rubber Seal",
+    "nombre_zh": "过线胶圈",
+    "auxiliar": false,
+    "nombre_es": "Retén de goma de cable"
+   },
+   {
+    "n": 16,
+    "codigo": "YC.JG.MY001387",
+    "nombre_en": "Power Distribution Board Cable Sealing Ring",
+    "nombre_zh": "分电过线密封圈",
+    "auxiliar": false,
+    "nombre_es": "Anillo de sellado de cable de placa de distribución de potencia"
+   },
+   {
+    "n": 17,
+    "codigo": "YC.JG.MY001073",
+    "nombre_en": "RTK Rubber Ring",
+    "nombre_zh": "RTK支撑胶圈",
+    "auxiliar": false,
+    "nombre_es": "Anillo de goma de RTK"
+   },
+   {
+    "n": 18,
+    "codigo": "YC.JG.MY001453",
+    "nombre_en": "Cable Rubber Stopper",
+    "nombre_zh": "走线胶塞",
+    "auxiliar": false,
+    "nombre_es": "Tapón de goma de cable"
+   },
+   {
+    "n": 19,
+    "codigo": "YC.JG.MQ002999",
+    "nombre_en": "Cable Threading Hole Foam Pad",
+    "nombre_zh": "单目过线孔泡棉",
+    "auxiliar": false,
+    "nombre_es": "Almohadilla de espuma del orificio pasacables"
+   }
+  ]
+ },
+ {
+  "clave": "marco_delantero_2",
+  "nombre": "Marco delantero (2)",
+  "nombre_zh": "前框2",
+  "sistema": "Aeronave y aspersión",
+  "zona": "Marco delantero",
+  "imagen": "marco_delantero_2.jpeg",
+  "piezas_catalogo": [
+   "frame",
+   "radar_phased",
+   "radar_bracket",
+   "beacon",
+   "control_module"
+  ],
+  "partes": [
+   {
+    "n": 1,
+    "codigo": "YC.JG.ZS004550",
+    "nombre_en": "Top Cover of Front Shell",
+    "nombre_zh": "前壳顶盖",
+    "auxiliar": false,
+    "nombre_es": "Cubierta superior de carcasa delantera"
+   },
+   {
+    "n": 2,
+    "codigo": "YC.WJ.L00868",
+    "nombre_en": "Screw M30-HC080080-55-85",
+    "nombre_zh": "螺丝 M30-HC080080-55-85",
+    "auxiliar": false,
+    "nombre_es": "Tornillo M30-HC080080-55-85"
+   },
+   {
+    "n": 3,
+    "codigo": "YC.WJ.L00868",
+    "nombre_en": "Screw M30-HC080080-55-85",
+    "nombre_zh": "螺丝 M30-HC080080-55-85",
+    "auxiliar": false,
+    "nombre_es": "Tornillo M30-HC080080-55-85"
+   },
+   {
+    "n": 4,
+    "codigo": "YC.JG.ZS006700",
+    "nombre_en": "Front Radar Base Bracket",
+    "nombre_zh": "前雷达底座支撑",
+    "auxiliar": false,
+    "nombre_es": "Soporte de base de radar delantero"
+   },
+   {
+    "n": 5,
+    "codigo": "YC.WJ.L00868",
+    "nombre_en": "Screw M30-HC080080-55-85",
+    "nombre_zh": "螺丝 M30-HC080080-55-85",
+    "auxiliar": false,
+    "nombre_es": "Tornillo M30-HC080080-55-85"
+   },
+   {
+    "n": 6,
+    "codigo": "YC.ST.LL000667",
+    "nombre_en": "Screw (M40-HCW01150115-070040-5103-N)",
+    "nombre_zh": "螺丝 M40-HCW01150115-070040-5103-N",
+    "auxiliar": false,
+    "nombre_es": "Tornillo (M40-HCW01150115-070040-5103-N)"
+   },
+   {
+    "n": 7,
+    "codigo": "YC.JG.ZS006148",
+    "nombre_en": "Power Distribution Board Protective Cover",
+    "nombre_zh": "分电板防护盖",
+    "auxiliar": false,
+    "nombre_es": "Cubierta protectora de placa de distribución de potencia"
+   },
+   {
+    "n": 8,
+    "codigo": "YC.WJ.L00868",
+    "nombre_en": "Screw M30-HC080080-55-85",
+    "nombre_zh": "螺丝 M30-HC080080-55-85",
+    "auxiliar": false,
+    "nombre_es": "Tornillo M30-HC080080-55-85"
+   },
+   {
+    "n": 9,
+    "codigo": "YC.JG.ZS006149",
+    "nombre_en": "Cable Cover Plate",
+    "nombre_zh": "压线盖",
+    "auxiliar": false,
+    "nombre_es": "Placa de cubierta de cable"
+   },
+   {
+    "n": 10,
+    "codigo": "YC.WJ.L00868",
+    "nombre_en": "Screw M30-HC080080-55-85",
+    "nombre_zh": "螺丝 M30-HC080080-55-85",
+    "auxiliar": false,
+    "nombre_es": "Tornillo M30-HC080080-55-85"
+   },
+   {
+    "n": 11,
+    "codigo": "YC.JG.ZS004560",
+    "nombre_en": "Power Distribution Board Dustproof Cover",
+    "nombre_zh": "分电防尘盖",
+    "auxiliar": false,
+    "nombre_es": "Cubierta antipolvo de placa de distribución de potencia"
+   },
+   {
+    "n": 12,
+    "codigo": "YC.ST.LL000715",
+    "nombre_en": "Screw (M25-HC00850060-055025-5103-Y)",
+    "nombre_zh": "螺丝 M25-HC00850060-055025-5103-Y",
+    "auxiliar": false,
+    "nombre_es": "Tornillo (M25-HC00850060-055025-5103-Y)"
+   },
+   {
+    "n": 13,
+    "codigo": "BC.AG.SS001023",
+    "nombre_en": "Power Distribution Board Module",
+    "nombre_zh": "分电板模块",
+    "auxiliar": false,
+    "nombre_es": "Módulo de placa de distribución de potencia"
+   },
+   {
+    "n": 14,
+    "codigo": "YC.ST.LL000667",
+    "nombre_en": "Screw (M40-HCW01150115-070040-5103-N)",
+    "nombre_zh": "螺丝 M40-HCW01150115-070040-5103-N",
+    "auxiliar": false,
+    "nombre_es": "Tornillo (M40-HCW01150115-070040-5103-N)"
+   },
+   {
+    "n": 15,
+    "codigo": "BC.AG.SS001050",
+    "nombre_en": "Rear Frame Aluminum Tube",
+    "nombre_zh": "后框铝管",
+    "auxiliar": false,
+    "nombre_es": "Tubo de aluminio de marco trasero"
+   },
+   {
+    "n": 16,
+    "codigo": "YC.JG.MQ002494",
+    "nombre_en": "Thermally Conductive Pad (71 x 51 mm)",
+    "nombre_zh": "导热垫（71*51mm）",
+    "auxiliar": false,
+    "nombre_es": "Almohadilla termoconductora (71 x 51 mm)"
+   },
+   {
+    "n": 17,
+    "codigo": "YC.JG.MQ002497",
+    "nombre_en": "Thermally Conductive Pad (35 x 27 mm)",
+    "nombre_zh": "导热垫（35*27mm）",
+    "auxiliar": false,
+    "nombre_es": "Almohadilla termoconductora (35 x 27 mm)"
+   },
+   {
+    "n": 18,
+    "codigo": "YC.JG.YZ000802",
+    "nombre_en": "Front Radar Bracket",
+    "nombre_zh": "前雷达支架",
+    "auxiliar": false,
+    "nombre_es": "Soporte de radar delantero"
+   },
+   {
+    "n": 19,
+    "codigo": "YC.ST.LL000482",
+    "nombre_en": "Screw M40-HC01400140-070042-4203-Y",
+    "nombre_zh": "M40-HC01400140-070042-4203-Y",
+    "auxiliar": false,
+    "nombre_es": "Tornillo M40-HC01400140-070042-4203-Y"
+   },
+   {
+    "n": 20,
+    "codigo": "YC.JG.MY001803",
+    "nombre_en": "Distribution Board Damping Rubber",
+    "nombre_zh": "分电减震软胶",
+    "auxiliar": false,
+    "nombre_es": "Amortiguación de goma de placa de distribución"
+   },
+   {
+    "n": 21,
+    "codigo": "YC.ST.LL000493",
+    "nombre_en": "Screw M40-HC01620050-155020-5103-Y",
+    "nombre_zh": "螺丝 M40-HC01620050-155020-5103-Y",
+    "auxiliar": false,
+    "nombre_es": "Tornillo M40-HC01620050-155020-5103-Y"
+   },
+   {
+    "n": 22,
+    "codigo": "YC.ST.LL000541",
+    "nombre_en": "Screw M30-HC02380080-094020-5103-Y",
+    "nombre_zh": "螺丝 M30-HC02380080-094020-5103-Y",
+    "auxiliar": false,
+    "nombre_es": "Tornillo M30-HC02380080-094020-5103-Y"
+   },
+   {
+    "n": 23,
+    "codigo": "YC.JG.MY001353",
+    "nombre_en": "Binocular Vision Sensor Damping Pad",
+    "nombre_zh": "双目减震垫",
+    "auxiliar": false,
+    "nombre_es": "Almohadilla de amortiguación de sensor binocular de visión"
+   },
+   {
+    "n": 24,
+    "codigo": "BC.AG.SS001026",
+    "nombre_en": "Binocular Fisheye Sensor (Incl. Signal Cable)",
+    "nombre_zh": "双目鱼眼视觉（含信号线）",
+    "auxiliar": false,
+    "nombre_es": "Sensor binocular ojo de pez (incluye cable de señal)"
+   },
+   {
+    "n": 25,
+    "codigo": "YC.XC.XX001420",
+    "nombre_en": "Binocular Vision Sensor Signal Cable",
+    "nombre_zh": "双目信号线",
+    "auxiliar": false,
+    "nombre_es": "Cable de señal de sensor binocular de visión"
+   },
+   {
+    "n": 26,
+    "codigo": "BC.AG.SS001021",
+    "nombre_en": "FPV Module",
+    "nombre_zh": "FPV模块",
+    "auxiliar": false,
+    "nombre_es": "Módulo de FPV"
+   },
+   {
+    "n": 27,
+    "codigo": "YC.WJ.L00870",
+    "nombre_en": "Screw M30-HC060060-55-85",
+    "nombre_zh": "螺丝 M30-HC060060-55-85",
+    "auxiliar": false,
+    "nombre_es": "Tornillo M30-HC060060-55-85"
+   },
+   {
+    "n": 28,
+    "codigo": "YC.XC.XX001419",
+    "nombre_en": "FPV Signal Cable",
+    "nombre_zh": "FPV信号线",
+    "auxiliar": false,
+    "nombre_es": "Cable de señal de FPV"
+   },
+   {
+    "n": 29,
+    "codigo": "BC.AG.SS001165",
+    "nombre_en": "Front Radar Module",
+    "nombre_zh": "前雷达模块",
+    "auxiliar": false,
+    "nombre_es": "Módulo de radar delantero"
+   },
+   {
+    "n": 30,
+    "codigo": "YC.XC.XX001467",
+    "nombre_en": "Front Radar Signal Cable",
+    "nombre_zh": "前雷达信号线",
+    "auxiliar": false,
+    "nombre_es": "Cable de señal de radar delantero"
+   },
+   {
+    "n": 31,
+    "codigo": "YC.ST.LL000485",
+    "nombre_en": "Screw M50-HC01300112-087052-4203-Y",
+    "nombre_zh": "螺丝 M50-HC01300112-087052-4203-Y",
+    "auxiliar": false,
+    "nombre_es": "Tornillo M50-HC01300112-087052-4203-Y"
+   },
+   {
+    "n": 32,
+    "codigo": "BC.AG.SS001049",
+    "nombre_en": "Front Frame Aluminum Tube",
+    "nombre_zh": "前框铝管",
+    "auxiliar": false,
+    "nombre_es": "Tubo de aluminio de marco delantero"
+   }
+  ]
+ },
+ {
+  "clave": "brazo",
+  "nombre": "Brazo M3",
+  "nombre_zh": "机臂3",
+  "sistema": "Aeronave y aspersión",
+  "zona": "Brazos y motores",
+  "imagen": "brazo.jpeg",
+  "piezas_catalogo": [
+   "arm_lock",
+   "arm_power_line",
+   "esc",
+   "motor",
+   "internal_wiring"
+  ],
+  "partes": [
+   {
+    "n": 1,
+    "codigo": "YC.JG.ZS006718",
+    "nombre_en": "Motor protection cover",
+    "nombre_zh": "电机保护壳",
+    "auxiliar": false,
+    "nombre_es": "Cubierta de protección de motor"
+   },
+   {
+    "n": 2,
+    "codigo": "YC.WJ.L00868",
+    "nombre_en": "Screw M30-HC080080-55-85",
+    "nombre_zh": "螺丝 M30-HC080080-55-85",
+    "auxiliar": false,
+    "nombre_es": "Tornillo M30-HC080080-55-85"
+   },
+   {
+    "n": 3,
+    "codigo": "YC.JG.ZS006183",
+    "nombre_en": "Motor Upper Cover",
+    "nombre_zh": "电机上盖",
+    "auxiliar": false,
+    "nombre_es": "Cubierta superior de motor"
+   },
+   {
+    "n": 4,
+    "codigo": "YC.ST.LL000750",
+    "nombre_en": "Screw (M60-NCW02300200-120060-5103-N)",
+    "nombre_zh": "螺丝 M60-NCW02300200-120060-5103-N",
+    "auxiliar": false,
+    "nombre_es": "Tornillo (M60-NCW02300200-120060-5103-N)"
+   },
+   {
+    "n": 5,
+    "codigo": "YC.XC.XX001392",
+    "nombre_en": "Aircraft Arm Signal Cable (Rear)",
+    "nombre_zh": "后机臂信号线",
+    "auxiliar": false,
+    "nombre_es": "Cable de señal de brazo del dron (trasero)"
+   },
+   {
+    "n": 6,
+    "codigo": "YC.JG.MQ002156",
+    "nombre_en": "Duct Tape",
+    "nombre_zh": "布基胶带",
+    "auxiliar": false,
+    "nombre_es": "Cinta americana"
+   },
+   {
+    "n": 7,
+    "codigo": "YC.ST.LL000612",
+    "nombre_en": "Screw (M30-HC00800080-055030-5103-Y)",
+    "nombre_zh": "螺丝 M30-HC00800080-055030-5103-Y",
+    "auxiliar": false,
+    "nombre_es": "Tornillo (M30-HC00800080-055030-5103-Y)"
+   },
+   {
+    "n": 8,
+    "codigo": "YC.ST.LL000667",
+    "nombre_en": "Screw (M40-HCW01150115-070040-5103-N)",
+    "nombre_zh": "螺丝 M40-HCW01150115-070040-5103-N",
+    "auxiliar": false,
+    "nombre_es": "Tornillo (M40-HCW01150115-070040-5103-N)"
+   },
+   {
+    "n": 9,
+    "codigo": "BC.AG.SS001132",
+    "nombre_en": "M1 Aircraft Arm (Front Right)",
+    "nombre_zh": "",
+    "auxiliar": false,
+    "nombre_es": "Brazo del dron M1 (delantero derecho)"
+   },
+   {
+    "n": 10,
+    "codigo": "YC.ST.LL000612",
+    "nombre_en": "Screw (M30-HC00800080-055030-5103-Y)",
+    "nombre_zh": "螺丝 M30-HC00800080-055030-5103-Y",
+    "auxiliar": false,
+    "nombre_es": "Tornillo (M30-HC00800080-055030-5103-Y)"
+   },
+   {
+    "n": 11,
+    "codigo": "YC.JG.ZS006181",
+    "nombre_en": "Motor Cable Protective Cover",
+    "nombre_zh": "电机线保护盖",
+    "auxiliar": false,
+    "nombre_es": "Cubierta protectora de cable de motor"
+   },
+   {
+    "n": 12,
+    "codigo": "BC.AG.SS001048",
+    "nombre_en": "15522 Motor",
+    "nombre_zh": "15522 动力电机",
+    "auxiliar": false,
+    "nombre_es": "Motor 15522"
+   },
+   {
+    "n": 13,
+    "codigo": "YC.XC.XX001463",
+    "nombre_en": "ESC Sprinkler Adapter Cable",
+    "nombre_zh": "电调喷头转接线",
+    "auxiliar": false,
+    "nombre_es": "Cable de adaptador de aspersor de ESC"
+   },
+   {
+    "n": 14,
+    "codigo": "YC.JG.ZS006180",
+    "nombre_en": "Motor Lower Cover",
+    "nombre_zh": "电机底盖",
+    "auxiliar": false,
+    "nombre_es": "Cubierta inferior de motor"
+   },
+   {
+    "n": 15,
+    "codigo": "YC.ST.LL000612",
+    "nombre_en": "Screw (M30-HC00800080-055030-5103-Y)",
+    "nombre_zh": "螺丝 M30-HC00800080-055030-5103-Y",
+    "auxiliar": false,
+    "nombre_es": "Tornillo (M30-HC00800080-055030-5103-Y)"
+   },
+   {
+    "n": 16,
+    "codigo": "YC.WJ.L00877",
+    "nombre_en": "M3 Nut",
+    "nombre_zh": "M3防滑螺母",
+    "auxiliar": false,
+    "nombre_es": "Tuerca M3"
+   },
+   {
+    "n": 17,
+    "codigo": "YC.WJ.L00871",
+    "nombre_en": "Screw M30-HC100100-55-85",
+    "nombre_zh": "螺丝 M30-HC100100-55-85",
+    "auxiliar": false,
+    "nombre_es": "Tornillo M30-HC100100-55-85"
+   },
+   {
+    "n": 18,
+    "codigo": "YC.JG.ZS003557",
+    "nombre_en": "Anti-Wear Sleeve",
+    "nombre_zh": "防磨套",
+    "auxiliar": false,
+    "nombre_es": "Manguito antidesgaste"
+   },
+   {
+    "n": 19,
+    "codigo": "YC.WJ.LM000044",
+    "nombre_en": "M60-HX100060-5103_01",
+    "nombre_zh": "M60-HX100060-5103_01",
+    "auxiliar": false,
+    "nombre_es": "M60-HX100060-5103 01"
+   },
+   {
+    "n": 20,
+    "codigo": "YC.JG.LD000041",
+    "nombre_en": "Locking Piece Fixing Screw Bolt",
+    "nombre_zh": "锁紧扣固定螺栓",
+    "auxiliar": false,
+    "nombre_es": "Perno de tornillo de fijación de pieza de bloqueo"
+   },
+   {
+    "n": 21,
+    "codigo": "YC.JG.LD000039",
+    "nombre_en": "Aircraft Arm Fixing Screw",
+    "nombre_zh": "机臂固定螺丝",
+    "auxiliar": false,
+    "nombre_es": "Tornillo de fijación de brazo del dron"
+   },
+   {
+    "n": 22,
+    "codigo": "YC.JG.QX002314",
+    "nombre_en": "Aircraft Arm Fixing Screw Bolt",
+    "nombre_zh": "机臂固定螺栓",
+    "auxiliar": false,
+    "nombre_es": "Perno de tornillo de fijación de brazo del dron"
+   },
+   {
+    "n": 23,
+    "codigo": "YC.ST.LL000667",
+    "nombre_en": "Screw (M40-HCW01150115-070040-5103-N)",
+    "nombre_zh": "螺丝 M40-HCW01150115-070040-5103-N",
+    "auxiliar": false,
+    "nombre_es": "Tornillo (M40-HCW01150115-070040-5103-N)"
+   },
+   {
+    "n": 24,
+    "codigo": "YC.WJ.L00871",
+    "nombre_en": "Screw M30-HC100100-55-85",
+    "nombre_zh": "螺丝 M30-HC100100-55-85",
+    "auxiliar": false,
+    "nombre_es": "Tornillo M30-HC100100-55-85"
+   },
+   {
+    "n": 25,
+    "codigo": "YC.JG.BJ003468",
+    "nombre_en": "Locking Piece Handle",
+    "nombre_zh": "锁紧扣手柄",
+    "auxiliar": false,
+    "nombre_es": "Manija de pieza de bloqueo"
+   },
+   {
+    "n": 26,
+    "codigo": "YC.JG.QX003014",
+    "nombre_en": "Buckle Rotation Shaft",
+    "nombre_zh": "卡扣转轴",
+    "auxiliar": false,
+    "nombre_es": "Eje de rotación de hebilla"
+   },
+   {
+    "n": 27,
+    "codigo": "YC.JG.BJ002409",
+    "nombre_en": "E-Shaped Circlip (6 mm)",
+    "nombre_zh": "E形卡簧（外径 6mm）",
+    "auxiliar": false,
+    "nombre_es": "Anillo de retención en E (6 mm)"
+   },
+   {
+    "n": 29,
+    "codigo": "YC.JG.ZS006171",
+    "nombre_en": "Thumb Nut",
+    "nombre_zh": "手拧螺母",
+    "auxiliar": false,
+    "nombre_es": "Tuerca manual"
+   },
+   {
+    "n": 30,
+    "codigo": "BC.AG.SS000701",
+    "nombre_en": "Buckle Module",
+    "nombre_zh": "锁紧卡扣组件",
+    "auxiliar": false,
+    "nombre_es": "Módulo de hebilla"
+   },
+   {
+    "n": 31,
+    "codigo": "YC.JG.QX004662",
+    "nombre_en": "Locking Piece_Handle Connecting Rod Shaft",
+    "nombre_zh": "锁紧扣手柄连杆转轴",
+    "auxiliar": false,
+    "nombre_es": "Eje de varilla de conexión de manija de pieza de bloqueo"
+   },
+   {
+    "n": 32,
+    "codigo": "YC.JG.QX003942",
+    "nombre_en": "Locking Piece Connection Rod",
+    "nombre_zh": "锁紧扣连杆",
+    "auxiliar": false,
+    "nombre_es": "Varilla de conexión de pieza de bloqueo"
+   },
+   {
+    "n": 33,
+    "codigo": "YC.ST.LL000148",
+    "nombre_en": "Screw (M40-HC01400140-070039-4105-Y)",
+    "nombre_zh": "M40-HC01400140-070039-4105-Y",
+    "auxiliar": false,
+    "nombre_es": "Tornillo (M40-HC01400140-070039-4105-Y)"
+   },
+   {
+    "n": 34,
+    "codigo": "YC.JG.ZS006831",
+    "nombre_en": "Locking Piece Handle Rubber Sleeve",
+    "nombre_zh": "手柄胶套",
+    "auxiliar": false,
+    "nombre_es": "Manguito de goma de manija de pieza de bloqueo"
+   },
+   {
+    "n": 35,
+    "codigo": "YC.JG.QX002089",
+    "nombre_en": "Locking Piece Aircraft Arm Shaft",
+    "nombre_zh": "锁紧扣机臂转轴",
+    "auxiliar": false,
+    "nombre_es": "Eje de brazo del dron de pieza de bloqueo"
+   },
+   {
+    "n": 36,
+    "codigo": "YC.JG.ZS006171",
+    "nombre_en": "Thumb Nut",
+    "nombre_zh": "手拧螺母",
+    "auxiliar": false,
+    "nombre_es": "Tuerca manual"
+   },
+   {
+    "n": 37,
+    "codigo": "YC.WJ.L00871",
+    "nombre_en": "Screw M30-HC100100-55-85",
+    "nombre_zh": "螺丝 M30-HC100100-55-85",
+    "auxiliar": false,
+    "nombre_es": "Tornillo M30-HC100100-55-85"
+   },
+   {
+    "n": 38,
+    "codigo": "YC.JG.ZS002278",
+    "nombre_en": "In-Position Detector Bracket",
+    "nombre_zh": "在位检测支架",
+    "auxiliar": false,
+    "nombre_es": "Soporte de detector de posición"
+   },
+   {
+    "n": 39,
+    "codigo": "YC.WJ.LL000232",
+    "nombre_en": "M40-HC01000100-072028-5103-N_01",
+    "nombre_zh": "M40-HC01000100-072028-5103-N_01",
+    "auxiliar": false,
+    "nombre_es": "M40-HC01000100-072028-5103-N 01"
+   },
+   {
+    "n": 40,
+    "codigo": "BC.AG.SS001022",
+    "nombre_en": "ESC Module",
+    "nombre_zh": "电调模块",
+    "auxiliar": false,
+    "nombre_es": "Módulo de ESC"
+   },
+   {
+    "n": 41,
+    "codigo": "YC.XC.DD000797",
+    "nombre_en": "Aircraft Arm Power Cable (Rear)",
+    "nombre_zh": "后机臂功率线",
+    "auxiliar": false,
+    "nombre_es": "Cable de potencia de brazo del dron (trasero)"
+   },
+   {
+    "n": 42,
+    "codigo": "YC.JG.MY001804",
+    "nombre_en": "ESC Three-Phase Waterproof Cover Rubber Seal",
+    "nombre_zh": "电调三相防水盖胶圈",
+    "auxiliar": false,
+    "nombre_es": "Retén de goma de cubierta trifásica impermeable de ESC"
+   },
+   {
+    "n": 43,
+    "codigo": "YC.JG.JS000073",
+    "nombre_en": "Aircraft Arm Hose",
+    "nombre_zh": "机臂水管",
+    "auxiliar": false,
+    "nombre_es": "Manguera de brazo del dron"
+   },
+   {
+    "n": 28,
+    "codigo": "YC.JG.TT000165",
+    "nombre_en": "Buckle Torsion Spring",
+    "nombre_zh": "卡扣扭簧",
+    "auxiliar": false,
+    "nombre_es": "Resorte de torsión de hebilla"
+   },
+   {
+    "n": 44,
+    "codigo": "YC.JG.ZS006196",
+    "nombre_en": "ESC Bus Waterproof Cover",
+    "nombre_zh": "电调母线防水盖",
+    "auxiliar": false,
+    "nombre_es": "Cubierta impermeable de bus de ESC"
+   },
+   {
+    "n": 45,
+    "codigo": "YC.JG.MY001805",
+    "nombre_en": "ESC Bus Waterproof Cover Rubber Seal",
+    "nombre_zh": "电调母线防水盖胶圈",
+    "auxiliar": false,
+    "nombre_es": "Retén de goma de cubierta impermeable de bus de ESC"
+   },
+   {
+    "n": 46,
+    "codigo": "YC.WJ.L00871",
+    "nombre_en": "Screw M30-HC100100-55-85",
+    "nombre_zh": "螺丝 M30-HC100100-55-85",
+    "auxiliar": false,
+    "nombre_es": "Tornillo M30-HC100100-55-85"
+   },
+   {
+    "n": 47,
+    "codigo": "YC.JG.ZS006195",
+    "nombre_en": "ESC Three-Phase Cable Waterproof Cover",
+    "nombre_zh": "电调三相线防水盖",
+    "auxiliar": false,
+    "nombre_es": "Cubierta impermeable de cable trifásico de ESC"
+   },
+   {
+    "n": 48,
+    "codigo": "YC.JG.MY001804",
+    "nombre_en": "ESC Three-Phase Waterproof Cover Rubber Seal",
+    "nombre_zh": "电调三相防水盖胶圈",
+    "auxiliar": false,
+    "nombre_es": "Retén de goma de cubierta trifásica impermeable de ESC"
+   },
+   {
+    "n": 49,
+    "codigo": "YC.WJ.L00871",
+    "nombre_en": "Screw M30-HC100100-55-85",
+    "nombre_zh": "螺丝 M30-HC100100-55-85",
+    "auxiliar": false,
+    "nombre_es": "Tornillo M30-HC100100-55-85"
+   },
+   {
+    "n": 50,
+    "codigo": "YC.WJ.LL000232",
+    "nombre_en": "M40-HC01000100-072028-5103-N_01",
+    "nombre_zh": "M40-HC01000100-072028-5103-N_01",
+    "auxiliar": false,
+    "nombre_es": "M40-HC01000100-072028-5103-N 01"
+   },
+   {
+    "n": 51,
+    "codigo": "YC.XC.DD000796",
+    "nombre_en": "Aircraft Arm Power Cable (Front)",
+    "nombre_zh": "机臂功率线（前）",
+    "auxiliar": false,
+    "nombre_es": "Cable de potencia de brazo del dron (delantero)"
+   }
+  ]
+ },
+ {
+  "clave": "marco_central",
+  "nombre": "Marco central",
+  "nombre_zh": "中框",
+  "sistema": "Aeronave y aspersión",
+  "zona": "Marco central",
+  "imagen": "marco_central.jpeg",
+  "piezas_catalogo": [
+   "frame",
+   "battery_slider",
+   "battery_connector",
+   "rtk_module",
+   "sdr_antenna",
+   "aerial_electronics"
+  ],
+  "partes": [
+   {
+    "n": 1,
+    "codigo": "YC.JG.ZS005318",
+    "nombre_en": "Power Distribution Board Supporting Piece",
+    "nombre_zh": "分电板支撑件",
+    "auxiliar": false,
+    "nombre_es": "Pieza de soporte de placa de distribución de potencia"
+   },
+   {
+    "n": 2,
+    "codigo": "BC.AG.SS000901",
+    "nombre_en": "M2 Aircraft Arm Connector",
+    "nombre_zh": "M2机臂连接件",
+    "auxiliar": false,
+    "nombre_es": "Conector de brazo del dron M2"
+   },
+   {
+    "n": 3,
+    "codigo": "YC.JG.ZS006286",
+    "nombre_en": "Cable Tube",
+    "nombre_zh": "过线管",
+    "auxiliar": false,
+    "nombre_es": "Tubo de cable"
+   },
+   {
+    "n": 4,
+    "codigo": "YC.JG.ZS006927",
+    "nombre_en": "Pipe clip",
+    "nombre_zh": "水管卡扣",
+    "auxiliar": false,
+    "nombre_es": "Clip de tubería"
+   },
+   {
+    "n": 5,
+    "codigo": "BC.AG.SS001040",
+    "nombre_en": "Left Battery Slider Module",
+    "nombre_zh": "左电池滑块组件",
+    "auxiliar": false,
+    "nombre_es": "Módulo de guía de batería izquierda"
+   },
+   {
+    "n": 6,
+    "codigo": "YC.ST.LL000485",
+    "nombre_en": "Screw M50-HC01300112-087052-4203-Y",
+    "nombre_zh": "螺丝 M50-HC01300112-087052-4203-Y",
+    "auxiliar": false,
+    "nombre_es": "Tornillo M50-HC01300112-087052-4203-Y"
+   },
+   {
+    "n": 7,
+    "codigo": "YC.JG.QX004396",
+    "nombre_en": "Roller Shaft",
+    "nombre_zh": "滚轮轴",
+    "auxiliar": false,
+    "nombre_es": "Eje de rodillo"
+   },
+   {
+    "n": 8,
+    "codigo": "YC.ST.LL000485",
+    "nombre_en": "Screw M50-HC01300112-087052-4203-Y",
+    "nombre_zh": "螺丝 M50-HC01300112-087052-4203-Y",
+    "auxiliar": false,
+    "nombre_es": "Tornillo M50-HC01300112-087052-4203-Y"
+   },
+   {
+    "n": 9,
+    "codigo": "YC.JG.ZS006300",
+    "nombre_en": "Roller",
+    "nombre_zh": "滚轮",
+    "auxiliar": false,
+    "nombre_es": "Rodillo"
+   },
+   {
+    "n": 10,
+    "codigo": "BC.AG.SS001051",
+    "nombre_en": "Middle Frame Aluminum Tube (Left)",
+    "nombre_zh": "中框铝管（左）",
+    "auxiliar": false,
+    "nombre_es": "Tubo de aluminio de marco central (izquierdo)"
+   },
+   {
+    "n": 11,
+    "codigo": "YC.JG.ZS006121",
+    "nombre_en": "Aircraft Arm Fixing Piece (Front Left)",
+    "nombre_zh": "机臂固定件（左前）",
+    "auxiliar": false,
+    "nombre_es": "Pieza de fijación de brazo del dron (delantera izquierda)"
+   },
+   {
+    "n": 12,
+    "codigo": "YC.ST.LL000485",
+    "nombre_en": "Screw M50-HC01300112-087052-4203-Y",
+    "nombre_zh": "螺丝 M50-HC01300112-087052-4203-Y",
+    "auxiliar": false,
+    "nombre_es": "Tornillo M50-HC01300112-087052-4203-Y"
+   },
+   {
+    "n": 13,
+    "codigo": "BC.AG.SS001037",
+    "nombre_en": "M3 Aircraft Arm Connector",
+    "nombre_zh": "M3机臂连接件",
+    "auxiliar": false,
+    "nombre_es": "Conector de brazo del dron M3"
+   },
+   {
+    "n": 14,
+    "codigo": "YC.JG.ZS006124",
+    "nombre_en": "Aircraft Arm Fixing Piece (Rear Left)",
+    "nombre_zh": "机臂固定件（左后）",
+    "auxiliar": false,
+    "nombre_es": "Pieza de fijación de brazo del dron (trasera izquierda)"
+   },
+   {
+    "n": 15,
+    "codigo": "YC.ST.LL000485",
+    "nombre_en": "Screw M50-HC01300112-087052-4203-Y",
+    "nombre_zh": "螺丝 M50-HC01300112-087052-4203-Y",
+    "auxiliar": false,
+    "nombre_es": "Tornillo M50-HC01300112-087052-4203-Y"
+   },
+   {
+    "n": 16,
+    "codigo": "BC.AG.SS001038",
+    "nombre_en": "M4 Aircraft Arm Connector",
+    "nombre_zh": "M4机臂连接件",
+    "auxiliar": false,
+    "nombre_es": "Conector de brazo del dron M4"
+   },
+   {
+    "n": 17,
+    "codigo": "YC.WJ.L00871",
+    "nombre_en": "Screw M30-HC100100-55-85",
+    "nombre_zh": "螺丝 M30-HC100100-55-85",
+    "auxiliar": false,
+    "nombre_es": "Tornillo M30-HC100100-55-85"
+   },
+   {
+    "n": 18,
+    "codigo": "YC.JG.ZS006128",
+    "nombre_en": "SDR Antenna Rear Shell",
+    "nombre_zh": "SDR天线后壳",
+    "auxiliar": false,
+    "nombre_es": "Carcasa trasera de antena de SDR"
+   },
+   {
+    "n": 19,
+    "codigo": "YC.ST.LL000485",
+    "nombre_en": "Screw M50-HC01300112-087052-4203-Y",
+    "nombre_zh": "螺丝 M50-HC01300112-087052-4203-Y",
+    "auxiliar": false,
+    "nombre_es": "Tornillo M50-HC01300112-087052-4203-Y"
+   },
+   {
+    "n": 20,
+    "codigo": "YC.JG.ZS006123",
+    "nombre_en": "Aircraft Arm Fixing Piece (Rear Right)",
+    "nombre_zh": "机臂固定件（右后）",
+    "auxiliar": false,
+    "nombre_es": "Pieza de fijación de brazo del dron (trasera derecha)"
+   },
+   {
+    "n": 21,
+    "codigo": "YC.ST.LL000485",
+    "nombre_en": "Screw M50-HC01300112-087052-4203-Y",
+    "nombre_zh": "螺丝 M50-HC01300112-087052-4203-Y",
+    "auxiliar": false,
+    "nombre_es": "Tornillo M50-HC01300112-087052-4203-Y"
+   },
+   {
+    "n": 22,
+    "codigo": "YC.JG.ZS006125",
+    "nombre_en": "Payload Rear Bracket",
+    "nombre_zh": "负载后支架",
+    "auxiliar": false,
+    "nombre_es": "Soporte trasero de carga útil"
+   },
+   {
+    "n": 23,
+    "codigo": "YC.JG.ZS006122",
+    "nombre_en": "Aircraft Arm Fixing Piece (Front Right)",
+    "nombre_zh": "机臂固定件（右前）",
+    "auxiliar": false,
+    "nombre_es": "Pieza de fijación de brazo del dron (delantera derecha)"
+   },
+   {
+    "n": 24,
+    "codigo": "BC.AG.SS001052",
+    "nombre_en": "Middle Frame Aluminum Tube (Right)",
+    "nombre_zh": "中框铝管（右）",
+    "auxiliar": false,
+    "nombre_es": "Tubo de aluminio de marco central (derecho)"
+   },
+   {
+    "n": 25,
+    "codigo": "YC.ST.LL000485",
+    "nombre_en": "Screw M50-HC01300112-087052-4203-Y",
+    "nombre_zh": "螺丝 M50-HC01300112-087052-4203-Y",
+    "auxiliar": false,
+    "nombre_es": "Tornillo M50-HC01300112-087052-4203-Y"
+   },
+   {
+    "n": 26,
+    "codigo": "YC.ST.LL000485",
+    "nombre_en": "Screw M50-HC01300112-087052-4203-Y",
+    "nombre_zh": "螺丝 M50-HC01300112-087052-4203-Y",
+    "auxiliar": false,
+    "nombre_es": "Tornillo M50-HC01300112-087052-4203-Y"
+   },
+   {
+    "n": 27,
+    "codigo": "YC.DZ.AA000556",
+    "nombre_en": "SDR Antenna (Rear)",
+    "nombre_zh": "SDR天线（后）",
+    "auxiliar": false,
+    "nombre_es": "Antena de SDR (trasera)"
+   },
+   {
+    "n": 28,
+    "codigo": "BC.AG.SS001039",
+    "nombre_en": "Right Battery Slider Module",
+    "nombre_zh": "右电池滑块组件",
+    "auxiliar": false,
+    "nombre_es": "Módulo de guía de batería derecha"
+   },
+   {
+    "n": 29,
+    "codigo": "YC.JG.ZS006286",
+    "nombre_en": "Cable Tube",
+    "nombre_zh": "过线管",
+    "auxiliar": false,
+    "nombre_es": "Tubo de cable"
+   },
+   {
+    "n": 30,
+    "codigo": "BC.AG.SS000900",
+    "nombre_en": "M1 Aircraft Arm Connector",
+    "nombre_zh": "M1机臂连接件",
+    "auxiliar": false,
+    "nombre_es": "Conector de brazo del dron M1"
+   },
+   {
+    "n": 31,
+    "codigo": "YC.WJ.L00871",
+    "nombre_en": "Screw M30-HC100100-55-85",
+    "nombre_zh": "螺丝 M30-HC100100-55-85",
+    "auxiliar": false,
+    "nombre_es": "Tornillo M30-HC100100-55-85"
+   }
+  ]
+ },
+ {
+  "clave": "tren",
+  "nombre": "Tren de aterrizaje",
+  "nombre_zh": "脚架",
+  "sistema": "Aeronave y aspersión",
+  "zona": "Tren de aterrizaje",
+  "imagen": "tren.jpeg",
+  "piezas_catalogo": [
+   "landing_gear",
+   "radar_bracket"
+  ],
+  "partes": [
+   {
+    "n": 1,
+    "codigo": "YC.ST.LL000543",
+    "nombre_en": "Screw T30-HC01000100-057030-5103-N",
+    "nombre_zh": "螺丝 T30-HC01000100-057030-5103-N",
+    "auxiliar": false,
+    "nombre_es": "Tornillo T30-HC01000100-057030-5103-N"
+   },
+   {
+    "n": 2,
+    "codigo": "YC.JG.ZS006380",
+    "nombre_en": "Landing Gear Cable Clamp A",
+    "nombre_zh": "脚架线夹A",
+    "auxiliar": false,
+    "nombre_es": "A de abrazadera de cable de tren de aterrizaje"
+   },
+   {
+    "n": 3,
+    "codigo": "YC.ST.LL000607",
+    "nombre_en": "Screw (M40-HC04000140-070040-5103-Y)",
+    "nombre_zh": "螺丝 M40-HC04000140-070040-5103-Y",
+    "auxiliar": false,
+    "nombre_es": "Tornillo (M40-HC04000140-070040-5103-Y)"
+   },
+   {
+    "n": 4,
+    "codigo": "YC.ST.LM000096",
+    "nombre_en": "Nut (M40-HX055030-5103)",
+    "nombre_zh": "螺母 M40-HX055030-5103",
+    "auxiliar": false,
+    "nombre_es": "Tuerca (M40-HX055030-5103)"
+   },
+   {
+    "n": 5,
+    "codigo": "YC.JG.ZS006641",
+    "nombre_en": "Landing Gear Fixing Piece (Front Right)",
+    "nombre_zh": "脚架固定件（右前）",
+    "auxiliar": false,
+    "nombre_es": "Pieza de fijación de tren de aterrizaje (delantera derecha)"
+   },
+   {
+    "n": 6,
+    "codigo": "YC.JG.ZS006642",
+    "nombre_en": "Landing Gear Fixing Piece (Front Left)",
+    "nombre_zh": "脚架固定件（左前）",
+    "auxiliar": false,
+    "nombre_es": "Pieza de fijación de tren de aterrizaje (delantera izquierda)"
+   },
+   {
+    "n": 7,
+    "codigo": "YC.JG.BJ003094",
+    "nombre_en": "Landing Gear Conductive Gasket",
+    "nombre_zh": "脚架导通垫片",
+    "auxiliar": false,
+    "nombre_es": "Empaque conductor de tren de aterrizaje"
+   },
+   {
+    "n": 8,
+    "codigo": "YC.ST.LL000142",
+    "nombre_en": "Screw (T25-HC00600050-040010-3123-N)",
+    "nombre_zh": "T25-HC00600050-040010-3123-N",
+    "auxiliar": false,
+    "nombre_es": "Tornillo (T25-HC00600050-040010-3123-N)"
+   },
+   {
+    "n": 9,
+    "codigo": "YC.WJ.L00873",
+    "nombre_en": "Screw M30-HC1880-55-85",
+    "nombre_zh": "螺丝 M30-HC1880-55-85",
+    "auxiliar": false,
+    "nombre_es": "Tornillo M30-HC1880-55-85"
+   },
+   {
+    "n": 10,
+    "codigo": "YC.ST.LL000017",
+    "nombre_en": "Screw M30-HC02800070-055030-0003-Y",
+    "nombre_zh": "螺丝 M30-HC02800070-055030-0003-Y",
+    "auxiliar": false,
+    "nombre_es": "Tornillo M30-HC02800070-055030-0003-Y"
+   },
+   {
+    "n": 11,
+    "codigo": "YC.WJ.L00877",
+    "nombre_en": "M3 Nut",
+    "nombre_zh": "M3防滑螺母",
+    "auxiliar": false,
+    "nombre_es": "Tuerca M3"
+   },
+   {
+    "n": 12,
+    "codigo": "YC.JG.ZS006560",
+    "nombre_en": "Landing Gear Y-tee Part",
+    "nombre_zh": "脚架三通",
+    "auxiliar": false,
+    "nombre_es": "Pieza de pieza en Y de tren de aterrizaje"
+   },
+   {
+    "n": 13,
+    "codigo": "YC.XC.XX001393",
+    "nombre_en": "Spotlight Signal Cable (Long)",
+    "nombre_zh": "夜航灯信号线",
+    "auxiliar": false,
+    "nombre_es": "Cable de señal de foco (largo)"
+   },
+   {
+    "n": 14,
+    "codigo": "YC.JG.ZS006301",
+    "nombre_en": "Spotlight Bracket",
+    "nombre_zh": "夜航灯支架",
+    "auxiliar": false,
+    "nombre_es": "Soporte de foco"
+   },
+   {
+    "n": 15,
+    "codigo": "BC.AG.SS001020",
+    "nombre_en": "Spotlight",
+    "nombre_zh": "夜航灯",
+    "auxiliar": false,
+    "nombre_es": "Foco"
+   },
+   {
+    "n": 16,
+    "codigo": "YC.WJ.L00873",
+    "nombre_en": "Screw M30-HC1880-55-85",
+    "nombre_zh": "螺丝 M30-HC1880-55-85",
+    "auxiliar": false,
+    "nombre_es": "Tornillo M30-HC1880-55-85"
+   },
+   {
+    "n": 17,
+    "codigo": "YC.WJ.L00871",
+    "nombre_en": "Screw M30-HC100100-55-85",
+    "nombre_zh": "螺丝 M30-HC100100-55-85",
+    "auxiliar": false,
+    "nombre_es": "Tornillo M30-HC100100-55-85"
+   },
+   {
+    "n": 18,
+    "codigo": "YC.ST.LL000122",
+    "nombre_en": "Screw M25-HC00780040-040020-5108-N",
+    "nombre_zh": "螺丝 M25-HC00780040-040020-5108-N",
+    "auxiliar": false,
+    "nombre_es": "Tornillo M25-HC00780040-040020-5108-N"
+   },
+   {
+    "n": 19,
+    "codigo": "YC.XC.XX001424",
+    "nombre_en": "Rear Radar Signal Cable",
+    "nombre_zh": "后雷达信号线",
+    "auxiliar": false,
+    "nombre_es": "Cable de señal de radar trasero"
+   },
+   {
+    "n": 20,
+    "codigo": "YC.JG.MY001575",
+    "nombre_en": "Anti-Wear Rubber Stopper",
+    "nombre_zh": "防磨胶塞",
+    "auxiliar": false,
+    "nombre_es": "Tapón antidesgaste de goma"
+   },
+   {
+    "n": 21,
+    "codigo": "YC.JG.ZS003492",
+    "nombre_en": "Radar Supporting Piece (Right)",
+    "nombre_zh": "雷达右支撑",
+    "auxiliar": false,
+    "nombre_es": "Pieza de soporte de radar (derecha)"
+   },
+   {
+    "n": 22,
+    "codigo": "YC.WJ.L00873",
+    "nombre_en": "Screw M30-HC1880-55-85",
+    "nombre_zh": "螺丝 M30-HC1880-55-85",
+    "auxiliar": false,
+    "nombre_es": "Tornillo M30-HC1880-55-85"
+   },
+   {
+    "n": 23,
+    "codigo": "YC.JG.MY001131",
+    "nombre_en": "Rubber Pad",
+    "nombre_zh": "橡胶垫",
+    "auxiliar": false,
+    "nombre_es": "Almohadilla de goma"
+   },
+   {
+    "n": 24,
+    "codigo": "YC.WJ.L00873",
+    "nombre_en": "Screw M30-HC1880-55-85",
+    "nombre_zh": "螺丝 M30-HC1880-55-85",
+    "auxiliar": false,
+    "nombre_es": "Tornillo M30-HC1880-55-85"
+   },
+   {
+    "n": 25,
+    "codigo": "YC.JG.ZS004711",
+    "nombre_en": "Radar Supporting Piece (Left)",
+    "nombre_zh": "雷达左支撑",
+    "auxiliar": false,
+    "nombre_es": "Pieza de soporte de radar (izquierda)"
+   },
+   {
+    "n": 26,
+    "codigo": "YC.WJ.L00870",
+    "nombre_en": "Screw M30-HC060060-55-85",
+    "nombre_zh": "螺丝 M30-HC060060-55-85",
+    "auxiliar": false,
+    "nombre_es": "Tornillo M30-HC060060-55-85"
+   },
+   {
+    "n": 27,
+    "codigo": "YC.JG.ZS006126",
+    "nombre_en": "Landing Gear Fixing Piece (Rear Left)",
+    "nombre_zh": "脚架固定件（左后）",
+    "auxiliar": false,
+    "nombre_es": "Pieza de fijación de tren de aterrizaje (trasera izquierda)"
+   },
+   {
+    "n": 28,
+    "codigo": "YC.JG.ZS006127",
+    "nombre_en": "Landing Gear Fixing Piece (Rear Right)",
+    "nombre_zh": "脚架固定件（右后）",
+    "auxiliar": false,
+    "nombre_es": "Pieza de fijación de tren de aterrizaje (trasera derecha)"
+   },
+   {
+    "n": 29,
+    "codigo": "YC.WJ.L00873",
+    "nombre_en": "Screw M30-HC1880-55-85",
+    "nombre_zh": "螺丝 M30-HC1880-55-85",
+    "auxiliar": false,
+    "nombre_es": "Tornillo M30-HC1880-55-85"
+   },
+   {
+    "n": 30,
+    "codigo": "YC.WJ.L00877",
+    "nombre_en": "M3 Nut",
+    "nombre_zh": "M3防滑螺母",
+    "auxiliar": false,
+    "nombre_es": "Tuerca M3"
+   },
+   {
+    "n": 31,
+    "codigo": "YC.ST.LL000543",
+    "nombre_en": "Screw T30-HC01000100-057030-5103-N",
+    "nombre_zh": "螺丝 T30-HC01000100-057030-5103-N",
+    "auxiliar": false,
+    "nombre_es": "Tornillo T30-HC01000100-057030-5103-N"
+   },
+   {
+    "n": 32,
+    "codigo": "YC.JG.ZS006379",
+    "nombre_en": "Landing Gear Cable Clamp B",
+    "nombre_zh": "脚架线夹B",
+    "auxiliar": false,
+    "nombre_es": "B de abrazadera de cable de tren de aterrizaje"
+   },
+   {
+    "n": 33,
+    "codigo": "YC.JG.ZS006813",
+    "nombre_en": "Landing Gear Crossbeam (Rear)",
+    "nombre_zh": "脚架横杆（后）",
+    "auxiliar": false,
+    "nombre_es": "Travesaño de tren de aterrizaje (trasera)"
+   },
+   {
+    "n": 34,
+    "codigo": "YC.WJ.L00877",
+    "nombre_en": "M3 Nut",
+    "nombre_zh": "M3防滑螺母",
+    "auxiliar": false,
+    "nombre_es": "Tuerca M3"
+   },
+   {
+    "n": 35,
+    "codigo": "YC.WJ.L00873",
+    "nombre_en": "Screw M30-HC1880-55-85",
+    "nombre_zh": "螺丝 M30-HC1880-55-85",
+    "auxiliar": false,
+    "nombre_es": "Tornillo M30-HC1880-55-85"
+   },
+   {
+    "n": 36,
+    "codigo": "BC.AG.SS001136",
+    "nombre_en": "Rear Radar Module",
+    "nombre_zh": "后雷达模块",
+    "auxiliar": false,
+    "nombre_es": "Módulo de radar trasero"
+   },
+   {
+    "n": 37,
+    "codigo": "YC.JG.ZS003558",
+    "nombre_en": "Bottom Rubber Pad",
+    "nombre_zh": "脚垫",
+    "auxiliar": false,
+    "nombre_es": "Almohadilla de goma inferior"
+   },
+   {
+    "n": 38,
+    "codigo": "YC.WJ.L00877",
+    "nombre_en": "M3 Nut",
+    "nombre_zh": "M3防滑螺母",
+    "auxiliar": false,
+    "nombre_es": "Tuerca M3"
+   },
+   {
+    "n": 39,
+    "codigo": "YC.WJ.L00871",
+    "nombre_en": "Screw M30-HC100100-55-85",
+    "nombre_zh": "螺丝 M30-HC100100-55-85",
+    "auxiliar": false,
+    "nombre_es": "Tornillo M30-HC100100-55-85"
+   },
+   {
+    "n": 41,
+    "codigo": "YC.JG.XW000200",
+    "nombre_en": "Landing Gear Crossbeam (Front)",
+    "nombre_zh": "脚架横杆（前）",
+    "auxiliar": false,
+    "nombre_es": "Travesaño de tren de aterrizaje (delantera)"
+   },
+   {
+    "n": 42,
+    "codigo": "YC.JG.BJ003078",
+    "nombre_en": "Landing Gear Aluminum Tube",
+    "nombre_zh": "脚架铝管",
+    "auxiliar": false,
+    "nombre_es": "Tubo de aluminio de tren de aterrizaje"
+   },
+   {
+    "n": 43,
+    "codigo": "YC.JG.ZS003725",
+    "nombre_en": "Landing Gear Cable Clip",
+    "nombre_zh": "脚架线夹",
+    "auxiliar": false,
+    "nombre_es": "Clip de cable de tren de aterrizaje"
+   },
+   {
+    "n": 44,
+    "codigo": "YC.ST.LL000543",
+    "nombre_en": "Screw T30-HC01000100-057030-5103-N",
+    "nombre_zh": "螺丝 T30-HC01000100-057030-5103-N",
+    "auxiliar": false,
+    "nombre_es": "Tornillo T30-HC01000100-057030-5103-N"
+   }
+  ]
+ },
+ {
+  "clave": "helices",
+  "nombre": "Hélices",
+  "nombre_zh": "桨叶",
+  "sistema": "Aeronave y aspersión",
+  "zona": "Hélices",
+  "imagen": "helices.jpeg",
+  "piezas_catalogo": [
+   "propellers",
+   "propeller_clamp"
+  ],
+  "partes": [
+   {
+    "n": 1,
+    "codigo": "YC.ST.LL000750",
+    "nombre_en": "Screw (M60-NCW02300200-120060-5103-N)",
+    "nombre_zh": "螺丝 M60-NCW02300200-120060-5103-N",
+    "auxiliar": false,
+    "nombre_es": "Tornillo (M60-NCW02300200-120060-5103-N)"
+   },
+   {
+    "n": 2,
+    "codigo": "YC.JG.QX004523",
+    "nombre_en": "Propeller Clamp Base",
+    "nombre_zh": "桨夹座",
+    "auxiliar": false,
+    "nombre_es": "Base de abrazadera de hélice"
+   },
+   {
+    "n": 3,
+    "codigo": "YC.JG.QX004525",
+    "nombre_en": "Propeller Clamp Base Shaft",
+    "nombre_zh": "桨夹座轴",
+    "auxiliar": false,
+    "nombre_es": "Eje de base de abrazadera de hélice"
+   },
+   {
+    "n": 4,
+    "codigo": "YC.ST.LL000750",
+    "nombre_en": "Screw (M60-NCW02300200-120060-5103-N)",
+    "nombre_zh": "螺丝 M60-NCW02300200-120060-5103-N",
+    "auxiliar": false,
+    "nombre_es": "Tornillo (M60-NCW02300200-120060-5103-N)"
+   },
+   {
+    "n": 5,
+    "codigo": "YC.JG.QX004524",
+    "nombre_en": "Propeller Shaft",
+    "nombre_zh": "桨叶轴",
+    "auxiliar": false,
+    "nombre_es": "Eje de hélice"
+   },
+   {
+    "n": 6,
+    "codigo": "YC.JG.ZS006832",
+    "nombre_en": "Propeller Clamp Bearing",
+    "nombre_zh": "桨夹滑动轴承",
+    "auxiliar": false,
+    "nombre_es": "Rodamiento de abrazadera de hélice"
+   },
+   {
+    "n": 7,
+    "codigo": "YC.JG.QX004522",
+    "nombre_en": "Propeller Clamp",
+    "nombre_zh": "桨夹",
+    "auxiliar": false,
+    "nombre_es": "Abrazadera de hélice"
+   },
+   {
+    "n": 8,
+    "codigo": "YC.ST.LL000750",
+    "nombre_en": "Screw (M60-NCW02300200-120060-5103-N)",
+    "nombre_zh": "螺丝 M60-NCW02300200-120060-5103-N",
+    "auxiliar": false,
+    "nombre_es": "Tornillo (M60-NCW02300200-120060-5103-N)"
+   },
+   {
+    "n": 9,
+    "codigo": "YC.JG.ZS007564",
+    "nombre_en": "Propeller Clamp Damping Pad",
+    "nombre_zh": "桨夹减震垫",
+    "auxiliar": false,
+    "nombre_es": "Almohadilla de amortiguación de abrazadera de hélice"
+   },
+   {
+    "n": 10,
+    "codigo": "YC.JG.ZS008218",
+    "nombre_en": "Propeller Gasket",
+    "nombre_zh": "桨叶垫片",
+    "auxiliar": false,
+    "nombre_es": "Empaque de hélice"
+   },
+   {
+    "n": 11,
+    "codigo": "YC.JG.XW000454.01",
+    "nombre_en": "Propeller (CW)",
+    "nombre_zh": "反桨（CW）",
+    "auxiliar": false,
+    "nombre_es": "Hélice (CW)"
+   },
+   {
+    "n": 12,
+    "codigo": "YC.JG.XW000453.01",
+    "nombre_en": "Propeller (CCW)",
+    "nombre_zh": "正桨（CCW）",
+    "auxiliar": false,
+    "nombre_es": "Hélice (CCW)"
+   }
+  ]
+ },
+ {
+  "clave": "elevacion_cabrestante",
+  "nombre": "Cabrestante de elevación",
+  "nombre_zh": "空吊",
+  "sistema": "Sistema de elevación",
+  "zona": "Sistema de elevación",
+  "imagen": "elevacion_cabrestante.jpeg",
+  "piezas_catalogo": [
+   "hoisting_module"
+  ],
+  "partes": [
+   {
+    "n": 1,
+    "codigo": "YC.ST.AS000061",
+    "nombre_en": "Lifting Hook",
+    "nombre_zh": "吊运挂钩",
+    "auxiliar": false,
+    "nombre_es": "Gancho de elevación"
+   },
+   {
+    "n": 2,
+    "codigo": "YC.ST.LL000696",
+    "nombre_en": "Screw (M60-HC02000180-100080-4203-Y)",
+    "nombre_zh": "螺丝 M60-HC02000180-100080-4203-Y",
+    "auxiliar": false,
+    "nombre_es": "Tornillo (M60-HC02000180-100080-4203-Y)"
+   },
+   {
+    "n": 3,
+    "codigo": "YC.JG.FM000229",
+    "nombre_en": "Lanyard Buckle",
+    "nombre_zh": "挂绳扣",
+    "auxiliar": false,
+    "nombre_es": "Hebilla de cordón"
+   },
+   {
+    "n": 4,
+    "codigo": "YC.JG.QX004670",
+    "nombre_en": "Lift System Crossbeam",
+    "nombre_zh": "吊运横杆",
+    "auxiliar": false,
+    "nombre_es": "Travesaño de sistema de elevación"
+   },
+   {
+    "n": 5,
+    "codigo": "YC.ST.LL000696",
+    "nombre_en": "Screw (M60-HC02000180-100080-4203-Y)",
+    "nombre_zh": "螺丝 M60-HC02000180-100080-4203-Y",
+    "auxiliar": false,
+    "nombre_es": "Tornillo (M60-HC02000180-100080-4203-Y)"
+   },
+   {
+    "n": 6,
+    "codigo": "YC.ST.LL000799",
+    "nombre_en": "Screw (M60-HO01930160-100033-4203-Y)",
+    "nombre_zh": "螺丝 M60-HO01930160-100033-4203-Y",
+    "auxiliar": false,
+    "nombre_es": "Tornillo (M60-HO01930160-100033-4203-Y)"
+   },
+   {
+    "n": 7,
+    "codigo": "YC.JG.BJ003490",
+    "nombre_en": "Lift System Left Bracket",
+    "nombre_zh": "吊运左支架",
+    "auxiliar": false,
+    "nombre_es": "Soporte izquierdo de sistema de elevación"
+   },
+   {
+    "n": 8,
+    "codigo": "YC.JG.ZS007220",
+    "nombre_en": "Knob",
+    "nombre_zh": "旋钮",
+    "auxiliar": false,
+    "nombre_es": "Perilla"
+   },
+   {
+    "n": 9,
+    "codigo": "YC.JG.MY002206",
+    "nombre_en": "Knob Rubber Stopper",
+    "nombre_zh": "旋钮胶塞",
+    "auxiliar": false,
+    "nombre_es": "Tapón de goma de perilla"
+   },
+   {
+    "n": 10,
+    "codigo": "YC.JG.BJ003651",
+    "nombre_en": "E-Type Circlip (OD=7.6 mm)",
+    "nombre_zh": "E形卡簧（外径7.6mm）",
+    "auxiliar": false,
+    "nombre_es": "Anillo de retención tipo E (OD=7.6 mm)"
+   },
+   {
+    "n": 11,
+    "codigo": "YC.JG.MQ004348",
+    "nombre_en": "Lift System Left Sticker",
+    "nombre_zh": "吊运左贴纸",
+    "auxiliar": false,
+    "nombre_es": "Adhesivo izquierdo de sistema de elevación"
+   },
+   {
+    "n": 12,
+    "codigo": "YC.JG.MQ004350",
+    "nombre_en": "Lift System Top Sticker",
+    "nombre_zh": "吊运顶部贴纸",
+    "auxiliar": false,
+    "nombre_es": "Adhesivo superior de sistema de elevación"
+   },
+   {
+    "n": 13,
+    "codigo": "YC.JG.MQ004349",
+    "nombre_en": "Lift System Right Sticker",
+    "nombre_zh": "吊运右贴纸",
+    "auxiliar": false,
+    "nombre_es": "Adhesivo derecho de sistema de elevación"
+   },
+   {
+    "n": 14,
+    "codigo": "YC.ST.LL000659",
+    "nombre_en": "Screw (M40-HC00600060-072072-5103-Y)",
+    "nombre_zh": "螺丝 M40-HC00600060-072072-5103-Y",
+    "auxiliar": false,
+    "nombre_es": "Tornillo (M40-HC00600060-072072-5103-Y)"
+   },
+   {
+    "n": 15,
+    "codigo": "YC.JG.BJ003491",
+    "nombre_en": "Lift System Right Bracket",
+    "nombre_zh": "吊运右支架",
+    "auxiliar": false,
+    "nombre_es": "Soporte derecho de sistema de elevación"
+   },
+   {
+    "n": 16,
+    "codigo": "BC.AG.SS001123",
+    "nombre_en": "Payload Lifting Control Module",
+    "nombre_zh": "负载吊运控制模块",
+    "auxiliar": false,
+    "nombre_es": "Módulo de control de elevación de carga útil"
+   },
+   {
+    "n": 17,
+    "codigo": "YC.ST.LL000799",
+    "nombre_en": "Screw (M60-HO01930160-100033-4203-Y)",
+    "nombre_zh": "螺丝 M60-HO01930160-100033-4203-Y",
+    "auxiliar": false,
+    "nombre_es": "Tornillo (M60-HO01930160-100033-4203-Y)"
+   },
+   {
+    "n": 18,
+    "codigo": "BC.AG.SS001124",
+    "nombre_en": "Three-Axis Force Sensor Module",
+    "nombre_zh": "三向力传感器模组",
+    "auxiliar": false,
+    "nombre_es": "Módulo de sensor de fuerza de tres ejes"
+   },
+   {
+    "n": 19,
+    "codigo": "YC.ST.AS000051",
+    "nombre_en": "Damper Hook",
+    "nombre_zh": "减震器连接挂钩",
+    "auxiliar": false,
+    "nombre_es": "Gancho amortiguado"
+   },
+   {
+    "n": 20,
+    "codigo": "YC.ST.AS000050",
+    "nombre_en": "Lifting Rope",
+    "nombre_zh": "吊运绳",
+    "auxiliar": false,
+    "nombre_es": "Cuerda de elevación"
+   },
+   {
+    "n": 21,
+    "codigo": "YC.JG.QX004806",
+    "nombre_en": "T-Shaped Nut (M6)",
+    "nombre_zh": "T形螺母（M6）",
+    "auxiliar": false,
+    "nombre_es": "Tuerca en T (M6)"
+   },
+   {
+    "n": 22,
+    "codigo": "YC.ST.LL000779",
+    "nombre_en": "Screw (M40-HP00700070-150030-5103-Y)",
+    "nombre_zh": "螺丝 M40-HP00700070-150030-5103-Y",
+    "auxiliar": false,
+    "nombre_es": "Tornillo (M40-HP00700070-150030-5103-Y)"
+   },
+   {
+    "n": 23,
+    "codigo": "YC.JG.MY001900",
+    "nombre_en": "Hose Rubber Stopper",
+    "nombre_zh": "软管胶塞",
+    "auxiliar": false,
+    "nombre_es": "Tapón de goma de manguera"
+   }
+  ]
+ },
+ {
+  "clave": "tolva",
+  "nombre": "Tolva de esparcido",
+  "nombre_zh": "水箱组件",
+  "sistema": "Sistema de esparcido",
+  "zona": "Tolva de esparcido",
+  "imagen": "tolva.jpeg",
+  "piezas_catalogo": [],
+  "partes": [
+   {
+    "n": 1,
+    "codigo": "YC.ST.LL000698",
+    "nombre_en": "Screw (M25-HCW00960040-055020-5103-Y)",
+    "nombre_zh": "螺丝 M25-HCW00960040-055020-5103-Y",
+    "auxiliar": false,
+    "nombre_es": "Tornillo (M25-HCW00960040-055020-5103-Y)"
+   },
+   {
+    "n": 2,
+    "codigo": "YC.XC.XX001401",
+    "nombre_en": "Weight Sensor Signal Cable",
+    "nombre_zh": "称重信号线",
+    "auxiliar": false,
+    "nombre_es": "Cable de señal de sensor de peso"
+   },
+   {
+    "n": 3,
+    "codigo": "YC.JG.ZS006138",
+    "nombre_en": "Cable Clamp 01",
+    "nombre_zh": "线卡01",
+    "auxiliar": false,
+    "nombre_es": "Abrazadera de cable 01"
+   },
+   {
+    "n": 4,
+    "codigo": "YC.WJ.L01234",
+    "nombre_en": "Screw M40-HC080080-68-85",
+    "nombre_zh": "螺丝 M40-HC080080-68-85",
+    "auxiliar": false,
+    "nombre_es": "Tornillo M40-HC080080-68-85"
+   },
+   {
+    "n": 5,
+    "codigo": "YC.WJ.L00870",
+    "nombre_en": "Screw M30-HC060060-55-85",
+    "nombre_zh": "螺丝 M30-HC060060-55-85",
+    "auxiliar": false,
+    "nombre_es": "Tornillo M30-HC060060-55-85"
+   },
+   {
+    "n": 6,
+    "codigo": "BC.AG.SS000887",
+    "nombre_en": "Weight Sensor Module",
+    "nombre_zh": "称重单体",
+    "auxiliar": false,
+    "nombre_es": "Módulo de sensor de peso"
+   },
+   {
+    "n": 7,
+    "codigo": "YC.JG.MQ002549",
+    "nombre_en": "Damping Rubber Pad",
+    "nombre_zh": "减震胶垫",
+    "auxiliar": false,
+    "nombre_es": "Almohadilla de goma de amortiguación"
+   },
+   {
+    "n": 8,
+    "codigo": "YC.JG.MY001377",
+    "nombre_en": "Weight Sensor Rubber Cover",
+    "nombre_zh": "称重橡胶头",
+    "auxiliar": false,
+    "nombre_es": "Cubierta de goma de sensor de peso"
+   },
+   {
+    "n": 9,
+    "codigo": "YC.JG.MY001780",
+    "nombre_en": "Spread Tank Block",
+    "nombre_zh": "料箱垫块",
+    "auxiliar": false,
+    "nombre_es": "Bloque de tanque de esparcido"
+   },
+   {
+    "n": 10,
+    "codigo": "YC.ST.LL000668",
+    "nombre_en": "Screw (M40-HC00600060-120030-0003-N)",
+    "nombre_zh": "螺丝 M40-HC00600060-120030-0003-N",
+    "auxiliar": false,
+    "nombre_es": "Tornillo (M40-HC00600060-120030-0003-N)"
+   },
+   {
+    "n": 11,
+    "codigo": "YC.WJ.L01234",
+    "nombre_en": "Screw M40-HC080080-68-85",
+    "nombre_zh": "螺丝 M40-HC080080-68-85",
+    "auxiliar": false,
+    "nombre_es": "Tornillo M40-HC080080-68-85"
+   },
+   {
+    "n": 12,
+    "codigo": "YC.JG.ZS006139",
+    "nombre_en": "Cable Clamp 02",
+    "nombre_zh": "线卡02",
+    "auxiliar": false,
+    "nombre_es": "Abrazadera de cable 02"
+   },
+   {
+    "n": 13,
+    "codigo": "YC.WJ.L01234",
+    "nombre_en": "Screw M40-HC080080-68-85",
+    "nombre_zh": "螺丝 M40-HC080080-68-85",
+    "auxiliar": false,
+    "nombre_es": "Tornillo M40-HC080080-68-85"
+   },
+   {
+    "n": 14,
+    "codigo": "YC.JG.ZS006138",
+    "nombre_en": "Cable Clamp 01",
+    "nombre_zh": "线卡01",
+    "auxiliar": false,
+    "nombre_es": "Abrazadera de cable 01"
+   },
+   {
+    "n": 15,
+    "codigo": "YC.JG.MY001780",
+    "nombre_en": "Spread Tank Block",
+    "nombre_zh": "料箱垫块",
+    "auxiliar": false,
+    "nombre_es": "Bloque de tanque de esparcido"
+   },
+   {
+    "n": 16,
+    "codigo": "YC.ST.LL000668",
+    "nombre_en": "Screw (M40-HC00600060-120030-0003-N)",
+    "nombre_zh": "螺丝 M40-HC00600060-120030-0003-N",
+    "auxiliar": false,
+    "nombre_es": "Tornillo (M40-HC00600060-120030-0003-N)"
+   },
+   {
+    "n": 17,
+    "codigo": "BC.AG.SS001068",
+    "nombre_en": "Payload Control Board",
+    "nombre_zh": "负载外设模块",
+    "auxiliar": false,
+    "nombre_es": "Placa de control de carga útil"
+   },
+   {
+    "n": 18,
+    "codigo": "YC.WJ.L01234",
+    "nombre_en": "Screw M40-HC080080-68-85",
+    "nombre_zh": "螺丝 M40-HC080080-68-85",
+    "auxiliar": false,
+    "nombre_es": "Tornillo M40-HC080080-68-85"
+   },
+   {
+    "n": 19,
+    "codigo": "YC.ST.LL000698",
+    "nombre_en": "Screw (M25-HCW00960040-055020-5103-Y)",
+    "nombre_zh": "螺丝 M25-HCW00960040-055020-5103-Y",
+    "auxiliar": false,
+    "nombre_es": "Tornillo (M25-HCW00960040-055020-5103-Y)"
+   },
+   {
+    "n": 20,
+    "codigo": "YC.JG.ZS006290",
+    "nombre_en": "4-pin Cable Rubber Cover",
+    "nombre_zh": "4pin线胶盖",
+    "auxiliar": false,
+    "nombre_es": "Cubierta de goma de cable 4-pin"
+   },
+   {
+    "n": 21,
+    "codigo": "YC.JG.MY001810",
+    "nombre_en": "4-pin Cable Sealing Ring",
+    "nombre_zh": "4pin线密封圈",
+    "auxiliar": false,
+    "nombre_es": "Anillo de sellado de cable 4-pin"
+   },
+   {
+    "n": 22,
+    "codigo": "YC.JG.MY001832",
+    "nombre_en": "Socket Rubber Stopper",
+    "nombre_zh": "母头胶塞",
+    "auxiliar": false,
+    "nombre_es": "Tapón de goma de la toma"
+   },
+   {
+    "n": 23,
+    "codigo": "YC.JG.ZS006190",
+    "nombre_en": "Spread Tank (100L)",
+    "nombre_zh": "料箱（80L）",
+    "auxiliar": false,
+    "nombre_es": "Tanque de esparcido (100L)"
+   },
+   {
+    "n": 24,
+    "codigo": "YC.ST.LL000705",
+    "nombre_en": "Screw (M40-HC01200120-072040-5103-Y)",
+    "nombre_zh": "螺丝 M40-HC01200120-072040-5103-Y",
+    "auxiliar": false,
+    "nombre_es": "Tornillo (M40-HC01200120-072040-5103-Y)"
+   },
+   {
+    "n": 25,
+    "codigo": "YC.JG.ZS004569",
+    "nombre_en": "Spread Tank Cover",
+    "nombre_zh": "料箱盖",
+    "auxiliar": false,
+    "nombre_es": "Cubierta de tanque de esparcido"
+   }
+  ]
+ },
+ {
+  "clave": "disco_esparcidor",
+  "nombre": "Disco esparcidor",
+  "nombre_zh": "甩盘组件",
+  "sistema": "Sistema de esparcido",
+  "zona": "Disco esparcidor",
+  "imagen": "disco_esparcidor.jpeg",
+  "piezas_catalogo": [],
+  "partes": [
+   {
+    "n": 1,
+    "codigo": "YC.JG.ZS006745",
+    "nombre_en": "Thumb Nut",
+    "nombre_zh": "手拧螺母",
+    "auxiliar": false,
+    "nombre_es": "Tuerca manual"
+   },
+   {
+    "n": 2,
+    "codigo": "YC.JG.TT000203",
+    "nombre_en": "R-Type Pin",
+    "nombre_zh": "R型销",
+    "auxiliar": false,
+    "nombre_es": "Pasador tipo R"
+   },
+   {
+    "n": 3,
+    "codigo": "YC.JG.ZS006256",
+    "nombre_en": "Spinner Disk",
+    "nombre_zh": "甩盘",
+    "auxiliar": false,
+    "nombre_es": "Disco giratorio"
+   },
+   {
+    "n": 4,
+    "codigo": "YC.WJ.L01234",
+    "nombre_en": "Screw M40-HC080080-68-85",
+    "nombre_zh": "螺丝 M40-HC080080-68-85",
+    "auxiliar": false,
+    "nombre_es": "Tornillo M40-HC080080-68-85"
+   },
+   {
+    "n": 5,
+    "codigo": "YC.ST.LL000698",
+    "nombre_en": "Screw (M25-HCW00960040-055020-5103-Y)",
+    "nombre_zh": "螺丝 M25-HCW00960040-055020-5103-Y",
+    "auxiliar": false,
+    "nombre_es": "Tornillo (M25-HCW00960040-055020-5103-Y)"
+   },
+   {
+    "n": 6,
+    "codigo": "YC.XC.XX001405",
+    "nombre_en": "Spinner Disk Cable",
+    "nombre_zh": "甩盘线",
+    "auxiliar": false,
+    "nombre_es": "Cable de disco giratorio"
+   },
+   {
+    "n": 7,
+    "codigo": "YC.ST.CT000163",
+    "nombre_en": "Bearing (OD=21 mm)",
+    "nombre_zh": "轴承（外径21mm）",
+    "auxiliar": false,
+    "nombre_es": "Rodamiento (OD=21 mm)"
+   },
+   {
+    "n": 8,
+    "codigo": "YC.ST.LL000705",
+    "nombre_en": "Screw (M40-HC01200120-072040-5103-Y)",
+    "nombre_zh": "螺丝 M40-HC01200120-072040-5103-Y",
+    "auxiliar": false,
+    "nombre_es": "Tornillo (M40-HC01200120-072040-5103-Y)"
+   },
+   {
+    "n": 9,
+    "codigo": "YC.JG.QX004442",
+    "nombre_en": "Spinner Disk Shaft",
+    "nombre_zh": "甩盘轴",
+    "auxiliar": false,
+    "nombre_es": "Eje de disco giratorio"
+   },
+   {
+    "n": 10,
+    "codigo": "YC.WJ.L00871",
+    "nombre_en": "Screw M30-HC100100-55-85",
+    "nombre_zh": "螺丝 M30-HC01000100-054029-0003-Y",
+    "auxiliar": false,
+    "nombre_es": "Tornillo M30-HC100100-55-85"
+   },
+   {
+    "n": 11,
+    "codigo": "BC.AG.SS001064",
+    "nombre_en": "Spinner Disk Motor",
+    "nombre_zh": "甩盘电机",
+    "auxiliar": false,
+    "nombre_es": "Motor de disco giratorio"
+   },
+   {
+    "n": 12,
+    "codigo": "BC.AG.SS001063",
+    "nombre_en": "Shaft Sleeve Module",
+    "nombre_zh": "轴套组件",
+    "auxiliar": false,
+    "nombre_es": "Módulo de manguito de eje"
+   },
+   {
+    "n": 13,
+    "codigo": "YC.JG.MY001800",
+    "nombre_en": "Spinner Disk Shaft Sealing Ring",
+    "nombre_zh": "甩盘轴密封圈",
+    "auxiliar": false,
+    "nombre_es": "Anillo de sellado de eje de disco giratorio"
+   },
+   {
+    "n": 14,
+    "codigo": "YC.JG.MY001799",
+    "nombre_en": "Spinner Disk Shaft Dustproof Cover",
+    "nombre_zh": "甩盘轴防尘套",
+    "auxiliar": false,
+    "nombre_es": "Cubierta antipolvo de eje de disco giratorio"
+   },
+   {
+    "n": 15,
+    "codigo": "YC.ST.LL000705",
+    "nombre_en": "Screw (M40-HC01200120-072040-5103-Y)",
+    "nombre_zh": "螺丝 M40-HC01200120-072040-5103-Y",
+    "auxiliar": false,
+    "nombre_es": "Tornillo (M40-HC01200120-072040-5103-Y)"
+   },
+   {
+    "n": 16,
+    "codigo": "YC.JG.ZS006130",
+    "nombre_en": "Spinner Disk Shell",
+    "nombre_zh": "甩盘外壳",
+    "auxiliar": false,
+    "nombre_es": "Carcasa de disco giratorio"
+   },
+   {
+    "n": 17,
+    "codigo": "YC.JG.MY001329",
+    "nombre_en": "One-Way Valve Core Sealing Ring",
+    "nombre_zh": "单向阀阀芯密封圈",
+    "auxiliar": false,
+    "nombre_es": "Anillo de sellado de núcleo de válvula antirretorno"
+   },
+   {
+    "n": 18,
+    "codigo": "YC.WJ.L01234",
+    "nombre_en": "Screw M40-HC080080-68-85",
+    "nombre_zh": "螺丝 M40-HC080080-68-85",
+    "auxiliar": false,
+    "nombre_es": "Tornillo M40-HC080080-68-85"
+   },
+   {
+    "n": 19,
+    "codigo": "YC.JG.ZS006376",
+    "nombre_en": "Baffle",
+    "nombre_zh": "挡板",
+    "auxiliar": false,
+    "nombre_es": "Deflector"
+   },
+   {
+    "n": 20,
+    "codigo": "YC.ST.LL000705",
+    "nombre_en": "Screw (M40-HC01200120-072040-5103-Y)",
+    "nombre_zh": "螺丝 M40-HC01200120-072040-5103-Y",
+    "auxiliar": false,
+    "nombre_es": "Tornillo (M40-HC01200120-072040-5103-Y)"
+   }
+  ]
+ },
+ {
+  "clave": "sinfin",
+  "nombre": "Sinfín de dosificación",
+  "nombre_zh": "绞龙组件",
+  "sistema": "Sistema de esparcido",
+  "zona": "Sinfín de dosificación",
+  "imagen": "sinfin.jpeg",
+  "piezas_catalogo": [],
+  "partes": [
+   {
+    "n": 1,
+    "codigo": "YC.JG.ZS006137",
+    "nombre_en": "Auger Motor Cover",
+    "nombre_zh": "绞龙电机外罩",
+    "auxiliar": false,
+    "nombre_es": "Cubierta de motor de sinfín"
+   },
+   {
+    "n": 2,
+    "codigo": "BC.AG.SS001062",
+    "nombre_en": "Auger Motor",
+    "nombre_zh": "绞龙电机",
+    "auxiliar": false,
+    "nombre_es": "Motor de sinfín"
+   },
+   {
+    "n": 3,
+    "codigo": "YC.ST.LL000705",
+    "nombre_en": "Screw (M40-HC01200120-072040-5103-Y)",
+    "nombre_zh": "螺丝 M40-HC01200120-072040-5103-Y",
+    "auxiliar": false,
+    "nombre_es": "Tornillo (M40-HC01200120-072040-5103-Y)"
+   },
+   {
+    "n": 4,
+    "codigo": "YC.ST.LL000698",
+    "nombre_en": "Screw (M25-HCW00960040-055020-5103-Y)",
+    "nombre_zh": "螺丝 M25-HCW00960040-055020-5103-Y",
+    "auxiliar": false,
+    "nombre_es": "Tornillo (M25-HCW00960040-055020-5103-Y)"
+   },
+   {
+    "n": 5,
+    "codigo": "YC.ST.CG000018",
+    "nombre_en": "Sliding Bearing",
+    "nombre_zh": "滑动轴承",
+    "auxiliar": false,
+    "nombre_es": "Rodamiento deslizante"
+   },
+   {
+    "n": 6,
+    "codigo": "YC.WJ.L00868",
+    "nombre_en": "Screw M30-HC080080-55-85",
+    "nombre_zh": "螺丝 M30-HC080080-55-85",
+    "auxiliar": false,
+    "nombre_es": "Tornillo M30-HC080080-55-85"
+   },
+   {
+    "n": 7,
+    "codigo": "BC.AG.SS001061",
+    "nombre_en": "Auger Sensor",
+    "nombre_zh": "绞龙传感器",
+    "auxiliar": false,
+    "nombre_es": "Sensor de sinfín"
+   },
+   {
+    "n": 8,
+    "codigo": "YC.JG.ZS005954",
+    "nombre_en": "Auger Motor Base",
+    "nombre_zh": "绞龙电机底座",
+    "auxiliar": false,
+    "nombre_es": "Base de motor de sinfín"
+   },
+   {
+    "n": 9,
+    "codigo": "YC.WJ.L00868",
+    "nombre_en": "Screw M30-HC080080-55-85",
+    "nombre_zh": "螺丝 M30-HC080080-55-85",
+    "auxiliar": false,
+    "nombre_es": "Tornillo M30-HC080080-55-85"
+   },
+   {
+    "n": 10,
+    "codigo": "YC.WJ.L01234",
+    "nombre_en": "Screw M40-HC080080-68-85",
+    "nombre_zh": "螺丝 M40-HC080080-68-85",
+    "auxiliar": false,
+    "nombre_es": "Tornillo M40-HC080080-68-85"
+   },
+   {
+    "n": 11,
+    "codigo": "YC.JG.MY001491",
+    "nombre_en": "4-pin Cable Sleeve",
+    "nombre_zh": "4pin线胶套",
+    "auxiliar": false,
+    "nombre_es": "Manguito de cable 4-pin"
+   },
+   {
+    "n": 12,
+    "codigo": "YC.ST.LL000698",
+    "nombre_en": "Screw (M25-HCW00960040-055020-5103-Y)",
+    "nombre_zh": "螺丝 M25-HCW00960040-055020-5103-Y",
+    "auxiliar": false,
+    "nombre_es": "Tornillo (M25-HCW00960040-055020-5103-Y)"
+   },
+   {
+    "n": 13,
+    "codigo": "BC.AG.SS001067",
+    "nombre_en": "Extra Large Auger",
+    "nombre_zh": "超大号绞龙",
+    "auxiliar": false,
+    "nombre_es": "Sinfín extragrande"
+   },
+   {
+    "n": 14,
+    "codigo": "YC.JG.MY000314",
+    "nombre_en": "Drain Hole Waterproof Ring",
+    "nombre_zh": "排水孔防水圈",
+    "auxiliar": false,
+    "nombre_es": "Anillo impermeable de orificio de drenaje"
+   },
+   {
+    "n": 15,
+    "codigo": "YC.ST.LL000112",
+    "nombre_en": "Screw M40-HC00450039-076020-0003-Y",
+    "nombre_zh": "螺丝 M40-HC00450039-076020-0003-Y",
+    "auxiliar": false,
+    "nombre_es": "Tornillo M40-HC00450039-076020-0003-Y"
+   },
+   {
+    "n": 16,
+    "codigo": "BC.AG.SS000914",
+    "nombre_en": "Material Detection Motor",
+    "nombre_zh": "物料检测电机",
+    "auxiliar": false,
+    "nombre_es": "Motor de detección de material"
+   },
+   {
+    "n": 17,
+    "codigo": "YC.JG.MY000387",
+    "nombre_en": "Reduction Gearbox Motor Dustproof Cover",
+    "nombre_zh": "电机防尘罩",
+    "auxiliar": false,
+    "nombre_es": "Cubierta antipolvo de motor de reductor"
+   },
+   {
+    "n": 18,
+    "codigo": "YC.WJ.L01234",
+    "nombre_en": "Screw M40-HC080080-68-85",
+    "nombre_zh": "螺丝 M40-HC080080-68-85",
+    "auxiliar": false,
+    "nombre_es": "Tornillo M40-HC080080-68-85"
+   },
+   {
+    "n": 19,
+    "codigo": "YC.JG.ZS004580",
+    "nombre_en": "Sensing Part",
+    "nombre_zh": "阻料片",
+    "auxiliar": false,
+    "nombre_es": "Pieza de detección"
+   },
+   {
+    "n": 20,
+    "codigo": "YC.WJ.L00006",
+    "nombre_en": "Hexagonal Socket Head Cap Screws M2.5*12",
+    "nombre_zh": "螺丝 M25-HC01200120-045025-5103-Y",
+    "auxiliar": false,
+    "nombre_es": "Tornillos Allen de cabeza cilíndrica M2.5*12"
+   },
+   {
+    "n": 21,
+    "codigo": "YC.JG.ZS005952",
+    "nombre_en": "Auger Shell",
+    "nombre_zh": "绞龙外壳",
+    "auxiliar": false,
+    "nombre_es": "Carcasa de sinfín"
+   },
+   {
+    "n": 22,
+    "codigo": "YC.JG.ZS004913",
+    "nombre_en": "Cable Clip",
+    "nombre_zh": "线卡03",
+    "auxiliar": false,
+    "nombre_es": "Clip de cable"
+   },
+   {
+    "n": 23,
+    "codigo": "YC.WJ.L01234",
+    "nombre_en": "Screw M40-HC080080-68-85",
+    "nombre_zh": "螺丝 M40-HC080080-68-85",
+    "auxiliar": false,
+    "nombre_es": "Tornillo M40-HC080080-68-85"
+   },
+   {
+    "n": 24,
+    "codigo": "YC.JG.ZS006306",
+    "nombre_en": "Cable Clamp 04",
+    "nombre_zh": "线卡04",
+    "auxiliar": false,
+    "nombre_es": "Abrazadera de cable 04"
+   },
+   {
+    "n": 25,
+    "codigo": "YC.WJ.L01234",
+    "nombre_en": "Screw M40-HC080080-68-85",
+    "nombre_zh": "螺丝 M40-HC080080-68-85",
+    "auxiliar": false,
+    "nombre_es": "Tornillo M40-HC080080-68-85"
+   },
+   {
+    "n": 26,
+    "codigo": "YC.XC.XX001400",
+    "nombre_en": "Motor Adapter Cable",
+    "nombre_zh": "电机转接线",
+    "auxiliar": false,
+    "nombre_es": "Cable de adaptador de motor"
+   },
+   {
+    "n": 27,
+    "codigo": "YC.WJ.L01234",
+    "nombre_en": "Screw M40-HC080080-68-85",
+    "nombre_zh": "螺丝 M40-HC080080-68-85",
+    "auxiliar": false,
+    "nombre_es": "Tornillo M40-HC080080-68-85"
+   },
+   {
+    "n": 28,
+    "codigo": "YC.JG.BJ002409",
+    "nombre_en": "E-Shaped Circlip (6 mm)",
+    "nombre_zh": "E形卡簧（外径 6mm）",
+    "auxiliar": false,
+    "nombre_es": "Anillo de retención en E (6 mm)"
+   },
+   {
+    "n": 29,
+    "codigo": "YC.JG.QX003649",
+    "nombre_en": "Medium Pin (22.2 mm)",
+    "nombre_zh": "中销轴（长度22.2mm）",
+    "auxiliar": false,
+    "nombre_es": "Pasador mediano (22.2 mm)"
+   },
+   {
+    "n": 30,
+    "codigo": "YC.JG.ZS004696",
+    "nombre_en": "Quick-Release Clamp",
+    "nombre_zh": "快拆抱箍",
+    "auxiliar": false,
+    "nombre_es": "Abrazadera de liberación rápida"
+   },
+   {
+    "n": 31,
+    "codigo": "YC.JG.ZS004557",
+    "nombre_en": "Quick-Release Rod",
+    "nombre_zh": "快拆连杆",
+    "auxiliar": false,
+    "nombre_es": "Varilla de liberación rápida"
+   },
+   {
+    "n": 32,
+    "codigo": "YC.JG.QX003650",
+    "nombre_en": "Short Pin (17.6 mm)",
+    "nombre_zh": "短销轴（长度17.6mm）",
+    "auxiliar": false,
+    "nombre_es": "Pasador corto (17.6 mm)"
+   },
+   {
+    "n": 33,
+    "codigo": "YC.ST.LL000698",
+    "nombre_en": "Screw (M25-HCW00960040-055020-5103-Y)",
+    "nombre_zh": "螺丝 M25-HCW00960040-055020-5103-Y",
+    "auxiliar": false,
+    "nombre_es": "Tornillo (M25-HCW00960040-055020-5103-Y)"
+   },
+   {
+    "n": 34,
+    "codigo": "YC.JG.ZS004555",
+    "nombre_en": "Lever 1",
+    "nombre_zh": "一级扳扣",
+    "auxiliar": false,
+    "nombre_es": "Palanca 1"
+   },
+   {
+    "n": 35,
+    "codigo": "YC.JG.QX003648",
+    "nombre_en": "Long Pin (29.4 mm)",
+    "nombre_zh": "长销轴（长度29.4mm）",
+    "auxiliar": false,
+    "nombre_es": "Pasador largo (29.4 mm)"
+   },
+   {
+    "n": 36,
+    "codigo": "YC.JG.TT000204",
+    "nombre_en": "Torsion Spring",
+    "nombre_zh": "扭簧",
+    "auxiliar": false,
+    "nombre_es": "Resorte de torsión"
+   },
+   {
+    "n": 37,
+    "codigo": "YC.JG.ZS004556",
+    "nombre_en": "Lever 2",
+    "nombre_zh": "二级扳扣",
+    "auxiliar": false,
+    "nombre_es": "Palanca 2"
+   },
+   {
+    "n": 38,
+    "codigo": "YC.JG.QX003649",
+    "nombre_en": "Medium Pin (22.2 mm)",
+    "nombre_zh": "中销轴（长度22.2mm）",
+    "auxiliar": false,
+    "nombre_es": "Pasador mediano (22.2 mm)"
+   }
+  ]
+ },
+ {
+  "clave": "lanza_niebla",
+  "nombre": "Lanza de aspersión por niebla",
+  "nombre_zh": "喷杆",
+  "sistema": "Aspersión por niebla",
+  "zona": "Lanza y aspersor",
+  "imagen": "lanza_niebla.jpeg",
+  "piezas_catalogo": [
+   "mist_sprinkler"
+  ],
+  "partes": [
+   {
+    "n": 1,
+    "codigo": "YC.JG.TT000203",
+    "nombre_en": "R-Type Pin",
+    "nombre_zh": "R型销",
+    "auxiliar": false,
+    "nombre_es": "Pasador tipo R"
+   },
+   {
+    "n": 2,
+    "codigo": "YC.JG.ZS004510",
+    "nombre_en": "Centrifugal Sprinkler Nut",
+    "nombre_zh": "离心喷头螺母",
+    "auxiliar": false,
+    "nombre_es": "Tuerca de aspersor centrífugo"
+   },
+   {
+    "n": 3,
+    "codigo": "YC.JG.ZS006907",
+    "nombre_en": "Mist Sprinkler Lower Disk",
+    "nombre_zh": "弥雾喷头下甩盘",
+    "auxiliar": false,
+    "nombre_es": "Disco inferior de aspersor de niebla"
+   },
+   {
+    "n": 4,
+    "codigo": "YC.XC.XX001394",
+    "nombre_en": "Centrifugal Sprinkler Adapter Cable",
+    "nombre_zh": "离心喷头转接线",
+    "auxiliar": false,
+    "nombre_es": "Cable de adaptador de aspersor centrífugo"
+   },
+   {
+    "n": 5,
+    "codigo": "YC.ST.LL000381",
+    "nombre_en": "Screw (M25-HF00550038-040016-3126-Y)",
+    "nombre_zh": "螺丝 M25-HF00550038-040016-3126-Y",
+    "auxiliar": false,
+    "nombre_es": "Tornillo (M25-HF00550038-040016-3126-Y)"
+   },
+   {
+    "n": 6,
+    "codigo": "YC.JG.ZS006906",
+    "nombre_en": "Mist Sprinkler Upper Disk",
+    "nombre_zh": "弥雾喷头上转笼",
+    "auxiliar": false,
+    "nombre_es": "Disco superior de aspersor de niebla"
+   },
+   {
+    "n": 7,
+    "codigo": "YC.JG.JS000067",
+    "nombre_en": "Sprinkler Soft Hose",
+    "nombre_zh": "喷头软管",
+    "auxiliar": false,
+    "nombre_es": "Manguera flexible de aspersor"
+   },
+   {
+    "n": 8,
+    "codigo": "BC.AG.SS001116",
+    "nombre_en": "Mist Sprinkler Motor",
+    "nombre_zh": "弥雾电机",
+    "auxiliar": false,
+    "nombre_es": "Motor de aspersor de niebla"
+   },
+   {
+    "n": 9,
+    "codigo": "YC.JG.ZS006905",
+    "nombre_en": "Mist Sprinkler Funnel",
+    "nombre_zh": "弥雾喷头漏斗",
+    "auxiliar": false,
+    "nombre_es": "Embudo de aspersor de niebla"
+   },
+   {
+    "n": 10,
+    "codigo": "YC.JG.MY002043",
+    "nombre_en": "Inlet Sealing Ring",
+    "nombre_zh": "入水口密封圈",
+    "auxiliar": false,
+    "nombre_es": "Anillo de sellado de entrada"
+   },
+   {
+    "n": 11,
+    "codigo": "BC.AG.SS001073",
+    "nombre_en": "Solenoid Valve Module",
+    "nombre_zh": "电磁阀组件",
+    "auxiliar": false,
+    "nombre_es": "Módulo de válvula solenoide"
+   },
+   {
+    "n": 12,
+    "codigo": "YC.WJ.LL000232",
+    "nombre_en": "Screw (M40-HC01000100-072028-5103-N_01)",
+    "nombre_zh": "M40-HC01000100-072028-5103-N_01",
+    "auxiliar": false,
+    "nombre_es": "Tornillo (M40-HC01000100-072028-5103-N 01)"
+   },
+   {
+    "n": 13,
+    "codigo": "YC.JG.ZS007536",
+    "nombre_en": "Mist Spray Lance Shell",
+    "nombre_zh": "弥雾喷杆外壳",
+    "auxiliar": false,
+    "nombre_es": "Carcasa de lanza de aspersión de niebla"
+   },
+   {
+    "n": 14,
+    "codigo": "YC.WJ.LL000232",
+    "nombre_en": "Screw (M40-HC01000100-072028-5103-N_01)",
+    "nombre_zh": "M40-HC01000100-072028-5103-N_01",
+    "auxiliar": false,
+    "nombre_es": "Tornillo (M40-HC01000100-072028-5103-N 01)"
+   },
+   {
+    "n": 15,
+    "codigo": "YC.JG.ZS006171",
+    "nombre_en": "Thumb Nut",
+    "nombre_zh": "手拧螺母",
+    "auxiliar": false,
+    "nombre_es": "Tuerca manual"
+   },
+   {
+    "n": 16,
+    "codigo": "YC.XC.XX001463",
+    "nombre_en": "ESC Sprinkler Adapter Cable",
+    "nombre_zh": "电调喷头转接线",
+    "auxiliar": false,
+    "nombre_es": "Cable de adaptador de aspersor de ESC"
+   },
+   {
+    "n": 17,
+    "codigo": "YC.JG.JS000076",
+    "nombre_en": "Hose (Optional)",
+    "nombre_zh": "选配水管",
+    "auxiliar": false,
+    "nombre_es": "Manguera (opcional)"
+   }
+  ]
+ },
+ {
+  "clave": "rc_completo",
+  "nombre": "Control remoto completo",
+  "nombre_zh": "整机",
+  "sistema": "Control remoto",
+  "zona": "Control remoto",
+  "imagen": "rc_completo.jpeg",
+  "piezas_catalogo": [
+   "remote",
+   "rtk_precision",
+   "rtk_dongle"
+  ],
+  "partes": [
+   {
+    "n": 1,
+    "codigo": "YC.JG.ZS004446",
+    "nombre_en": "Anti-Collision Soft Rubber (Upper Right)",
+    "nombre_zh": "防撞软胶（右上）",
+    "auxiliar": false,
+    "nombre_es": "Anticolisión flexible de goma (superior derecho)"
+   },
+   {
+    "n": 2,
+    "codigo": "YC.JG.MQ002575",
+    "nombre_en": "Speaker Waterproof Film",
+    "nombre_zh": "喇叭防水膜",
+    "auxiliar": false,
+    "nombre_es": "Lámina impermeable de altavoz"
+   },
+   {
+    "n": 3,
+    "codigo": "YC.JG.ZS004297",
+    "nombre_en": "USB-A Port Dustproof Cover",
+    "nombre_zh": "USB-A防尘盖",
+    "auxiliar": false,
+    "nombre_es": "Cubierta antipolvo de puerto de USB-A"
+   },
+   {
+    "n": 4,
+    "codigo": "YC.JG.ZS004567",
+    "nombre_en": "Dustproof Cover Fixing Part",
+    "nombre_zh": "防尘盖压条",
+    "auxiliar": false,
+    "nombre_es": "Pieza de fijación de cubierta antipolvo"
+   },
+   {
+    "n": 5,
+    "codigo": "YC.ST.LL000161",
+    "nombre_en": "Screw T16-PP00400040-030005-3123-N",
+    "nombre_zh": "螺丝T16-PP00400040-030005-3123-N",
+    "auxiliar": false,
+    "nombre_es": "Tornillo T16-PP00400040-030005-3123-N"
+   },
+   {
+    "n": 6,
+    "codigo": "YC.DZ.AA000415",
+    "nombre_en": "External SDR Antenna (Sleeve End)",
+    "nombre_zh": "外置SDR天线（套筒端）",
+    "auxiliar": false,
+    "nombre_es": "Antena de SDR externo (extremo del manguito)"
+   },
+   {
+    "n": 7,
+    "codigo": "YC.JG.ZS001885",
+    "nombre_en": "Control Stick Protective Ring",
+    "nombre_zh": "摇杆防护圈",
+    "auxiliar": false,
+    "nombre_es": "Anillo protector de palanca de control"
+   },
+   {
+    "n": 8,
+    "codigo": "YC.JG.MY000594",
+    "nombre_en": "Control Stick Cover",
+    "nombre_zh": "摇杆硅胶圈",
+    "auxiliar": false,
+    "nombre_es": "Cubierta de palanca de control"
+   },
+   {
+    "n": 9,
+    "codigo": "YC.JG.BJ001355",
+    "nombre_en": "Anti-Rotation Gasket",
+    "nombre_zh": "防转垫片",
+    "auxiliar": false,
+    "nombre_es": "Empaque antirrotación"
+   },
+   {
+    "n": 10,
+    "codigo": "YC.JG.ZS004308",
+    "nombre_en": "Fan Cover",
+    "nombre_zh": "风扇拆件盖",
+    "auxiliar": false,
+    "nombre_es": "Cubierta de ventilador"
+   },
+   {
+    "n": 11,
+    "codigo": "YC.JG.QX002379",
+    "nombre_en": "Control Stick Slot",
+    "nombre_zh": "摇杆刺头",
+    "auxiliar": false,
+    "nombre_es": "Ranura de palanca de control"
+   },
+   {
+    "n": 12,
+    "codigo": "YC.ST.LL000279",
+    "nombre_en": "Screw T20-PC00400040-040010-3123-N",
+    "nombre_zh": "T20-PC00400040-040010-3123-N",
+    "auxiliar": false,
+    "nombre_es": "Tornillo T20-PC00400040-040010-3123-N"
+   },
+   {
+    "n": 13,
+    "codigo": "YC.WJ.LL000196",
+    "nombre_en": "M16-PP00700070-030005-3123-Y_01",
+    "nombre_zh": "M16-PP00700070-030005-3123-Y_01",
+    "auxiliar": false,
+    "nombre_es": "M16-PP00700070-030005-3123-Y 01"
+   },
+   {
+    "n": 14,
+    "codigo": "YC.JG.MQ001103",
+    "nombre_en": "Dongle Thermal Conductive Pad",
+    "nombre_zh": "Dongle导热垫",
+    "auxiliar": false,
+    "nombre_es": "Almohadilla térmica conductora de adaptador"
+   },
+   {
+    "n": 15,
+    "codigo": "YC.WJ.LL000288",
+    "nombre_en": "M16-PC00300030-030008-0323-Y",
+    "nombre_zh": "M16-PC00300030-030008-0323-Y",
+    "auxiliar": false,
+    "nombre_es": "M16-PC00300030-030008-0323-Y"
+   },
+   {
+    "n": 17,
+    "codigo": "YC.JG.ZS002875",
+    "nombre_en": "Left Handle Soft Rubber",
+    "nombre_zh": "左手柄软胶",
+    "auxiliar": false,
+    "nombre_es": "Manija izquierda flexible de goma"
+   },
+   {
+    "n": 18,
+    "codigo": "YC.WJ.LL000404",
+    "nombre_en": "T20-PC00600060-040010-0323-N",
+    "nombre_zh": "T20-PC00600060-040010-0323-N",
+    "auxiliar": false,
+    "nombre_es": "T20-PC00600060-040010-0323-N"
+   },
+   {
+    "n": 19,
+    "codigo": "YC.JG.MQ002575",
+    "nombre_en": "Speaker Waterproof Film",
+    "nombre_zh": "喇叭防水膜",
+    "auxiliar": false,
+    "nombre_es": "Lámina impermeable de altavoz"
+   },
+   {
+    "n": 20,
+    "codigo": "YC.JG.MQ001494",
+    "nombre_en": "Screw Waterproof Gasket",
+    "nombre_zh": "螺钉防水垫片",
+    "auxiliar": false,
+    "nombre_es": "Empaque impermeable de tornillo"
+   },
+   {
+    "n": 21,
+    "codigo": "BC.RC.SS000050",
+    "nombre_en": "Air Intake Cover",
+    "nombre_zh": "进风口盖组件",
+    "auxiliar": false,
+    "nombre_es": "Cubierta de toma de aire"
+   },
+   {
+    "n": 22,
+    "codigo": "YC.WJ.LL000438",
+    "nombre_en": "M12-PC00300030-022005-0323-Y_01",
+    "nombre_zh": "M12-PC00300030-022005-0323-Y_01",
+    "auxiliar": false,
+    "nombre_es": "M12-PC00300030-022005-0323-Y 01"
+   },
+   {
+    "n": 23,
+    "codigo": "YC.JG.MQ001494",
+    "nombre_en": "Screw Waterproof Gasket",
+    "nombre_zh": "螺钉防水垫片",
+    "auxiliar": false,
+    "nombre_es": "Empaque impermeable de tornillo"
+   },
+   {
+    "n": 24,
+    "codigo": "YC.ST.LL000273",
+    "nombre_en": "Screw T20-HC00800080-040020-0323-N",
+    "nombre_zh": "螺丝 T20-HC00800080-040020-0323-N",
+    "auxiliar": false,
+    "nombre_es": "Tornillo T20-HC00800080-040020-0323-N"
+   },
+   {
+    "n": 25,
+    "codigo": "YC.JG.BJ002182",
+    "nombre_en": "FPC Fixing Piece",
+    "nombre_zh": "FPC压片",
+    "auxiliar": false,
+    "nombre_es": "Pieza de fijación de FPC"
+   },
+   {
+    "n": 26,
+    "codigo": "YC.JG.ZS002876",
+    "nombre_en": "Right Handle Soft Rubber",
+    "nombre_zh": "右手柄软胶",
+    "auxiliar": false,
+    "nombre_es": "Manija derecha flexible de goma"
+   },
+   {
+    "n": 27,
+    "codigo": "YC.ST.LL000161",
+    "nombre_en": "Screw T16-PP00400040-030005-3123-N",
+    "nombre_zh": "螺丝T16-PP00400040-030005-3123-N",
+    "auxiliar": false,
+    "nombre_es": "Tornillo T16-PP00400040-030005-3123-N"
+   },
+   {
+    "n": 28,
+    "codigo": "YC.JG.ZS001930",
+    "nombre_en": "Scroll Wheel Bracket",
+    "nombre_zh": "无限波轮支座",
+    "auxiliar": false,
+    "nombre_es": "Soporte de rueda de desplazamiento"
+   },
+   {
+    "n": 29,
+    "codigo": "YC.JG.TT000113",
+    "nombre_en": "Scroll Wheel Spring",
+    "nombre_zh": "无限波轮弹簧",
+    "auxiliar": false,
+    "nombre_es": "Resorte de rueda de desplazamiento"
+   },
+   {
+    "n": 30,
+    "codigo": "YC.WJ.C00159",
+    "nombre_en": "Inspire 1 Remote Controller Ball Bearing",
+    "nombre_zh": "Inspire 1 GRC 滚珠",
+    "auxiliar": false,
+    "nombre_es": "Rodamiento de bolas (control remoto Inspire 1)"
+   },
+   {
+    "n": 31,
+    "codigo": "YC.JG.QX001901",
+    "nombre_en": "Scroll Wheel Main Body",
+    "nombre_zh": "无限波轮主体",
+    "auxiliar": false,
+    "nombre_es": "Cuerpo principal de rueda de desplazamiento"
+   },
+   {
+    "n": 32,
+    "codigo": "YC.JG.MY000605",
+    "nombre_en": "Scroll Wheel Waterproof Ring",
+    "nombre_zh": "无限拨轮防水圈",
+    "auxiliar": false,
+    "nombre_es": "Anillo impermeable de rueda de desplazamiento"
+   },
+   {
+    "n": 33,
+    "codigo": "YC.JG.ZS001892",
+    "nombre_en": "Scroll Wheel Cover",
+    "nombre_zh": "无限波轮拆件盖",
+    "auxiliar": false,
+    "nombre_es": "Cubierta de rueda de desplazamiento"
+   },
+   {
+    "n": 34,
+    "codigo": "YC.WJ.LL000394",
+    "nombre_en": "T20-PP00400040-035014-0323-N",
+    "nombre_zh": "T20-PP00400040-035014-0323-N",
+    "auxiliar": false,
+    "nombre_es": "T20-PP00400040-035014-0323-N"
+   },
+   {
+    "n": 35,
+    "codigo": "YC.DZ.AF000079",
+    "nombre_en": "Fan",
+    "nombre_zh": "风扇",
+    "auxiliar": false,
+    "nombre_es": "Ventilador"
+   },
+   {
+    "n": 37,
+    "codigo": "YC.JG.ZS004298",
+    "nombre_en": "HDMI Port Dustproof Cover",
+    "nombre_zh": "HDMI防尘盖",
+    "auxiliar": false,
+    "nombre_es": "Cubierta antipolvo de puerto de HDMI"
+   },
+   {
+    "n": 38,
+    "codigo": "YC.JG.ZS004445",
+    "nombre_en": "Anti-Collision Rubber (Upper Left)",
+    "nombre_zh": "防撞软胶（左上）",
+    "auxiliar": false,
+    "nombre_es": "Anticolisión de goma (superior izquierdo)"
+   },
+   {
+    "n": 39,
+    "codigo": "BC.RC.SS000051",
+    "nombre_en": "Air Outlet Cover",
+    "nombre_zh": "出风口盖组件",
+    "auxiliar": false,
+    "nombre_es": "Cubierta de salida de aire"
+   }
+  ]
+ },
+ {
+  "clave": "rc_carcasa_delantera",
+  "nombre": "Carcasa delantera del control",
+  "nombre_zh": "前壳",
+  "sistema": "Control remoto",
+  "zona": "Control remoto",
+  "imagen": "rc_carcasa_delantera.jpeg",
+  "piezas_catalogo": [
+   "remote"
+  ],
+  "partes": [
+   {
+    "n": 1,
+    "codigo": "YC.WJ.LL000438",
+    "nombre_en": "M12-PC00300030-022005-0323-Y_01",
+    "nombre_zh": "M12-PC00300030-022005-0323-Y_01",
+    "auxiliar": false,
+    "nombre_es": "M12-PC00300030-022005-0323-Y 01"
+   },
+   {
+    "n": 2,
+    "codigo": "YC.JG.MQ002683",
+    "nombre_en": "Ground Conductive Cloth",
+    "nombre_zh": "接地导电布",
+    "auxiliar": false,
+    "nombre_es": "Tela conductora de tierra"
+   },
+   {
+    "n": 3,
+    "codigo": "YC.JG.BJ002182",
+    "nombre_en": "FPC Fixing Piece",
+    "nombre_zh": "FPC压片",
+    "auxiliar": false,
+    "nombre_es": "Pieza de fijación de FPC"
+   },
+   {
+    "n": 4,
+    "codigo": "YC.ST.LL000251",
+    "nombre_en": "T20-PP00500050-035014-0323-N",
+    "nombre_zh": "T20-PP00500050-035014-0323-N",
+    "auxiliar": false,
+    "nombre_es": "T20-PP00500050-035014-0323-N"
+   },
+   {
+    "n": 5,
+    "codigo": "YC.JG.ZS004303",
+    "nombre_en": "Feeder Bracket",
+    "nombre_zh": "馈线支架",
+    "auxiliar": false,
+    "nombre_es": "Soporte de alimentador"
+   },
+   {
+    "n": 6,
+    "codigo": "YC.XC.TT000178",
+    "nombre_en": "Phased Array Board Feeder (1G) (Left)",
+    "nombre_zh": "相控阵板馈线1G（左）",
+    "auxiliar": false,
+    "nombre_es": "Alimentador de placa de matriz en fase (1G) (izquierdo)"
+   },
+   {
+    "n": 7,
+    "codigo": "BC.RC.SS000057",
+    "nombre_en": "Phased Array Board",
+    "nombre_zh": "相控阵板",
+    "auxiliar": false,
+    "nombre_es": "Placa de matriz en fase"
+   },
+   {
+    "n": 8,
+    "codigo": "YC.XC.TT000177",
+    "nombre_en": "Phased Array Board Feeder (4G) (Left)",
+    "nombre_zh": "相控阵板馈线4G（左）",
+    "auxiliar": false,
+    "nombre_es": "Alimentador de placa de matriz en fase (4G) (izquierdo)"
+   },
+   {
+    "n": 9,
+    "codigo": "YC.JG.MQ000824",
+    "nombre_en": "Conductive Foam(5.3*3*2mm)",
+    "nombre_zh": "导电泡棉(5.3*3*2mm)",
+    "auxiliar": false,
+    "nombre_es": "Espuma conductora (5.3*3*2mm)"
+   },
+   {
+    "n": 10,
+    "codigo": "YC.WJ.LL000308",
+    "nombre_en": "M20PC005000500400100323Y",
+    "nombre_zh": "M20-PC00500050-040010-0323-Y",
+    "auxiliar": false,
+    "nombre_es": "M20PC005000500400100323Y"
+   },
+   {
+    "n": 11,
+    "codigo": "YC.JG.ZS004310",
+    "nombre_en": "Heat Sink",
+    "nombre_zh": "散热器",
+    "auxiliar": false,
+    "nombre_es": "Disipador"
+   },
+   {
+    "n": 12,
+    "codigo": "YC.XC.XX001220",
+    "nombre_en": "Fan Cable",
+    "nombre_zh": "风扇转接线",
+    "auxiliar": false,
+    "nombre_es": "Cable de ventilador"
+   },
+   {
+    "n": 13,
+    "codigo": "YC.JG.MY001607",
+    "nombre_en": "Fan Cable Rubber Stopper",
+    "nombre_zh": "风扇出线胶塞",
+    "auxiliar": false,
+    "nombre_es": "Tapón de goma de cable de ventilador"
+   },
+   {
+    "n": 14,
+    "codigo": "YC.ST.LL000251",
+    "nombre_en": "T20-PP00500050-035014-0323-N",
+    "nombre_zh": "T20-PP00500050-035014-0323-N",
+    "auxiliar": false,
+    "nombre_es": "T20-PP00500050-035014-0323-N"
+   },
+   {
+    "n": 15,
+    "codigo": "YC.JG.MQ002377",
+    "nombre_en": "Heat Sink Rubber Pad",
+    "nombre_zh": "散热片橡胶垫",
+    "auxiliar": false,
+    "nombre_es": "Almohadilla de goma de disipador"
+   },
+   {
+    "n": 16,
+    "codigo": "YC.JG.MQ001494",
+    "nombre_en": "Screw Waterproof Gasket",
+    "nombre_zh": "螺钉防水垫片",
+    "auxiliar": false,
+    "nombre_es": "Empaque impermeable de tornillo"
+   },
+   {
+    "n": 17,
+    "codigo": "YC.ST.LL000279",
+    "nombre_en": "Screw T20-PC00400040-040010-3123-N",
+    "nombre_zh": "T20-PC00400040-040010-3123-N",
+    "auxiliar": false,
+    "nombre_es": "Tornillo T20-PC00400040-040010-3123-N"
+   },
+   {
+    "n": 18,
+    "codigo": "YC.ST.LL000251",
+    "nombre_en": "T20-PP00500050-035014-0323-N",
+    "nombre_zh": "T20-PP00500050-035014-0323-N",
+    "auxiliar": false,
+    "nombre_es": "T20-PP00500050-035014-0323-N"
+   },
+   {
+    "n": 19,
+    "codigo": "BC.RC.PP000053",
+    "nombre_en": "USB-A Port Board",
+    "nombre_zh": "USB-A口小板",
+    "auxiliar": false,
+    "nombre_es": "Placa de puerto de USB-A"
+   },
+   {
+    "n": 20,
+    "codigo": "YC.JG.MQ000824",
+    "nombre_en": "Conductive Foam(5.3*3*2mm)",
+    "nombre_zh": "导电泡棉(5.3*3*2mm)",
+    "auxiliar": false,
+    "nombre_es": "Espuma conductora (5.3*3*2mm)"
+   },
+   {
+    "n": 21,
+    "codigo": "YC.JG.ZS003180",
+    "nombre_en": "Shutter Button Silicone Rubber Pad",
+    "nombre_zh": "拍照按键硅胶垫",
+    "auxiliar": false,
+    "nombre_es": "Almohadilla de goma de silicona de botón de obturador"
+   },
+   {
+    "n": 22,
+    "codigo": "YC.WJ.LL000376",
+    "nombre_en": "T14-PP00400040-025005-0323-N",
+    "nombre_zh": "T14-PP00400040-025005-0323-N",
+    "auxiliar": false,
+    "nombre_es": "T14-PP00400040-025005-0323-N"
+   },
+   {
+    "n": 23,
+    "codigo": "YC.JG.ZS001730",
+    "nombre_en": "Shutter Button",
+    "nombre_zh": "拍照键",
+    "auxiliar": false,
+    "nombre_es": "Botón de obturador"
+   },
+   {
+    "n": 24,
+    "codigo": "YC.DZ.AA000423",
+    "nombre_en": "Internal Wi-Fi Antenna (Right)",
+    "nombre_zh": "内置右WIFI天线",
+    "auxiliar": false,
+    "nombre_es": "Antena de Wi-Fi interno (derecha)"
+   },
+   {
+    "n": 25,
+    "codigo": "YC.JG.ZS001739",
+    "nombre_en": "Pause Button",
+    "nombre_zh": "暂停按键",
+    "auxiliar": false,
+    "nombre_es": "Botón de pausa"
+   },
+   {
+    "n": 26,
+    "codigo": "BC.RC.SS000055",
+    "nombre_en": "Right Control Stick Module",
+    "nombre_zh": "右摇杆组件",
+    "auxiliar": false,
+    "nombre_es": "Módulo de palanca derecha de control"
+   },
+   {
+    "n": 27,
+    "codigo": "YC.JG.MY000753",
+    "nombre_en": "Pause Button Silicone Rubber Pad",
+    "nombre_zh": "暂停按键橡胶垫",
+    "auxiliar": false,
+    "nombre_es": "Almohadilla de goma de silicona de botón de pausa"
+   },
+   {
+    "n": 28,
+    "codigo": "YC.WJ.LL000375",
+    "nombre_en": "T14-PC00300030-025006-0323-N",
+    "nombre_zh": "T14-PC00300030-025006-0323-N",
+    "auxiliar": false,
+    "nombre_es": "T14-PC00300030-025006-0323-N"
+   },
+   {
+    "n": 29,
+    "codigo": "YC.ST.LL000251",
+    "nombre_en": "T20-PP00500050-035014-0323-N",
+    "nombre_zh": "T20-PP00500050-035014-0323-N",
+    "auxiliar": false,
+    "nombre_es": "T20-PP00500050-035014-0323-N"
+   },
+   {
+    "n": 30,
+    "codigo": "BC.RC.PP000131",
+    "nombre_en": "Pause Button Flat Cable",
+    "nombre_zh": "暂停拍照按键排线",
+    "auxiliar": false,
+    "nombre_es": "Cable plano de botón de pausa"
+   },
+   {
+    "n": 31,
+    "codigo": "YC.JG.MY000552",
+    "nombre_en": "5D Button Rubber Pad",
+    "nombre_zh": "五维按键防护胶垫",
+    "auxiliar": false,
+    "nombre_es": "Almohadilla de goma de botón 5D"
+   },
+   {
+    "n": 32,
+    "codigo": "YC.JG.ZS001735",
+    "nombre_en": "5D Button Cap",
+    "nombre_zh": "五维按键-帽子",
+    "auxiliar": false,
+    "nombre_es": "Tapa de botón 5D"
+   },
+   {
+    "n": 33,
+    "codigo": "YC.JG.ZS001736",
+    "nombre_en": "5D Button Base",
+    "nombre_zh": "五维按键-基座",
+    "auxiliar": false,
+    "nombre_es": "Base de botón 5D"
+   },
+   {
+    "n": 34,
+    "codigo": "YC.ST.LL000279",
+    "nombre_en": "Screw T20-PC00400040-040010-3123-N",
+    "nombre_zh": "T20-PC00400040-040010-3123-N",
+    "auxiliar": false,
+    "nombre_es": "Tornillo T20-PC00400040-040010-3123-N"
+   },
+   {
+    "n": 35,
+    "codigo": "BC.RC.PP000051",
+    "nombre_en": "Right Button Board",
+    "nombre_zh": "右按键板",
+    "auxiliar": false,
+    "nombre_es": "Placa de botón derecho"
+   },
+   {
+    "n": 36,
+    "codigo": "YC.JG.YT000015",
+    "nombre_en": "Right Side Buttons (R1/R2/R3)",
+    "nombre_zh": "右屏边按键(R1/R2/R3)",
+    "auxiliar": false,
+    "nombre_es": "Botones derecho lateral (/ de / R1 R2 R3)"
+   },
+   {
+    "n": 37,
+    "codigo": "YC.DZ.PF002266",
+    "nombre_en": "Flexible Flat Cable Connecting Right Button Board and Core Board",
+    "nombre_zh": "右按键板到核心板软排线",
+    "auxiliar": false,
+    "nombre_es": "Cable plano flexible entre la placa de botones derecha y la placa principal"
+   },
+   {
+    "n": 38,
+    "codigo": "YC.JG.MQ001336",
+    "nombre_en": "Status LED Shielding Foam",
+    "nombre_zh": "状态灯遮光泡棉",
+    "auxiliar": false,
+    "nombre_es": "Espuma de blindaje de LED de estado"
+   },
+   {
+    "n": 39,
+    "codigo": "YC.JG.MY001318",
+    "nombre_en": "Light Pipe Waterproof Rubber Pad",
+    "nombre_zh": "导光柱防水硅胶垫",
+    "auxiliar": false,
+    "nombre_es": "Almohadilla de goma impermeable de tubería de luz"
+   },
+   {
+    "n": 40,
+    "codigo": "YC.JG.ZS004444",
+    "nombre_en": "Light Pipe",
+    "nombre_zh": "导光柱",
+    "auxiliar": false,
+    "nombre_es": "Tubería de luz"
+   },
+   {
+    "n": 41,
+    "codigo": "YC.ST.LL000279",
+    "nombre_en": "Screw T20-PC00400040-040010-3123-N",
+    "nombre_zh": "T20-PC00400040-040010-3123-N",
+    "auxiliar": false,
+    "nombre_es": "Tornillo T20-PC00400040-040010-3123-N"
+   },
+   {
+    "n": 42,
+    "codigo": "YC.JG.ZS004300",
+    "nombre_en": "Dustproof Cover",
+    "nombre_zh": "防尘盖",
+    "auxiliar": false,
+    "nombre_es": "Cubierta antipolvo"
+   },
+   {
+    "n": 43,
+    "codigo": "YC.ST.LL000236",
+    "nombre_en": "T20-PC00400040-040010-5103-N",
+    "nombre_zh": "T20-PC00400040-040010-5103-N",
+    "auxiliar": false,
+    "nombre_es": "T20-PC00400040-040010-5103-N"
+   },
+   {
+    "n": 44,
+    "codigo": "YC.JG.ZS004299",
+    "nombre_en": "Microphone Cover",
+    "nombre_zh": "MIC盖",
+    "auxiliar": false,
+    "nombre_es": "Cubierta de micrófono"
+   }
+  ]
+ },
+ {
+  "clave": "rc_carcasa_trasera",
+  "nombre": "Carcasa trasera del control",
+  "nombre_zh": "后壳",
+  "sistema": "Control remoto",
+  "zona": "Control remoto",
+  "imagen": "rc_carcasa_trasera.jpeg",
+  "piezas_catalogo": [
+   "remote",
+   "remote_charger"
+  ],
+  "partes": [
+   {
+    "n": 1,
+    "codigo": "YC.JG.BJ002281",
+    "nombre_en": "Handle",
+    "nombre_zh": "提手",
+    "auxiliar": false,
+    "nombre_es": "Manija"
+   },
+   {
+    "n": 2,
+    "codigo": "YC.DZ.AA000414",
+    "nombre_en": "External SDR Antenna",
+    "nombre_zh": "外置SDR天线",
+    "auxiliar": false,
+    "nombre_es": "Antena de SDR externo"
+   },
+   {
+    "n": 3,
+    "codigo": "BC.RC.SS000049",
+    "nombre_en": "Dial Module",
+    "nombre_zh": "回中波轮组件",
+    "auxiliar": false,
+    "nombre_es": "Módulo de rueda de ajuste"
+   },
+   {
+    "n": 4,
+    "codigo": "YC.WJ.LL000379",
+    "nombre_en": "T14-PP00500050-025005-0323-N",
+    "nombre_zh": "T14-PP00500050-025005-0323-N",
+    "auxiliar": false,
+    "nombre_es": "T14-PP00500050-025005-0323-N"
+   },
+   {
+    "n": 5,
+    "codigo": "YC.JG.ZS005128",
+    "nombre_en": "Waterproof Dial Cover Plate (Left)",
+    "nombre_zh": "防水波轮盖板(左)",
+    "auxiliar": false,
+    "nombre_es": "Placa de cubierta de rueda de ajuste impermeable (izquierda)"
+   },
+   {
+    "n": 6,
+    "codigo": "YC.WJ.LL000379",
+    "nombre_en": "T14-PP00500050-025005-0323-N",
+    "nombre_zh": "T14-PP00500050-025005-0323-N",
+    "auxiliar": false,
+    "nombre_es": "T14-PP00500050-025005-0323-N"
+   },
+   {
+    "n": 7,
+    "codigo": "BC.RC.PP000129",
+    "nombre_en": "Left Dial Board",
+    "nombre_zh": "左波轮板",
+    "auxiliar": false,
+    "nombre_es": "Placa de rueda de ajuste izquierdo"
+   },
+   {
+    "n": 8,
+    "codigo": "YC.WJ.LL000379",
+    "nombre_en": "T14-PP00500050-025005-0323-N",
+    "nombre_zh": "T14-PP00500050-025005-0323-N",
+    "auxiliar": false,
+    "nombre_es": "T14-PP00500050-025005-0323-N"
+   },
+   {
+    "n": 9,
+    "codigo": "YC.ST.LL000161",
+    "nombre_en": "Screw T16-PP00400040-030005-3123-N",
+    "nombre_zh": "螺丝T16-PP00400040-030005-3123-N",
+    "auxiliar": false,
+    "nombre_es": "Tornillo T16-PP00400040-030005-3123-N"
+   },
+   {
+    "n": 10,
+    "codigo": "YC.JG.ZS004309",
+    "nombre_en": "Speaker Fixing Block",
+    "nombre_zh": "扬声器压紧块",
+    "auxiliar": false,
+    "nombre_es": "Bloque de fijación de altavoz"
+   },
+   {
+    "n": 11,
+    "codigo": "YC.ST.LL000279",
+    "nombre_en": "Screw T20-PC00400040-040010-3123-N",
+    "nombre_zh": "T20-PC00400040-040010-3123-N",
+    "auxiliar": false,
+    "nombre_es": "Tornillo T20-PC00400040-040010-3123-N"
+   },
+   {
+    "n": 12,
+    "codigo": "YC.JG.ZS001796",
+    "nombre_en": "C3 Button Protective Plate",
+    "nombre_zh": "C3按键防护压板",
+    "auxiliar": false,
+    "nombre_es": "Placa protectora de botón C3"
+   },
+   {
+    "n": 13,
+    "codigo": "YC.DZ.AY000003",
+    "nombre_en": "Speaker",
+    "nombre_zh": "扬声器",
+    "auxiliar": false,
+    "nombre_es": "Altavoz"
+   },
+   {
+    "n": 14,
+    "codigo": "YC.ST.LL000161",
+    "nombre_en": "Screw T16-PP00400040-030005-3123-N",
+    "nombre_zh": "螺丝T16-PP00400040-030005-3123-N",
+    "auxiliar": false,
+    "nombre_es": "Tornillo T16-PP00400040-030005-3123-N"
+   },
+   {
+    "n": 15,
+    "codigo": "YC.JG.ZS001851",
+    "nombre_en": "C3 Button Cap",
+    "nombre_zh": "C3按键帽",
+    "auxiliar": false,
+    "nombre_es": "Tapa de botón C3"
+   },
+   {
+    "n": 16,
+    "codigo": "YC.JG.MY000593",
+    "nombre_en": "C3/C4 Button Waterproof Rubber Cover",
+    "nombre_zh": "C3/C4按键防水胶套",
+    "auxiliar": false,
+    "nombre_es": "Cubierta impermeable de goma de botón de / C3 C4"
+   },
+   {
+    "n": 17,
+    "codigo": "BC.EN.AA000624",
+    "nombre_en": "C1-C3 Buttons",
+    "nombre_zh": "C1-C3按键组件",
+    "auxiliar": false,
+    "nombre_es": "Botones C1-C3"
+   },
+   {
+    "n": 18,
+    "codigo": "YC.ST.LL000069",
+    "nombre_en": "Screw (T20-PC00300030-030006-3123-N)",
+    "nombre_zh": "螺丝 T20-PC00300030-030006-3123-N",
+    "auxiliar": false,
+    "nombre_es": "Tornillo (T20-PC00300030-030006-3123-N)"
+   },
+   {
+    "n": 19,
+    "codigo": "YC.JG.ZS001860",
+    "nombre_en": "C1 Button Cap",
+    "nombre_zh": "C1按键帽",
+    "auxiliar": false,
+    "nombre_es": "Tapa de botón C1"
+   },
+   {
+    "n": 20,
+    "codigo": "YC.JG.MY000592",
+    "nombre_en": "C1/C2 Button Waterproof Rubber Cover",
+    "nombre_zh": "C1/C2按键防水胶套",
+    "auxiliar": false,
+    "nombre_es": "Cubierta impermeable de goma de botón de / C1 C2"
+   },
+   {
+    "n": 21,
+    "codigo": "YC.JG.MQ000249",
+    "nombre_en": "Dongle Fixing Foam(7.5*10*3mm)",
+    "nombre_zh": "泡棉(7.5*10*3mm)",
+    "auxiliar": false,
+    "nombre_es": "Espuma de fijación de adaptador (7.5*10*3mm)"
+   },
+   {
+    "n": 22,
+    "codigo": "YC.ST.LL000279",
+    "nombre_en": "Screw T20-PC00400040-040010-3123-N",
+    "nombre_zh": "T20-PC00400040-040010-3123-N",
+    "auxiliar": false,
+    "nombre_es": "Tornillo T20-PC00400040-040010-3123-N"
+   },
+   {
+    "n": 23,
+    "codigo": "YC.JG.MQ001078",
+    "nombre_en": "Built-in Battery Fixing Foam",
+    "nombre_zh": "内置电池压紧泡棉",
+    "auxiliar": false,
+    "nombre_es": "Espuma de fijación de batería integrada"
+   },
+   {
+    "n": 24,
+    "codigo": "YC.DZ.BB000137",
+    "nombre_en": "Remote Controller Built-in Battery",
+    "nombre_zh": "遥控器内置电池",
+    "auxiliar": false,
+    "nombre_es": "Batería integrada de controlador remoto"
+   },
+   {
+    "n": 25,
+    "codigo": "YC.JG.ZS001798",
+    "nombre_en": "Battery Fixing Bracket (Left)",
+    "nombre_zh": "内置电池锁紧支架（左）",
+    "auxiliar": false,
+    "nombre_es": "Soporte de fijación de batería (izquierdo)"
+   },
+   {
+    "n": 26,
+    "codigo": "YC.WJ.LL000196",
+    "nombre_en": "M16-PP00700070-030005-3123-Y_01",
+    "nombre_zh": "M16-PP00700070-030005-3123-Y_01",
+    "auxiliar": false,
+    "nombre_es": "M16-PP00700070-030005-3123-Y 01"
+   },
+   {
+    "n": 27,
+    "codigo": "YC.JG.ZS005445",
+    "nombre_en": "4G Dongle Cover",
+    "nombre_zh": "4G dongle盖",
+    "auxiliar": false,
+    "nombre_es": "Cubierta de adaptador 4G"
+   },
+   {
+    "n": 28,
+    "codigo": "YC.ST.LL000229",
+    "nombre_en": "T20-PR00500030-035013-1223-N",
+    "nombre_zh": "T20-PR00500030-035013-1223-N",
+    "auxiliar": false,
+    "nombre_es": "T20-PR00500030-035013-1223-N"
+   },
+   {
+    "n": 29,
+    "codigo": "YC.JG.TT000105",
+    "nombre_en": "Battery Release Button Spring",
+    "nombre_zh": "电池解锁弹簧",
+    "auxiliar": false,
+    "nombre_es": "Resorte de botón de liberación de batería"
+   },
+   {
+    "n": 30,
+    "codigo": "YC.JG.MQ002926",
+    "nombre_en": "4G Dongle Fixing Foam Pad",
+    "nombre_zh": "4G Dongle 压紧泡棉",
+    "auxiliar": false,
+    "nombre_es": "Almohadilla de espuma de fijación de adaptador 4G"
+   },
+   {
+    "n": 31,
+    "codigo": "YC.DZ.AA000404",
+    "nombre_en": "4G Antenna (Left)",
+    "nombre_zh": "4G天线-左",
+    "auxiliar": false,
+    "nombre_es": "Antena 4G (izquierda)"
+   },
+   {
+    "n": 32,
+    "codigo": "YC.JG.ZS001848",
+    "nombre_en": "Battery Release Button Cap",
+    "nombre_zh": "电池解锁按键帽",
+    "auxiliar": false,
+    "nombre_es": "Tapa de botón de liberación de batería"
+   },
+   {
+    "n": 33,
+    "codigo": "YC.ST.LL000262",
+    "nombre_en": "T16-PC00300030-055006-3123-N",
+    "nombre_zh": "T16-PC00300030-055006-3123-N",
+    "auxiliar": false,
+    "nombre_es": "T16-PC00300030-055006-3123-N"
+   },
+   {
+    "n": 34,
+    "codigo": "YC.JG.MY000722",
+    "nombre_en": "Battery Release Button Waterproof Ring",
+    "nombre_zh": "电池解锁按键防水圈",
+    "auxiliar": false,
+    "nombre_es": "Anillo impermeable de botón de liberación de batería"
+   },
+   {
+    "n": 35,
+    "codigo": "YC.ST.LL000279",
+    "nombre_en": "Screw T20-PC00400040-040010-3123-N",
+    "nombre_zh": "T20-PC00400040-040010-3123-N",
+    "auxiliar": false,
+    "nombre_es": "Tornillo T20-PC00400040-040010-3123-N"
+   },
+   {
+    "n": 36,
+    "codigo": "YC.JG.ZS004983",
+    "nombre_en": "Battery Cover Left Shaft Bracket",
+    "nombre_zh": "电池盖转轴支座（左）",
+    "auxiliar": false,
+    "nombre_es": "Soporte de eje izquierdo de cubierta de batería"
+   },
+   {
+    "n": 37,
+    "codigo": "YC.JG.HG000015",
+    "nombre_en": "Torsion Spring Shaft Module (White) (Left)",
+    "nombre_zh": "弹簧转轴组件（左）",
+    "auxiliar": false,
+    "nombre_es": "Módulo de eje de resorte de torsión (blanco) (izquierdo)"
+   },
+   {
+    "n": 38,
+    "codigo": "YC.WJ.LL000394",
+    "nombre_en": "T20-PP00400040-035014-0323-N",
+    "nombre_zh": "T20-PP00400040-035014-0323-N",
+    "auxiliar": false,
+    "nombre_es": "T20-PP00400040-035014-0323-N"
+   },
+   {
+    "n": 39,
+    "codigo": "YC.JG.ZS004307",
+    "nombre_en": "Battery Compartment Rear Cover",
+    "nombre_zh": "电池仓后盖",
+    "auxiliar": false,
+    "nombre_es": "Cubierta trasera de compartimento de batería"
+   },
+   {
+    "n": 40,
+    "codigo": "YC.JG.ZS002395",
+    "nombre_en": "Battery Lock",
+    "nombre_zh": "电池锁扣",
+    "auxiliar": false,
+    "nombre_es": "Seguro de batería"
+   }
+  ]
+ }
+]

@@ -1,0 +1,517 @@
+{% extends "_layout.html" %}
+{% block titulo %}Catálogo de mantenimiento{% endblock %}
+{% block encabezado %}Catálogo de mantenimiento{% endblock %}
+{% block subtitulo %}Límites por horas, ciclos o calendario de cada modelo{% endblock %}
+
+{% block head %}
+<style>
+.cat-grupo{margin-bottom:22px}
+.cat-grupo > .t{display:flex;align-items:baseline;gap:10px;margin:0 2px 10px;font-size:11px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.08em}
+.cat-grupo > .t .n{font-weight:600;letter-spacing:0;text-transform:none;font-size:12px}
+.cat-modelos{display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:12px}
+.cat-modelo{position:relative;display:flex;flex-direction:column;gap:10px;background:var(--bg2);border:1px solid var(--line);border-radius:18px;padding:16px;
+  cursor:pointer;text-align:left;font-family:var(--font);color:var(--ink);transition:.18s}
+.cat-modelo:hover{border-color:var(--line2);box-shadow:var(--shadow);transform:translateY(-2px)}
+.cat-modelo.sel{border-color:var(--acc-d);box-shadow:0 0 0 3px rgba(253,185,19,.25)}
+.cat-modelo .cab{display:flex;gap:12px;align-items:flex-start}
+.cat-ic{flex:none;width:42px;height:42px;border-radius:13px;display:grid;place-items:center;background:rgba(115,122,134,.1);color:var(--ink2)}
+.cat-ic svg{width:22px;height:22px}
+.cat-modelo.propio .cat-ic{background:var(--acc);color:var(--acc-txt)}
+.cat-modelo.plantilla .cat-ic{background:var(--o-grafito,#1a1d24);color:var(--acc)}
+.cat-modelo .nom{font-size:14.5px;font-weight:700;letter-spacing:-.015em;line-height:1.25}
+.cat-modelo .clave{font-size:11.5px;color:var(--mut);margin-top:2px}
+.cat-sello{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:980px;font-size:10.5px;font-weight:700;letter-spacing:.02em;white-space:nowrap}
+.cat-sello svg{width:11px;height:11px}
+.cat-sello.propio{background:var(--acc-soft);color:var(--acc-deep)}
+.cat-sello.plantilla{background:var(--o-grafito,#1a1d24);color:var(--acc)}
+.cat-sello.sistema{background:rgba(115,122,134,.14);color:var(--ink2)}
+.cat-chips{display:flex;gap:5px;flex-wrap:wrap}
+.cat-chip{font-size:11px;font-weight:600;padding:2px 8px;border-radius:7px;background:rgba(115,122,134,.1);color:var(--ink2)}
+.cat-cifras{display:flex;gap:18px;margin-top:auto;padding-top:10px;border-top:.5px solid var(--line)}
+.cat-cifras b{font-family:var(--font-marca);font-size:20px;font-weight:800;letter-spacing:-.03em;color:var(--acc-ink);font-variant-numeric:tabular-nums}
+.cat-cifras span{display:block;font-size:10.5px;color:var(--mut);text-transform:uppercase;letter-spacing:.05em;font-weight:650}
+
+/* ---- Detalle del modelo ---- */
+.cat-det-cab{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;margin-bottom:16px}
+.cat-det-cab .cat-ic{width:54px;height:54px;border-radius:16px}
+.cat-det-cab .cat-ic svg{width:28px;height:28px}
+.cat-det-cab .info{flex:1;min-width:240px}
+.cat-det-cab h2{font-size:20px;font-weight:750;letter-spacing:-.025em;line-height:1.2;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.cat-det-cab p{font-size:13px;color:var(--ink2);margin-top:4px;max-width:90ch}
+.cat-det-cab .acc{display:flex;gap:8px;flex-wrap:wrap}
+.cat-resumen{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:18px}
+.cat-resumen div{border:1px solid var(--line);border-radius:14px;padding:10px 14px}
+.cat-resumen b{display:block;font-family:var(--font-marca);font-size:24px;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.cat-resumen span{font-size:11px;color:var(--mut);font-weight:600}
+.cat-resumen .ref b{color:var(--o-tx-ambar,#8a5f00)}
+
+.cat-modulo{margin-bottom:18px}
+.cat-modulo > .t{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.cat-modulo > .t h4{font-size:14px;font-weight:700;letter-spacing:-.01em}
+.cat-modulo > .t .mut{font-size:12px}
+.cat-modulo .tabla-envoltura table{min-width:1180px;table-layout:auto}
+.cat-modulo td.nom{min-width:270px;padding-left:14px!important}
+.cat-modulo th:first-child{padding-left:14px}
+.cat-modulo td{vertical-align:middle}
+.cat-modulo td.nom b{display:block;font-size:13.5px}
+.cat-modulo td.nom .nota{font-size:11.5px;color:var(--mut);margin-top:2px;max-width:46ch}
+.cat-modulo td.nom .marcas{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px}
+.ref-marca{white-space:nowrap;display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:980px;font-size:10.5px;font-weight:700;background:var(--o-suave-ambar,#fff3d1);color:var(--o-tx-ambar,#7a5400);border:1px dashed rgba(192,134,0,.55)}
+.ref-marca button{border:none;background:var(--acc);color:var(--acc-txt);border-radius:980px;font-size:10.5px;font-weight:700;padding:1px 8px;cursor:pointer;font-family:var(--font)}
+.ref-marca button:hover{background:var(--acc-d)}
+.tag.pieza{background:rgba(26,29,36,.07);color:var(--ink2)}
+.con-unidad{display:flex;align-items:center;gap:4px}
+.con-unidad .u{font-size:11px;color:var(--mut);white-space:nowrap;min-width:34px}
+table.editable td .celda{min-height:34px;padding:7px 9px}
+table.editable td select.celda{padding-right:4px}
+.solo-lectura td{color:var(--ink2)}
+.valor{font-variant-numeric:tabular-nums;font-weight:620;color:var(--ink)}
+.valor.no{color:var(--mut);font-weight:500}
+.chk{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:560;cursor:pointer;text-transform:none!important;letter-spacing:0!important;color:var(--ink)!important}
+.chk input{width:16px!important;height:16px}
+.cont-checks{display:flex;gap:8px 16px;flex-wrap:wrap;padding:8px 0}
+.cat-err[hidden]{display:none}
+.bloque-cond{border:.5px solid var(--line2);border-radius:14px;padding:14px 14px 2px;margin-bottom:14px;background:rgba(115,122,134,.04)}
+.bloque-cond > .t{font-size:11px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px}
+.vista-base{display:flex;gap:12px;align-items:center;border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:14px;background:var(--acc-soft)}
+@media(max-width:760px){.cat-modelos{grid-template-columns:1fr}}
+</style>
+{% endblock %}
+
+{% block acciones %}
+<button class="btn secundario" id="btnVacio">＋ Crear modelo vacío</button>
+<button class="btn" id="btnPlantilla"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><rect x="6.5" y="6.5" width="10" height="10" rx="2"/><path d="M13.5 6.5V4.8a1.3 1.3 0 0 0-1.3-1.3H4.8a1.3 1.3 0 0 0-1.3 1.3v7.4a1.3 1.3 0 0 0 1.3 1.3h1.7"/></svg> Crear modelo desde plantilla</button>
+{% endblock %}
+
+{% block barra %}
+<div class="tabsbar"><div class="wrap">
+  <div class="segmento" id="segTipo">
+    <button data-v="" class="activo">Todos</button><button data-v="dron">Drones</button><button data-v="avion">Aviones</button>
+  </div>
+  <div class="filters"><input type="search" id="fBuscar" placeholder="Buscar ítem en el modelo elegido…" style="min-width:240px"></div>
+</div></div>
+{% endblock %}
+
+{% block contenido %}
+<div class="aviso ambar"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3.2 17.4 16H2.6z"/><path d="M10 8.2v3.6M10 13.9v.01"/></svg>
+  <div><b>Valores de referencia.</b> Los límites de la plantilla Cessna 188A son orientativos: deben confirmarse con el manual del fabricante
+  y con el programa de mantenimiento aprobado del operador antes de usarlos para liberar un avión. Cada ítem sin confirmar lleva la marca
+  <span class="ref-marca">Referencia · confirmar</span>.</div></div>
+
+<div id="modelos"><div class="empty"><span class="cargador oscuro"></span> Cargando modelos…</div></div>
+
+<div class="card" id="detalle" style="display:none"></div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const IC_DRON = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="4.5" cy="4.5" r="2.3"/><circle cx="15.5" cy="4.5" r="2.3"/><circle cx="4.5" cy="15.5" r="2.3"/><circle cx="15.5" cy="15.5" r="2.3"/><path d="M6.3 6.3 8.3 8.3M13.7 6.3l-2 2M6.3 13.7l2-2M13.7 13.7l-2-2"/><rect x="8" y="8" width="4" height="4" rx="1"/></svg>';
+const IC_AVION = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.5c.8 0 1.2.9 1.2 2v3.3l6.3 2v1.6l-6.3-1.2v3.4l2 1.5V16.6L10 15.8l-3.2.8v-1.5l2-1.5V10.2L2.5 11.4V9.8l6.3-2V4.5c0-1.1.4-2 1.2-2z"/></svg>';
+const IC_CANDADO = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="9" width="11" height="8" rx="2"/><path d="M7 9V6.5a3 3 0 0 1 6 0V9"/></svg>';
+const IC_LAPIZ = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 3.5l3 3L7 16H4v-3z"/></svg>';
+const IC_ERR = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="7"/><path d="M10 6v5M10 13.6v.01"/></svg>';
+const icTipo = t => t === 'avion' ? IC_AVION : IC_DRON;
+
+let DATOS = null, ITEMS = [], SEL = paramURL('modelo') || '', TIPO = paramURL('tipo') || '', BUSCAR = '';
+const CONT = ()=> DATOS.contadores;
+const unidad = c => (CONT()[c] || {}).unidad || '';
+const nombreCont = c => (CONT()[c] || {}).nombre || c || '—';
+
+async function llamar(url, opts={}){
+  const r = await fetch(url, opts.body ? {...opts, headers:{'Content-Type':'application/json'}, body:JSON.stringify(opts.body)} : opts);
+  let d = null; try{ d = await r.json(); }catch(e){}
+  if(r.status === 401){ location.href = '/login'; throw new Error('Sesión caducada'); }
+  if(!r.ok){ const e = new Error((d && d.error) || `Error ${r.status}`); e.status = r.status; throw e; }
+  return d;
+}
+const cajaError = '<div class="aviso rojo cat-err" data-error hidden></div>';
+function mostrarError(v, err){
+  const caja = v.$('[data-error]'); if(!caja){ toast(err.message); return; }
+  const t = err.status === 403 ? 'Sin permiso' : err.status === 400 ? 'Revisa los datos' : err.status === 409 ? 'No se puede' : 'No se pudo guardar';
+  caja.innerHTML = `${IC_ERR}<div><b>${t}.</b> ${escapar(err.message)}${err.status ? ` <span style="opacity:.7">(${err.status})</span>` : ''}</div>`;
+  caja.hidden = false;
+}
+
+function clase(m){ return m.propio ? 'propio' : m.es_plantilla ? 'plantilla' : 'sistema'; }
+function sello(m){
+  if(m.propio) return `<span class="cat-sello propio">${IC_LAPIZ} Propio · editable</span>`;
+  if(m.es_plantilla) return `<span class="cat-sello plantilla">Plantilla</span>`;
+  return `<span class="cat-sello sistema">${IC_CANDADO} Sistema · solo lectura</span>`;
+}
+
+// ================= Modelos =================
+async function cargarModelos(){
+  try{ DATOS = await llamar('/api/modelos-activo'); }
+  catch(err){
+    document.getElementById('modelos').innerHTML = `<div class="card vacio-rico">${IC_CANDADO.replace('<svg','<svg style="width:42px;height:42px;color:var(--line2)"')}
+      <b>${err.status === 403 ? 'El catálogo lo gestiona el administrador' : 'No se pudo cargar el catálogo'}</b><p>${escapar(err.message)}</p></div>`;
+    document.getElementById('btnVacio').disabled = document.getElementById('btnPlantilla').disabled = true;
+    return;
+  }
+  if(!SEL || !DATOS.modelos.some(m => m.clave === SEL)){
+    SEL = (DATOS.modelos.find(m => m.propio && (!TIPO || m.tipo_activo === TIPO)) || DATOS.modelos.find(m => !TIPO || m.tipo_activo === TIPO) || {}).clave || '';
+  }
+  pintarModelos();
+  if(SEL) await elegir(SEL, false);
+}
+
+function tarjeta(m){
+  return `<button class="cat-modelo ${clase(m)} ${m.clave===SEL?'sel':''}" data-clave="${escapar(m.clave)}">
+    <div class="cab"><div class="cat-ic">${icTipo(m.tipo_activo)}</div>
+      <div style="flex:1;min-width:0"><div class="nom">${escapar(m.nombre)}</div>
+        <div class="clave">${escapar(m.clave)} · ${escapar(m.fabricante||'—')} · ${DATOS.tipos[m.tipo_activo]||m.tipo_activo}</div></div></div>
+    <div>${sello(m)}</div>
+    <div class="cat-chips">${(m.contadores||[]).map(c => `<span class="cat-chip">${escapar(nombreCont(c))}</span>`).join('')}</div>
+    <div class="cat-cifras"><div><b>${m.n_items}</b><span>ítems</span></div><div><b>${m.n_equipos}</b><span>${m.n_equipos===1?'activo':'activos'}</span></div>
+      ${m.plantilla ? `<div style="margin-left:auto;text-align:right"><span>desde</span><div style="font-size:12px;font-weight:650">${escapar(m.plantilla)}</div></div>` : ''}</div>
+  </button>`;
+}
+function pintarModelos(){
+  const ms = DATOS.modelos.filter(m => !TIPO || m.tipo_activo === TIPO);
+  const grupos = [
+    ['Tus modelos', 'catálogo propio, editable', ms.filter(m => m.propio)],
+    ['Plantillas', 'punto de partida para crear un modelo propio', ms.filter(m => !m.propio && m.es_plantilla)],
+    ['Modelos del sistema', 'valores publicados por el fabricante, solo lectura', ms.filter(m => !m.propio && !m.es_plantilla)],
+  ];
+  const cont = document.getElementById('modelos');
+  cont.innerHTML = grupos.map(([t, n, lista]) => lista.length || t === 'Tus modelos' ? `
+    <div class="cat-grupo"><div class="t">${t} <span class="n">· ${lista.length} · ${n}</span></div>
+      ${lista.length ? `<div class="cat-modelos">${lista.map(tarjeta).join('')}</div>`
+        : `<div class="card vacio-rico" style="padding:26px"><b>Todavía no tienes modelos propios</b><p>Crea uno desde una plantilla para poder ajustar sus límites.</p>
+            <button class="btn" onclick="crearDesdePlantilla()">Crear modelo desde plantilla</button></div>`}
+    </div>` : '').join('');
+  cont.querySelectorAll('.cat-modelo').forEach(b => b.onclick = ()=> elegir(b.dataset.clave, true));
+}
+
+async function elegir(clave, desplazar){
+  SEL = clave;
+  document.querySelectorAll('.cat-modelo').forEach(b => b.classList.toggle('sel', b.dataset.clave === clave));
+  const u = new URL(location.href); u.searchParams.set('modelo', clave); history.replaceState(null, '', u);
+  ITEMS = await api(`/api/catalogo/items?modelo=${encodeURIComponent(clave)}`);
+  pintarDetalle();
+  if(desplazar) document.getElementById('detalle').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+// ================= Detalle =================
+function modeloSel(){ return DATOS.modelos.find(m => m.clave === SEL); }
+
+function num(v){ return v === null || v === undefined || v === '' || Number(v) === 0 ? null : Number(v); }
+
+function celdaNum(it, campo, sufijo){
+  const v = it[campo];
+  return `<div class="con-unidad"><input class="celda" type="number" step="any" min="0" data-id="${it.id}" data-campo="${campo}" value="${num(v) ?? ''}" placeholder="—">${sufijo!==undefined?`<span class="u" data-u="${campo}">${escapar(sufijo)}</span>`:''}</div>`;
+}
+function celdaSel(it, campo, lista, vacio){
+  return `<select class="celda" data-id="${it.id}" data-campo="${campo}">${vacio ? `<option value="">${vacio}</option>` : ''}${opciones(lista, it[campo] || '')}</select>`;
+}
+function leer(v, u){ return num(v) == null ? '<span class="valor no">—</span>' : `<span class="valor">${fmt(v)}</span> <span class="mut" style="font-size:11px">${escapar(u||'')}</span>`; }
+
+// La frase estándar de la plantilla ya la dice la marca «Referencia · confirmar».
+const FRASE_REF = /\s*Valor de referencia: confirmar con el manual del fabricante y el programa de mantenimiento aprobado\.?/i;
+function notaLimpia(it){ return (it.nota || '').replace(FRASE_REF, '').trim(); }
+function marcas(it, editable){
+  return `<div class="marcas">
+    ${it.referencia ? `<span class="ref-marca">Referencia · confirmar${editable ? ` <button type="button" onclick="confirmarRef(${it.id})" title="El valor ya se verificó con el manual y el programa aprobado">Confirmar</button>` : ''}</span>` : ''}
+    ${it.serializada ? '<span class="tag gray">Con serial</span>' : ''}
+  </div>`;
+}
+
+function filaEditable(it, m){
+  const conts = (m.contadores||[]).map(c => ({v:c, t:nombreCont(c)}));
+  const tipos = Object.entries(DATOS.tipos_item).map(([v,t]) => ({v, t: v==='pieza'?'Pieza':'Inspección'}));
+  return `<tr data-fila="${it.id}">
+    <td class="nom"><b>${escapar(it.nombre)}</b>${notaLimpia(it) ? `<div class="nota">${escapar(notaLimpia(it))}</div>` : ''}${marcas(it, true)}</td>
+    <td style="width:118px">${celdaSel(it, 'tipo_item', tipos)}</td>
+    <td style="width:130px">${celdaSel(it, 'contador_base', conts)}</td>
+    <td class="num" style="width:120px">${celdaNum(it, 'vida_util_horas', unidad(it.contador_base))}</td>
+    <td style="width:250px"><div style="display:flex;gap:6px">${celdaSel(it, 'contador_ciclos', conts, '— sin ciclos —')}<div style="width:90px">${celdaNum(it, 'limite_ciclos')}</div></div></td>
+    <td class="num" style="width:90px">${celdaNum(it, 'vida_util_meses', 'm')}</td>
+    <td class="num" style="width:100px">${celdaNum(it, 'tolerancia', unidad(it.contador_base))}</td>
+    <td style="width:70px;text-align:center"><input type="checkbox" data-serial="${it.id}" ${it.serializada?'checked':''} title="Pieza con número de serie propio" style="width:16px;height:16px"></td>
+    <td class="num" style="width:110px">${celdaNum(it, 'precio')}</td>
+    <td style="white-space:nowrap;width:84px"><button class="btn-icono" title="Editar ítem completo" onclick="editarItem(${it.id})" style="background:rgba(253,185,19,.18);color:var(--acc-deep)">✎</button>
+      <button class="btn-icono" title="Eliminar ítem" onclick="borrarItem(${it.id})">✕</button></td>
+  </tr>`;
+}
+function filaLectura(it){
+  const ciclos = it.contador_ciclos && num(it.limite_ciclos) ? `${fmt(it.limite_ciclos,0)} ${escapar(unidad(it.contador_ciclos))} <span class="mut" style="font-size:11px">(${escapar(nombreCont(it.contador_ciclos))})</span>` : '<span class="valor no">—</span>';
+  return `<tr>
+    <td class="nom"><b>${escapar(it.nombre)}</b>${notaLimpia(it) ? `<div class="nota">${escapar(notaLimpia(it))}</div>` : ''}${marcas(it, false)}</td>
+    <td><span class="tag ${it.tipo_item==='inspeccion'?'inspeccion':'pieza'}">${it.tipo_item==='inspeccion'?'Inspección':'Pieza'}</span></td>
+    <td>${escapar(nombreCont(it.contador_base))}</td>
+    <td class="num">${leer(it.vida_util_horas, unidad(it.contador_base))}</td>
+    <td>${ciclos}</td>
+    <td class="num">${leer(it.vida_util_meses, 'meses')}</td>
+    <td class="num">${leer(it.tolerancia, unidad(it.contador_base))}</td>
+    <td style="text-align:center">${it.serializada ? 'Sí' : '<span class="valor no">—</span>'}</td>
+    <td class="num">${num(it.precio) != null ? fmt(it.precio, 0) : '<span class="valor no">—</span>'}</td>
+    <td></td>
+  </tr>`;
+}
+
+function pintarDetalle(){
+  const m = modeloSel(), det = document.getElementById('detalle');
+  if(!m){ det.style.display = 'none'; return; }
+  det.style.display = '';
+  const editable = !!m.propio;
+  const q = BUSCAR.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+  const items = ITEMS.filter(it => !q || (it.nombre + ' ' + it.modulo).normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().includes(q));
+  const modulos = {};
+  items.forEach(it => (modulos[it.modulo || 'General'] = modulos[it.modulo || 'General'] || []).push(it));
+  const orden = Object.keys(modulos).sort((a,b)=> (a==='Inspecciones'?-1:b==='Inspecciones'?1:0) || a.localeCompare(b));
+  const nRef = ITEMS.filter(i => i.referencia).length;
+  const esCessna = /C188A/i.test(m.clave) || /C188A/i.test(m.plantilla || '');
+
+  det.innerHTML = `
+    <div class="cat-det-cab">
+      <div class="cat-ic" style="${editable?'background:var(--acc);color:var(--acc-txt)':m.es_plantilla?'background:var(--o-grafito,#1a1d24);color:var(--acc)':''}">${icTipo(m.tipo_activo)}</div>
+      <div class="info"><h2>${escapar(m.nombre)} ${sello(m)}</h2>
+        <p>${escapar(m.clave)} · ${escapar(m.fabricante||'—')} · ${DATOS.tipos[m.tipo_activo]||''} · contadores: ${(m.contadores||[]).map(c=>escapar(nombreCont(c))).join(', ')}${m.plantilla ? ` · copiado de <b>${escapar(m.plantilla)}</b>` : ''}</p>
+        ${m.descripcion ? `<p class="mut">${escapar(m.descripcion)}</p>` : ''}</div>
+      <div class="acc">${editable ? `
+        <button class="btn secundario" onclick="editarModelo()">Editar modelo</button>
+        <button class="btn secundario" onclick="borrarModelo()" ${m.n_equipos?`disabled title="Hay ${m.n_equipos} activo(s) de este modelo"`:''}>Eliminar</button>
+        <button class="btn" onclick="editarItem()">＋ Agregar ítem</button>`
+      : `<button class="btn" onclick="crearDesdePlantilla('${escapar(m.clave)}')">Crear copia editable</button>`}</div>
+    </div>
+    ${!editable ? `<div class="aviso gris">${IC_CANDADO}<div><b>${m.es_plantilla ? 'Plantilla bloqueada.' : 'Modelo del sistema bloqueado.'}</b>
+        ${m.es_plantilla ? 'La plantilla es común a todas las empresas y no se modifica. Crea una copia propia para ajustar límites, precios y tolerancias a tu programa de mantenimiento.'
+                         : 'Sus límites vienen del fabricante (DJI) y se actualizan con el sistema. Si necesitas otros valores, crea una copia propia.'}</div></div>` : ''}
+    ${editable && esCessna && nRef ? `<div class="aviso ambar">${IC_ERR}<div>Quedan <b>${nRef} ${nRef===1?'valor':'valores'} de referencia</b> sin confirmar en este modelo. Verifica cada uno con el manual del fabricante y el programa de mantenimiento aprobado, corrígelo si hace falta y pulsa «Confirmar».</div></div>` : ''}
+    <div class="cat-resumen">
+      <div><b>${ITEMS.filter(i=>i.tipo_item!=='inspeccion').length}</b><span>Piezas con vida útil</span></div>
+      <div><b>${ITEMS.filter(i=>i.tipo_item==='inspeccion').length}</b><span>Inspecciones periódicas</span></div>
+      <div><b>${ITEMS.filter(i=>i.contador_ciclos && num(i.limite_ciclos)).length}</b><span>Con límite por ciclos</span></div>
+      <div><b>${ITEMS.filter(i=>i.serializada).length}</b><span>Con número de serie</span></div>
+      <div class="ref"><b>${nRef}</b><span>Referencia por confirmar</span></div>
+    </div>
+    ${editable ? '<div class="mut" style="font-size:12px;margin-bottom:12px">Los cambios se guardan solos al salir de cada celda y recalculan el desgaste de los activos de este modelo. Deja un límite vacío si no aplica.</div>' : ''}
+    ${orden.length ? orden.map(mod => `
+      <div class="cat-modulo">
+        <div class="t"><h4>${escapar(mod)}</h4><span class="mut">${modulos[mod].length} ${modulos[mod].length===1?'ítem':'ítems'}</span></div>
+        <div class="tabla-envoltura"><table class="${editable?'editable':'solo-lectura'}">
+          <thead><tr><th>Ítem</th><th>Tipo</th><th>Contador base</th><th class="num">Límite</th><th>Ciclos (contador · límite)</th><th class="num">Meses</th><th class="num">Tolerancia</th><th style="text-align:center">Serial</th><th class="num">Precio</th><th></th></tr></thead>
+          <tbody>${modulos[mod].map(it => editable ? filaEditable(it, m) : filaLectura(it)).join('')}</tbody>
+        </table></div>
+      </div>`).join('')
+    : `<div class="empty">${BUSCAR ? 'Ningún ítem coincide con la búsqueda.' : 'Este modelo todavía no tiene ítems.'}${editable && !BUSCAR ? ' <a href="#" onclick="editarItem();return false">Agrega el primero</a>.' : ''}</div>`}`;
+
+  if(editable && !det._enLinea){
+    det._enLinea = true;
+    edicionEnLinea(det, {
+      url: id => `/api/catalogo/items/${id}`,
+      validar: (campo, valor) => (valor !== '' && campo !== 'tipo_item' && !campo.startsWith('contador') && (isNaN(Number(valor)) || Number(valor) < 0)) ? 'Escribe un número mayor o igual a cero' : null,
+      alGuardar: (r, celda) => {
+        const it = ITEMS.find(i => String(i.id) === celda.dataset.id); if(!it) return;
+        it[celda.dataset.campo] = celda.value;
+        if(celda.dataset.campo === 'contador_base'){
+          const fila = celda.closest('tr');
+          fila.querySelectorAll('[data-u="vida_util_horas"],[data-u="tolerancia"]').forEach(u => u.textContent = unidad(celda.value));
+        }
+      },
+    });
+  }
+  if(editable){
+    det.querySelectorAll('[data-serial]').forEach(ch => ch.onchange = async ()=>{
+      try{ await llamar(`/api/catalogo/items/${ch.dataset.serial}`, {method:'PUT', body:{serializada: ch.checked}});
+        const it = ITEMS.find(i => String(i.id) === ch.dataset.serial); it.serializada = ch.checked ? 1 : 0; toast('Guardado'); }
+      catch(err){ ch.checked = !ch.checked; toast(err.message); }
+    });
+  }
+}
+
+async function confirmarRef(id){
+  const it = ITEMS.find(i => i.id === id);
+  if(!await confirmar({titulo:'Confirmar valor', aceptar:'Sí, está verificado',
+    mensaje:`¿Los límites de <b>${escapar(it.nombre)}</b> ya se verificaron con el manual del fabricante y el programa de mantenimiento aprobado? La marca «Referencia · confirmar» desaparece.`})) return;
+  try{ await llamar(`/api/catalogo/items/${id}`, {method:'PUT', body:{referencia:0}}); it.referencia = 0; toast('Valor confirmado'); pintarDetalle(); }
+  catch(err){ toast(err.message); }
+}
+
+// ================= Ítems =================
+function editarItem(id){
+  const m = modeloSel();
+  const it = id ? ITEMS.find(i => i.id === id) : {tipo_item:'pieza', contador_base:(m.contadores||[])[0], modulo:''};
+  const conts = (m.contadores||[]).map(c => ({v:c, t:nombreCont(c)}));
+  const mods = [...new Set(ITEMS.map(i => i.modulo).filter(Boolean))].sort();
+  const v = ventana({
+    titulo: id ? 'Editar ítem' : 'Nuevo ítem del catálogo', subtitulo: `${escapar(m.nombre)} · ${escapar(m.clave)}`, ancho:'ancha',
+    cuerpo: `${cajaError}<form id="fItem">
+      <div class="form-grid">
+        <div class="campo ancho"><label>Nombre *</label><input name="nombre" required value="${escapar(it.nombre||'')}" placeholder="Filtro de combustible"></div>
+        <div class="campo"><label>Módulo</label><input name="modulo" list="dlMod" value="${escapar(it.modulo||'')}" placeholder="Motor, Hélice…"><datalist id="dlMod">${mods.map(x=>`<option value="${escapar(x)}">`).join('')}</datalist></div>
+        <div class="campo"><label>Tipo</label><select name="tipo_item">${opciones([{v:'pieza',t:'Pieza con vida útil'},{v:'inspeccion',t:'Inspección periódica'}], it.tipo_item)}</select></div>
+        <div class="campo"><label>Precio</label><input type="number" step="any" min="0" name="precio" value="${num(it.precio) ?? ''}"></div>
+      </div>
+      <div class="bloque-cond"><div class="t">Límites · vence con el primero que se cumpla</div><div class="form-grid">
+        <div class="campo"><label>Contador base</label><select name="contador_base">${opciones(conts, it.contador_base)}</select></div>
+        <div class="campo"><label>Límite en ese contador</label><input type="number" step="any" min="0" name="vida_util_horas" value="${num(it.vida_util_horas) ?? ''}" placeholder="100"></div>
+        <div class="campo"><label>Tolerancia</label><input type="number" step="any" min="0" name="tolerancia" value="${num(it.tolerancia) ?? ''}" placeholder="10"></div>
+        <div class="campo"><label>Contador de ciclos</label><select name="contador_ciclos"><option value="">— Sin ciclos —</option>${opciones(conts, it.contador_ciclos||'')}</select></div>
+        <div class="campo"><label>Límite de ciclos</label><input type="number" step="1" min="0" name="limite_ciclos" value="${num(it.limite_ciclos) ?? ''}" placeholder="500"></div>
+        <div class="campo"><label>Calendario (meses)</label><input type="number" step="any" min="0" name="vida_util_meses" value="${num(it.vida_util_meses) ?? ''}" placeholder="12"></div>
+      </div></div>
+      <div class="form-grid">
+        <div class="campo ancho"><label>Nota</label><textarea name="nota" placeholder="Referencia del manual, condiciones de operación…">${escapar(it.nota||'')}</textarea></div>
+        <div class="campo"><label class="chk"><input type="checkbox" name="serializada" ${it.serializada?'checked':''}> Pieza con número de serie (TSN/TSO)</label></div>
+        ${id ? `<div class="campo"><label class="chk"><input type="checkbox" name="referencia" ${it.referencia?'checked':''}> Valor de referencia, pendiente de confirmar</label></div>` : ''}
+      </div></form>`,
+    pie: `<div class="der"><button class="btn secundario" data-no>Cancelar</button><button class="btn" data-si>${id?'Guardar':'Agregar ítem'}</button></div>`,
+  });
+  v.$('[data-no]').onclick = v.cerrar;
+  v.$('[data-si]').onclick = async ()=>{
+    const f = v.$('#fItem'); if(!f.reportValidity()) return;
+    const c = Object.fromEntries(new FormData(f).entries());
+    c.serializada = f.serializada.checked;
+    if(id) c.referencia = f.referencia.checked;
+    else c.modelo = m.clave;
+    try{
+      await llamar(id ? `/api/catalogo/items/${id}` : '/api/catalogo/items', {method: id ? 'PUT' : 'POST', body:c});
+      toast(id ? 'Ítem actualizado' : 'Ítem agregado'); await v.cerrar();
+      await refrescar();
+    }catch(err){ mostrarError(v, err); }
+  };
+}
+async function borrarItem(id){
+  const it = ITEMS.find(i => i.id === id);
+  if(!await confirmar({titulo:'Eliminar ítem', peligro:true, aceptar:'Eliminar',
+    mensaje:`Se quita <b>${escapar(it.nombre)}</b> del catálogo de este modelo.`})) return;
+  try{ await llamar(`/api/catalogo/items/${id}`, {method:'DELETE'}); toast('Ítem eliminado'); await refrescar(); }
+  catch(err){ toast(err.message); }
+}
+async function refrescar(){
+  DATOS = await llamar('/api/modelos-activo');
+  pintarModelos();
+  await elegir(SEL, false);
+}
+
+// ================= Crear / editar modelos =================
+function checksContadores(sel){
+  return `<div class="cont-checks">${Object.entries(DATOS.contadores).map(([k, c]) =>
+    `<label class="chk"><input type="checkbox" name="cont" value="${k}" ${sel.includes(k)?'checked':''}> ${escapar(c.nombre)} <span class="mut" style="font-size:11px">(${escapar(c.unidad)})</span></label>`).join('')}</div>`;
+}
+
+function crearVacio(){
+  let tipo = TIPO || 'avion';
+  const v = ventana({
+    titulo:'Crear modelo vacío', subtitulo:'Un modelo propio sin ítems: agrega luego sus piezas e inspecciones',
+    cuerpo: `${cajaError}<form id="fMod"><div class="form-grid">
+      <div class="campo ancho"><label>Nombre *</label><input name="nombre" required placeholder="Air Tractor AT-402B"></div>
+      <div class="campo"><label>Tipo de activo</label><div class="segmento" id="segT"><button type="button" data-v="avion">Avión</button><button type="button" data-v="dron">Dron</button></div></div>
+      <div class="campo"><label>Fabricante</label><input name="fabricante" placeholder="Air Tractor"></div>
+      <div class="campo ancho"><label>Contadores que se registran</label><div id="chks"></div></div>
+      <div class="campo ancho"><label>Descripción</label><textarea name="descripcion"></textarea></div>
+    </div></form>`,
+    pie: `<div class="der"><button class="btn secundario" data-no>Cancelar</button><button class="btn" data-si>Crear modelo</button></div>`,
+  });
+  const pintarT = ()=>{
+    v.$$('#segT button').forEach(b => b.classList.toggle('activo', b.dataset.v === tipo));
+    v.$('#chks').innerHTML = checksContadores(DATOS.contadores_por_tipo[tipo] || []);
+  };
+  v.$$('#segT button').forEach(b => b.onclick = ()=>{ tipo = b.dataset.v; pintarT(); });
+  pintarT();
+  v.$('[data-no]').onclick = v.cerrar;
+  v.$('[data-si]').onclick = async ()=>{
+    const f = v.$('#fMod'); if(!f.reportValidity()) return;
+    const contadores = v.$$('[name=cont]:checked').map(x => x.value);
+    if(!contadores.length) return mostrarError(v, Object.assign(new Error('Elige al menos un contador.'), {status:0}));
+    try{
+      const r = await llamar('/api/modelos-activo', {method:'POST', body:{nombre:f.nombre.value, tipo_activo:tipo, fabricante:f.fabricante.value, contadores, descripcion:f.descripcion.value}});
+      toast('Modelo creado'); await v.cerrar(); SEL = r.clave; await refrescar();
+    }catch(err){ mostrarError(v, err); }
+  };
+}
+
+function crearDesdePlantilla(base){
+  const bases = DATOS.modelos;
+  const plantillas = bases.filter(m => m.es_plantilla), sistema = bases.filter(m => !m.es_plantilla && !m.propio), propios = bases.filter(m => m.propio);
+  const def = base || (plantillas.find(m => !TIPO || m.tipo_activo === TIPO) || plantillas[0] || bases[0]).clave;
+  const grupo = (t, l) => l.length ? `<optgroup label="${t}">${l.map(m => `<option value="${escapar(m.clave)}" ${m.clave===def?'selected':''}>${escapar(m.nombre)} · ${escapar(m.clave)}</option>`).join('')}</optgroup>` : '';
+  const v = ventana({
+    titulo:'Crear modelo desde plantilla', subtitulo:'Copia el catálogo completo en un modelo propio que sí puedes editar',
+    cuerpo: `${cajaError}<form id="fPl"><div class="form-grid">
+      <div class="campo ancho"><label>Copiar desde</label><select name="plantilla">${grupo('Plantillas', plantillas)}${grupo('Modelos del sistema', sistema)}${grupo('Duplicar un modelo propio', propios)}</select></div>
+      <div class="campo ancho"><div id="vista"></div></div>
+      <div class="campo ancho"><label>Nombre del nuevo modelo *</label><input name="nombre" required></div>
+      <div class="campo"><label>Fabricante</label><input name="fabricante"></div>
+      <div class="campo ancho"><label>Descripción</label><textarea name="descripcion"></textarea></div>
+    </div></form>
+    <div class="aviso ambar" style="margin:0">${IC_ERR}<div>Los valores copiados conservan la marca «Referencia · confirmar» hasta que los verifiques con el manual del fabricante y el programa de mantenimiento aprobado.</div></div>`,
+    pie: `<div class="der"><button class="btn secundario" data-no>Cancelar</button><button class="btn" data-si>Crear copia</button></div>`,
+  });
+  const f = v.$('#fPl');
+  const pintarBase = ()=>{
+    const m = bases.find(x => x.clave === f.plantilla.value);
+    v.$('#vista').innerHTML = `<div class="vista-base"><div class="cat-ic" style="background:var(--o-grafito,#1a1d24);color:var(--acc)">${icTipo(m.tipo_activo)}</div>
+      <div><b>${escapar(m.nombre)}</b><div class="mut" style="font-size:12px">${DATOS.tipos[m.tipo_activo]} · ${escapar(m.fabricante||'—')} · ${m.n_items} ítems · ${(m.contadores||[]).map(c=>escapar(nombreCont(c))).join(', ')}</div></div></div>`;
+    f.nombre.value = m.nombre.replace(/\s*\(plantilla\)\s*/i, '') + (m.propio ? ' (copia)' : '');
+    f.fabricante.value = m.fabricante || '';
+    f.descripcion.value = m.descripcion || '';
+  };
+  f.plantilla.onchange = pintarBase; pintarBase();
+  v.$('[data-no]').onclick = v.cerrar;
+  v.$('[data-si]').onclick = async ()=>{
+    if(!f.reportValidity()) return;
+    const m = bases.find(x => x.clave === f.plantilla.value);
+    try{
+      const r = await llamar('/api/modelos-activo', {method:'POST', body:{nombre:f.nombre.value, tipo_activo:m.tipo_activo, fabricante:f.fabricante.value,
+        contadores:m.contadores, descripcion:f.descripcion.value, plantilla:m.clave}});
+      toast('Modelo creado con ' + m.n_items + ' ítems'); await v.cerrar(); SEL = r.clave;
+      if(TIPO && TIPO !== m.tipo_activo){ TIPO = ''; marcarTipo(); }
+      await refrescar();
+    }catch(err){ mostrarError(v, err); }
+  };
+}
+
+function editarModelo(){
+  const m = modeloSel();
+  const v = ventana({
+    titulo:'Editar modelo', subtitulo: escapar(m.clave),
+    cuerpo: `${cajaError}<form id="fEd"><div class="form-grid">
+      <div class="campo ancho"><label>Nombre *</label><input name="nombre" required value="${escapar(m.nombre)}"></div>
+      <div class="campo"><label>Fabricante</label><input name="fabricante" value="${escapar(m.fabricante||'')}"></div>
+      <div class="campo"><label>Tipo</label><input value="${DATOS.tipos[m.tipo_activo]}" disabled></div>
+      <div class="campo ancho"><label>Contadores que se registran</label>${checksContadores(m.contadores||[])}</div>
+      <div class="campo ancho"><label>Descripción</label><textarea name="descripcion">${escapar(m.descripcion||'')}</textarea></div>
+    </div></form>`,
+    pie: `<div class="der"><button class="btn secundario" data-no>Cancelar</button><button class="btn" data-si>Guardar</button></div>`,
+  });
+  v.$('[data-no]').onclick = v.cerrar;
+  v.$('[data-si]').onclick = async ()=>{
+    const f = v.$('#fEd'); if(!f.reportValidity()) return;
+    const contadores = v.$$('[name=cont]:checked').map(x => x.value);
+    if(!contadores.length) return mostrarError(v, Object.assign(new Error('Elige al menos un contador.'), {status:0}));
+    try{
+      await llamar(`/api/modelos-activo/${encodeURIComponent(m.clave)}`, {method:'PUT', body:{nombre:f.nombre.value, fabricante:f.fabricante.value, descripcion:f.descripcion.value, contadores}});
+      toast('Modelo actualizado'); await v.cerrar(); await refrescar();
+    }catch(err){ mostrarError(v, err); }
+  };
+}
+async function borrarModelo(){
+  const m = modeloSel();
+  if(!await confirmar({titulo:'Eliminar modelo', peligro:true, aceptar:'Eliminar',
+    mensaje:`Se elimina <b>${escapar(m.nombre)}</b> y sus ${m.n_items} ítems de catálogo. No se puede deshacer.`})) return;
+  try{ await llamar(`/api/modelos-activo/${encodeURIComponent(m.clave)}`, {method:'DELETE'}); toast('Modelo eliminado'); SEL = ''; await cargarModelos(); }
+  catch(err){ toast(err.message); }
+}
+
+// ================= Filtros =================
+function marcarTipo(){ document.querySelectorAll('#segTipo button').forEach(b => b.classList.toggle('activo', b.dataset.v === TIPO)); }
+document.querySelectorAll('#segTipo button').forEach(b => b.onclick = ()=>{
+  TIPO = b.dataset.v; marcarTipo();
+  const u = new URL(location.href); if(TIPO) u.searchParams.set('tipo', TIPO); else u.searchParams.delete('tipo'); history.replaceState(null, '', u);
+  pintarModelos();
+  const m = modeloSel();
+  if(!m || (TIPO && m.tipo_activo !== TIPO)){
+    const otro = DATOS.modelos.find(x => x.propio && (!TIPO || x.tipo_activo === TIPO)) || DATOS.modelos.find(x => !TIPO || x.tipo_activo === TIPO);
+    if(otro) elegir(otro.clave, false); else document.getElementById('detalle').style.display = 'none';
+  }
+});
+let tBuscar = null;
+document.getElementById('fBuscar').addEventListener('input', e => { clearTimeout(tBuscar); tBuscar = setTimeout(()=>{ BUSCAR = e.target.value.trim(); pintarDetalle(); }, 160); });
+document.getElementById('btnVacio').onclick = ()=> DATOS && crearVacio();
+document.getElementById('btnPlantilla').onclick = ()=> DATOS && crearDesdePlantilla();
+marcarTipo();
+cargarModelos().catch(err => toast(err.message));
+</script>
+{% endblock %}

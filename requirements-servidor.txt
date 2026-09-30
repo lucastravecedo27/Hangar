@@ -1,0 +1,4 @@
+# Sólo en el servidor (PostgreSQL + Gunicorn).
+-r requirements.txt
+psycopg[binary]>=3.2
+gunicorn>=22

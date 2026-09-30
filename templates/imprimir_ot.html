@@ -1,0 +1,59 @@
+{% extends "_hoja_impresa.html" %}
+{% block titulo %}Orden de trabajo {{ ot.codigo }}{% endblock %}
+{% block encabezado %}Orden de trabajo{% endblock %}
+{% block codigo %}{{ ot.codigo }} · {{ ot.estado_txt }}{% endblock %}
+
+{% block contenido %}
+<div class="bloque">
+  <div class="t"><span class="n">1</span> Identificación del equipo</div>
+  <div class="datos">
+    <div class="d"><div class="l">Equipo</div><div class="v">{{ ot.equipo }}</div></div>
+    <div class="d"><div class="l">Modelo</div><div class="v">{{ ot.modelo }}</div></div>
+    <div class="d"><div class="l">Número de serie</div><div class="v">{{ ot.numero_serie or '—' }}</div></div>
+    <div class="d"><div class="l">Horas del equipo</div><div class="v">{{ '%.1f'|format(ot.horas_equipo or 0) }} h</div></div>
+    <div class="d"><div class="l">Tipo</div><div class="v">{{ (ot.tipo or '')|capitalize }}</div></div>
+    <div class="d"><div class="l">Prioridad</div><div class="v">{{ (ot.prioridad or '')|capitalize }}</div></div>
+  </div>
+</div>
+
+<div class="bloque">
+  <div class="t"><span class="n">2</span> Trabajos a ejecutar</div>
+  <ol class="trabajos" style="padding-left:20px">
+    {% for t in ot.tareas %}
+    <li>
+      <span class="casilla"></span>{{ t.descripcion }}
+      <div class="sub">{{ 'Añadido por el personal' if t.origen == 'manual' else 'Cronograma automático' }}
+        {%- if t.nota %} · {{ t.nota }}{% endif %}</div>
+    </li>
+    {% else %}
+    <li>Sin trabajos detallados.</li>
+    {% endfor %}
+  </ol>
+</div>
+
+<div class="bloque">
+  <div class="t"><span class="n">3</span> Programación y personal asignado</div>
+  <div class="datos">
+    <div class="d"><div class="l">Asignado a</div><div class="v">{{ ot.asignado_a or '—' }}</div></div>
+    <div class="d"><div class="l">Correo</div><div class="v">{{ ot.asignado_email or '—' }}</div></div>
+    <div class="d"><div class="l">Fecha programada</div><div class="v">{{ ot.fecha_programada or '—' }} {{ ot.hora_programada or '' }}</div></div>
+    <div class="d"><div class="l">Lugar</div><div class="v">{{ ot.lugar or '—' }}</div></div>
+    <div class="d"><div class="l">Notificada</div><div class="v">{{ ot.enviado_en or 'No enviada' }}</div></div>
+    <div class="d"><div class="l">Programada por</div><div class="v">{{ ot.creado_por or '—' }}</div></div>
+  </div>
+  {% if ot.observaciones %}
+  <div style="margin-top:14px;background:var(--bg);border-radius:10px;padding:12px 14px;font-size:13px">
+    <b>Observaciones:</b> {{ ot.observaciones }}</div>
+  {% endif %}
+</div>
+
+<div class="bloque">
+  <div class="t">Reporte de ejecución</div>
+  <div style="border:.5px solid var(--line2);border-radius:10px;height:110px"></div>
+</div>
+
+<div class="firmas">
+  <div class="firma">Personal que ejecuta — {{ ot.asignado_a or '' }}</div>
+  <div class="firma">Administrador — {{ ot.creado_por or '' }}</div>
+</div>
+{% endblock %}

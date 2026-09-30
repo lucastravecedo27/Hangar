@@ -1,0 +1,43 @@
+# Hangar en TU computador, para probar: app + PostgreSQL, sin Caddy ni HTTPS.
+#   docker compose -f docker-compose.local.yml up --build
+#   -> http://localhost:8000
+# Los datos quedan en el volumen "pgdata_local" (sobreviven a reinicios).
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: hangar
+      POSTGRES_USER: hangar
+      POSTGRES_PASSWORD: hangar
+      TZ: America/Bogota
+    volumes:
+      - pgdata_local:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hangar -d hangar"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  app:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://hangar:hangar@db:5432/hangar
+      SECRET_KEY: solo-para-pruebas-locales-cambiar-en-servidor
+      HANGAR_ENTORNO: desarrollo
+      COOKIE_SEGURA: "0"
+      PROXIES_DELANTE: "0"
+      TZ: America/Bogota
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app                  # el código de esta carpeta, en vivo: los cambios entran sin reconstruir
+      - ./datos:/app/datos      # aquí puedes dejar app.db para migrarlo
+    # Gunicorn con --reload: al guardar un archivo .py se reinicia solo (las plantillas y el CSS
+    # se leen en cada petición gracias a HANGAR_ENTORNO=desarrollo).
+    command: ["gunicorn", "app:app", "--bind", "0.0.0.0:8000", "--workers", "2", "--threads", "2", "--reload", "--access-logfile", "-"]
+
+volumes:
+  pgdata_local:

@@ -1,0 +1,256 @@
+{% extends "_layout.html" %}
+{% block titulo %}Diagrama de zonas{% endblock %}
+{% block encabezado %}<span id="avdTitulo">Diagrama de zonas</span>{% endblock %}
+{% block subtitulo %}<span id="avdSubtitulo">Zonas de la aeronave coloreadas por el estado de sus componentes</span>{% endblock %}
+
+{% block acciones %}
+<a class="btn secundario" href="/flota/{{ equipo_id }}" id="lnkFicha">
+  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M12 4.5 6.5 10l5.5 5.5"/></svg>
+  Ficha del activo</a>
+<a class="btn secundario" href="/diagramas?equipo={{ equipo_id }}">Láminas del fabricante</a>
+{% endblock %}
+
+{% block head %}
+<style>
+.pagina-acciones a.btn,.avd-acciones a.btn,.aviso a.btn{text-decoration:none}
+.avd-cab{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,2fr);gap:22px;align-items:center}
+.avd-cab .id{display:flex;gap:16px;align-items:center;min-width:0}
+.avd-cab .ico{width:54px;height:54px;border-radius:16px;background:var(--acc);color:var(--acc-txt);display:grid;place-items:center;flex:none}
+.avd-cab .ico svg{width:32px;height:32px}
+.avd-cab .nom{font-family:var(--font-marca);font-size:22px;font-weight:800;letter-spacing:-.02em;line-height:1.15}
+.avd-cab .meta{font-size:12.5px;color:var(--mut);margin-top:3px}
+.avd-cab .meta b{color:var(--ink2);font-weight:650}
+.avd-estado{display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap}
+.avd-estado .tag{font-size:12px;padding:4px 10px}
+.avd-contadores{display:grid;grid-template-columns:repeat(var(--n,4),minmax(0,1fr));gap:10px}
+.avd-contadores .c{border:1px solid var(--line);border-radius:14px;padding:10px 12px;background:var(--bg2)}
+.avd-contadores .l{font-size:10.5px;font-weight:700;color:var(--mut);letter-spacing:.08em;text-transform:uppercase}
+.avd-contadores .v{font-family:var(--font-marca);font-size:21px;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums;margin-top:3px}
+.avd-contadores .v small{font-family:var(--font);font-size:11.5px;font-weight:600;color:var(--mut);margin-left:3px;letter-spacing:0}
+.avd-motivos{margin-top:14px;font-size:12.5px;color:var(--ink2)}
+.avd-motivos summary{cursor:pointer;color:var(--mut);font-weight:600}
+.avd-motivos ul{margin:8px 0 0 18px;columns:2;column-gap:28px}
+.avd-motivos li{margin-bottom:3px;break-inside:avoid}
+
+.avd-rejilla{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(320px,1fr);gap:18px;align-items:start}
+.avd-rejilla .card{margin-bottom:0}
+.avd-panel{position:sticky;top:18px}
+.avd-conteos{display:flex;gap:8px;flex-wrap:wrap;margin:-2px 0 14px}
+.avd-conteos span{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:650;color:var(--ink2);background:rgba(115,122,134,.08);border-radius:980px;padding:4px 10px}
+.avd-conteos i{width:8px;height:8px;border-radius:50%;display:inline-block}
+.avd-leyenda{display:flex;flex-wrap:wrap;gap:14px;margin-top:14px;padding-top:12px;border-top:.5px solid var(--line);font-size:12px;color:var(--ink2)}
+.avd-leyenda span{display:inline-flex;align-items:center;gap:7px}
+.avd-leyenda i{width:16px;height:12px;border-radius:4px;border:1.4px solid var(--o-grafito,#1a1d24);display:inline-block}
+.avd-leyenda .mut{margin-left:auto}
+
+.avd-zona-cab{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:6px}
+.avd-zona-cab h3{margin:0}
+.avd-zona-cab .sub{font-size:12.5px;color:var(--mut);margin-top:2px}
+.avd-items{display:flex;flex-direction:column;gap:8px;margin-top:14px;max-height:calc(100vh - 290px);overflow:auto;padding-right:2px}
+.avd-it{display:grid;grid-template-columns:22px minmax(0,1fr);gap:4px 10px;padding:11px 12px;border:.5px solid var(--line2);border-radius:14px;background:var(--bg2);border-left:4px solid #b5bac3}
+.avd-it.n-ok{border-left-color:var(--green)}.avd-it.n-proximo{border-left-color:#e8a400}.avd-it.n-critico{border-left-color:#e0473e}.avd-it.n-vencido{border-left-color:#b3261e}
+.avd-it input{margin-top:3px;accent-color:#e5a200;width:15px;height:15px}
+.avd-it .fila{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.avd-it .n{font-weight:650;line-height:1.3}
+.avd-it .barra{margin:7px 0 5px}
+.avd-it .det{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:11.5px;color:var(--mut)}
+.avd-it .det b{color:var(--ink2);font-weight:650}
+.avd-it .plazo{font-size:12.5px;font-weight:650}
+.avd-it.n-vencido .plazo,.avd-it.n-critico .plazo{color:var(--o-tx-rojo,#a4271f)}
+.avd-it.n-proximo .plazo{color:var(--o-tx-ambar,#7a5400)}
+.avd-it.n-ok .plazo{color:var(--o-tx-verde,#1d6b38)}
+.avd-it .chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.avd-it .serial{font:600 11px ui-monospace,SFMono-Regular,Menlo,monospace;background:rgba(26,29,36,.06);color:var(--ink2);border-radius:6px;padding:2px 7px}
+.avd-acciones{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;padding-top:14px;border-top:.5px solid var(--line)}
+.avd-acciones .btn[disabled]{opacity:.5;pointer-events:none}
+
+@media(max-width:1100px){.avd-rejilla{grid-template-columns:1fr}.avd-panel{position:static}.avd-items{max-height:none}}
+@media(max-width:900px){.avd-cab{grid-template-columns:1fr}}
+@media(max-width:560px){.avd-contadores{grid-template-columns:repeat(2,minmax(0,1fr))}.avd-motivos ul{columns:1}.avd-leyenda .mut{margin-left:0}
+  .avd-rejilla .card{padding:16px}.avd-cab .nom{font-size:19px}}
+</style>
+{% endblock %}
+
+{% block contenido %}
+<div id="avdRaiz">
+  <div class="card"><div class="empty"><span class="cargador oscuro"></span> Cargando diagrama…</div></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static_shell', archivo='avion.js') }}"></script>
+<script>
+const EQUIPO_ID = {{ equipo_id|int }};
+const NIVEL_COLOR = {vencido:'#b3261e', critico:'#e0473e', proximo:'#e8a400', ok:'#2f8f4e'};
+const ICONO_DRON = `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round">
+  <circle cx="7.5" cy="7.5" r="4.5"/><circle cx="24.5" cy="7.5" r="4.5"/><circle cx="7.5" cy="24.5" r="4.5"/><circle cx="24.5" cy="24.5" r="4.5"/>
+  <path d="M10.7 10.7l2.8 2.8M21.3 10.7l-2.8 2.8M10.7 21.3l2.8-2.8M21.3 21.3l-2.8-2.8"/><rect x="12.5" y="12.5" width="7" height="7" rx="2"/></svg>`;
+const ICONO_AVION = `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round">
+  <path d="M16 3.5c1.3 0 1.8 1.4 1.8 3v5.2l11 1.3v3.2l-11 .6-.6 7.4 3.6.9v2.4H11.2v-2.4l3.6-.9-.6-7.4-11-.6V13l11-1.3V6.5c0-1.6.5-3 1.8-3Z"/><path d="M12.6 3.2h6.8"/></svg>`;
+const esDron = () => EQUIPO && EQUIPO.tipo_activo !== 'avion';
+let EQUIPO = null, DIAGRAMA = null, ZONA = null, ITEMS = [], MARCADOS = new Set();
+
+function contadorManda(c){
+  if(c.sin_plazo) return 'Sin plazo';
+  if(c.motivo_alerta === 'ciclos'){
+    const info = (EQUIPO.contadores_info || {})[c.contador_ciclos];
+    return info ? info.nombre : (c.unidad_ciclos || 'Ciclos');
+  }
+  if(c.motivo_alerta === 'calendario') return 'Calendario';
+  return c.contador_txt || 'Horas';
+}
+function usoItem(c){
+  if(c.motivo_alerta === 'ciclos' && c.limite_ciclos) return `${fmt(c.ciclos_uso,0)} / ${fmt(c.limite_ciclos,0)} ${escapar(c.unidad_ciclos||'')}`;
+  if(c.motivo_alerta === 'calendario' && c.vida_util_meses) return `${fmt(c.meses_en_servicio)} / ${fmt(c.vida_util_meses,0)} meses`;
+  if(c.vida_util_horas) return `${fmt(c.horas_uso)} / ${fmt(c.vida_util_horas,0)} h ${escapar(c.contador_txt||'')}`;
+  if(c.vida_util_meses) return `${fmt(c.meses_en_servicio)} / ${fmt(c.vida_util_meses,0)} meses`;
+  return 'sin plazo';
+}
+
+function tagAeronavegable(a){
+  const cls = {apto:'green', observaciones:'proximo', no_apto:'red'}[a?.estado] || 'gray';
+  return `<span class="tag ${cls}">${escapar(a?.estado_txt || 'Sin evaluar')}</span>`;
+}
+
+function pintarCabecera(e){
+  const ci = e.contadores_info || {}, co = e.contadores || {};
+  const claves = (e.modelo_info?.contadores?.length ? e.modelo_info.contadores
+    : (esDron() ? Object.keys(co) : ['hobbs','tach','aterrizajes','arranques'])).slice(0,4);
+  const motivos = e.aeronavegable?.motivos || [];
+  return `<div class="card">
+    <div class="avd-cab">
+      <div>
+        <div class="id">
+          <div class="ico">${esDron() ? ICONO_DRON : ICONO_AVION}</div>
+          <div style="min-width:0">
+            <div class="nom">${escapar(e.nombre)}</div>
+            <div class="meta">${esDron() ? (e.numero_serie ? `<b>S/N ${escapar(e.numero_serie)}</b> · ` : '') : `<b>${escapar(e.matricula || 'Sin matrícula')}</b> · `}${escapar(e.modelo_info?.nombre || e.modelo)}${e.base ? ` · Base ${escapar(e.base)}` : ''}${e.anio ? ` · ${escapar(e.anio)}` : ''}</div>
+            <div class="avd-estado"><span class="mut" style="font-size:12px">Aeronavegabilidad</span> ${tagAeronavegable(e.aeronavegable)}
+              ${e.estado && e.estado !== 'activo' ? `<span class="tag gray">${escapar(e.estado)}</span>` : ''}</div>
+          </div>
+        </div>
+      </div>
+      <div class="avd-contadores" style="--n:${Math.max(claves.length, 1)}">
+        ${claves.map(k => `<div class="c"><div class="l">${escapar(ci[k]?.nombre || k)}</div>
+          <div class="v">${fmt(co[k], ci[k]?.unidad === 'h' ? 1 : 0)}<small>${escapar(ci[k]?.unidad || '')}</small></div></div>`).join('')}
+      </div>
+    </div>
+    ${motivos.length ? `<details class="avd-motivos" ${e.aeronavegable?.estado === 'no_apto' ? '' : ''}>
+      <summary>${motivos.length} ${motivos.length === 1 ? 'motivo' : 'motivos'} del estado de aeronavegabilidad</summary>
+      <ul>${motivos.map(m => `<li>${escapar(m)}</li>`).join('')}</ul></details>` : ''}
+  </div>`;
+}
+
+function pintarPanel(zona, items, grupo){
+  ZONA = zona; ITEMS = items;
+  MARCADOS = new Set(items.filter(c => c.nivel !== 'ok').map(c => c.id));
+  const el = document.getElementById('avdPanel');
+  const nivel = grupo?.nivel || 'sin';
+  const cuenta = grupo?.cuenta || {};
+  el.innerHTML = `
+    <div class="avd-zona-cab">
+      <div><h3>${escapar(zona)}</h3>
+        <div class="sub">${items.length} ${items.length === 1 ? 'ítem' : 'ítems'}${grupo?.alertas ? ` · ${grupo.alertas} con alerta` : ' · todo al día'}</div></div>
+      ${nivel !== 'sin' ? tagNivel(nivel) : '<span class="tag gray">Sin ítems</span>'}
+    </div>
+    ${items.length ? `<div class="avd-items">${items.map(c => `
+      <label class="avd-it n-${c.nivel}">
+        <input type="checkbox" data-id="${c.id}" ${MARCADOS.has(c.id) ? 'checked' : ''} aria-label="Incluir en la orden de trabajo">
+        <div>
+          <div class="fila"><div class="n">${escapar(c.nombre)}</div>${tagNivel(c.nivel)}</div>
+          <div class="barra ${c.nivel}"><i style="width:${Math.min(+c.pct || 0, 100)}%"></i></div>
+          <div class="fila"><div class="plazo">${escapar(c.plazo_txt || '—')}</div><div class="pct">${fmt(c.pct,0)} %</div></div>
+          <div class="det"><span>Manda: <b>${escapar(contadorManda(c))}</b></span><span>${usoItem(c)}</span>
+            ${c.tipo_item === 'inspeccion' ? '<span>Inspección</span>' : ''}</div>
+          ${(c.serial || c.referencia) ? `<div class="chips">
+            ${c.serial ? `<span class="serial">S/N ${escapar(c.serial)}</span>` : ''}
+            ${+c.referencia ? '<span class="tag acc" title="Valor de referencia: confirmar con el manual del fabricante y el programa de mantenimiento aprobado">Referencia · confirmar</span>' : ''}
+          </div>` : ''}
+        </div>
+      </label>`).join('')}</div>`
+    : '<div class="empty" style="padding:30px 10px">Esta zona no tiene ítems en el catálogo del modelo.</div>'}
+    <div class="avd-acciones">
+      <button class="btn" id="btnOT"></button>
+      <a class="btn secundario" href="/flota/${EQUIPO_ID}">Ver ficha del activo</a>
+    </div>`;
+  el.querySelectorAll('input[data-id]').forEach(ch => ch.onchange = () => {
+    const id = +ch.dataset.id; ch.checked ? MARCADOS.add(id) : MARCADOS.delete(id); botonOT();
+  });
+  el.querySelector('#btnOT').onclick = crearOT;
+  botonOT();
+}
+
+function botonOT(){
+  const b = document.getElementById('btnOT'); if(!b) return;
+  const n = MARCADOS.size;
+  b.disabled = !n;
+  b.innerHTML = `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><rect x="4" y="3" width="12" height="14.5" rx="2"/><path d="M7.5 3V2h5v1M7 8.5h6M7 11.5h6M7 14.5h3.5"/></svg>
+    Crear OT con estos ítems${n ? ` (${n})` : ''}`;
+}
+
+function crearOT(){
+  const ids = [...MARCADOS];
+  if(!ids.length) return;
+  const items = ITEMS.filter(c => MARCADOS.has(c.id)).map(c => ({componente_id:c.id, nombre:c.nombre, modulo:c.modulo, nivel:c.nivel, plazo_txt:c.plazo_txt}));
+  try{ sessionStorage.setItem('ot_prefill', JSON.stringify({equipo_id:EQUIPO_ID, zona:ZONA, items})); }catch(_){}
+  location.href = `/ordenes-trabajo?nueva=1&equipo=${EQUIPO_ID}&componentes=${ids.join(',')}&zona=${encodeURIComponent(ZONA)}`;
+}
+
+async function cargar(){
+  let e;
+  try{ e = await api(`/api/equipos/${EQUIPO_ID}`); }
+  catch(err){
+    document.getElementById('avdRaiz').innerHTML = `<div class="card"><div class="empty">No se pudo cargar el activo: ${escapar(err.message)}.
+      <div style="margin-top:12px"><a class="btn secundario" href="/flota">Volver a la flota</a></div></div></div>`;
+    return;
+  }
+  EQUIPO = e;
+  const tipo = esDron() ? 'dron' : 'avion';
+  document.title = `Diagrama · ${e.matricula || e.nombre} · ${document.title.split(' · ').pop()}`;
+  document.getElementById('avdTitulo').textContent = esDron() ? 'Diagrama del dron' : 'Diagrama del avión';
+  document.getElementById('avdSubtitulo').textContent = esDron()
+    ? 'Sistemas del dron coloreados por el estado de sus piezas de seguimiento'
+    : 'Zonas del avión coloreadas por el estado de sus componentes e inspecciones';
+
+  const comps = e.componentes || [];
+  const cuenta = n => comps.filter(c => c.nivel === n).length;
+  document.getElementById('avdRaiz').innerHTML = pintarCabecera(e) + `
+    <div class="avd-rejilla">
+      <div class="card">
+        <h3>${esDron() ? 'Sistemas del dron' : 'Zonas del avión'} <span class="mut">clic en una zona para ver sus componentes</span></h3>
+        <div class="avd-conteos">
+          <span><i style="background:${NIVEL_COLOR.vencido}"></i>${cuenta('vencido')} vencidos</span>
+          <span><i style="background:${NIVEL_COLOR.critico}"></i>${cuenta('critico')} críticos</span>
+          <span><i style="background:${NIVEL_COLOR.proximo}"></i>${cuenta('proximo')} próximos</span>
+          <span><i style="background:${NIVEL_COLOR.ok}"></i>${cuenta('ok')} al día</span>
+        </div>
+        <div id="avdDiagrama"></div>
+        <div class="avd-leyenda">
+          <span><i style="background:var(--o-avd-vencido,#f2b3ae)"></i>Vencido</span>
+          <span><i style="background:var(--o-avd-critico,#f8cdc9)"></i>Crítico (&gt; 90 %)</span>
+          <span><i style="background:var(--o-avd-proximo,#fdefc4)"></i>Próximo (&gt; 75 %)</span>
+          <span><i style="background:var(--o-avd-ok,#e3f1e7)"></i>Al día</span>
+          <span><i style="background:var(--o-avd-sin,#f3f4f6)"></i>Sin ítems</span>
+          <span class="mut">Cada zona toma el peor nivel de sus componentes</span>
+        </div>
+      </div>
+      <div class="card avd-panel" id="avdPanel"></div>
+    </div>`;
+
+  DIAGRAMA = diagramaAeronave(document.getElementById('avdDiagrama'), comps, {
+    tipo, modelo: e.modelo,
+    titulo: `${e.matricula || e.nombre} · ${e.modelo_info?.nombre || e.modelo}`.toUpperCase(),
+    alElegir: (zona, items, grupo) => {
+      pintarPanel(zona, items, grupo);
+      if(window.innerWidth <= 1100) document.getElementById('avdPanel').scrollIntoView({behavior:'smooth', block:'start'});
+      history.replaceState(null, '', `?zona=${encodeURIComponent(zona)}`);
+    },
+  });
+  const zonas = DIAGRAMA.zonas();
+  const ini = (paramURL('zona') && zonas[paramURL('zona')]) ? paramURL('zona') : (DIAGRAMA.peorZona() || DIAGRAMA.porDefecto);
+  DIAGRAMA.seleccionar(ini, false);
+  pintarPanel(ini, zonas[ini].items, zonas[ini]);
+}
+cargar();
+</script>
+{% endblock %}

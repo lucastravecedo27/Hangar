@@ -1,0 +1,58 @@
+{% extends "_layout.html" %}
+{% block titulo %}Diagramas{% endblock %}
+{% block encabezado %}Diagramas de piezas{% endblock %}
+{% block subtitulo %}Láminas oficiales del fabricante · elige el modelo y haz clic en un número para identificar la pieza y su código{% endblock %}
+{% block acciones %}<select id="selModelo" style="min-width:210px"></select><select id="selEquipo" style="min-width:190px"></select>{% endblock %}
+
+{% block barra %}
+<div class="tabsbar"><div class="wrap">
+  <div class="modulos" id="modulos"></div>
+</div></div>
+{% endblock %}
+
+{% block contenido %}
+<div class="despiece-grid">
+  <div>
+    <div class="diagrama" id="diagrama">
+      <div class="lienzo" id="lienzo"><img id="imagen" alt="Diagrama de piezas" draggable="false"><div id="puntos"></div></div>
+      <div class="controles">
+        <button class="btn peq secundario" id="zMenos">−</button>
+        <span id="zoomTxt" style="min-width:44px;text-align:center">100 %</span>
+        <button class="btn peq secundario" id="zMas">+</button>
+        <button class="btn peq secundario" id="zReset">Ajustar</button>
+        <label style="margin-left:auto"><input type="checkbox" id="chkEditar"> Ajustar posiciones</label>
+        <span id="editAcciones" style="display:none;gap:6px">
+          <button class="btn peq verde" id="btnGuardar">Guardar</button>
+          <button class="btn peq secundario" id="btnRestablecer">Restablecer</button>
+        </span>
+      </div>
+      <div class="ayuda-edicion" id="ayudaEdicion" style="display:none">Modo ajuste: arrastra un número para moverlo · selecciona una pieza en la lista y haz clic en el diagrama para colocar su número · doble clic en un número lo quita.</div>
+    </div>
+    <div class="leyenda">
+      <span><i style="background:#8f9d8a"></i> Módulo OK</span>
+      <span><i style="background:#e8a400"></i> Próximo</span>
+      <span><i style="background:#e0473e"></i> Crítico</span>
+      <span><i style="background:#e0473e"></i> Vencido</span>
+      <span style="margin-left:auto;color:var(--mut)">Arrastra para mover · rueda para acercar · clic en un número</span>
+    </div>
+  </div>
+
+  <div class="panel-pieza">
+    <div class="card detalle-pieza" id="detalle"><div class="empty" style="padding:22px 10px">Selecciona un número en el diagrama o una pieza de la lista.</div></div>
+    <div class="card" id="cardEstado" style="display:none">
+      <h3>Vida útil del módulo <span class="mut">según el catálogo de mantenimiento</span></h3>
+      <div class="lista" id="estadoPiezas"></div>
+    </div>
+    <div class="card">
+      <h3>Lista de piezas <span class="mut" id="partesConteo"></span></h3>
+      <input type="text" id="buscar" placeholder="Buscar pieza o código…" style="width:100%;margin-bottom:8px">
+      <div class="pieza-lista" id="lista"></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static_shell', archivo='traduccion.js') }}"></script>
+<script src="{{ url_for('static_shell', archivo='diagramas.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,526 @@
+{% extends "_layout.html" %}
+{% block titulo %}Reportes{% endblock %}
+{% block encabezado %}Panel de reportes{% endblock %}
+{% block subtitulo %}Operaciones, productividad, costo de mantenimiento y salud de la flota en un solo tablero{% endblock %}
+
+{% block head %}
+<style>
+/* Drones vs aviones */
+.dva-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media(max-width:1180px){.dva-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:560px){.dva-grid{grid-template-columns:1fr}}
+.dva{border:.5px solid var(--line2);border-radius:14px;padding:14px 14px 12px;background:var(--bg2);display:flex;flex-direction:column;gap:9px}
+.dva .t{display:flex;align-items:center;gap:6px;font-size:10.5px;font-weight:700;color:var(--mut);letter-spacing:.07em;text-transform:uppercase}
+.dva .t .gana{margin-left:auto;white-space:nowrap;font-size:10px;letter-spacing:.02em;text-transform:none;font-weight:700;border-radius:980px;padding:2px 8px;background:var(--acc-soft);color:var(--acc-deep)}
+.dva .t .gana.avion{background:var(--o-grafito,#1a1d24);color:#fdb913}
+.dva .f{display:grid;grid-template-columns:58px 1fr auto;align-items:center;gap:8px;font-size:12px}
+.dva .f .n{color:var(--ink2);font-weight:600}
+.dva .f .tr{height:10px;border-radius:6px;background:rgba(115,122,134,.12);overflow:hidden}
+.dva .f .tr i{display:block;height:100%;border-radius:6px}
+.dva .f .v{font-family:var(--font-marca);font-weight:800;font-size:14px;font-variant-numeric:tabular-nums;letter-spacing:-.02em;min-width:64px;text-align:right}
+.dva .f .v small{font-family:var(--font);font-weight:600;font-size:10.5px;color:var(--mut);margin-left:2px}
+.dva .f.sin .v{color:var(--mut);font-weight:600}
+.dva .dif{font-size:11px;color:var(--mut)}
+.dva-vacio{display:flex;gap:14px;align-items:center;padding:18px;border-radius:14px;background:var(--acc-soft);border:.5px dashed var(--acc-linea);color:var(--ink2);font-size:13px}
+.dva-vacio svg{width:34px;height:34px;flex:none;color:var(--acc-ink)}
+</style>
+{% endblock %}
+
+{% block acciones %}
+<div class="segmento" id="segPeriodo">
+  <button data-p="30">30 días</button>
+  <button data-p="90">90 días</button>
+  <button data-p="365">12 meses</button>
+  <button data-p="" class="activo">Todo</button>
+</div>
+<button class="btn secundario" id="btnExcel">↓ Excel</button>
+<button class="btn" id="btnPdf">
+  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M6 7.6V3.4h8v4.2"/><rect x="3.2" y="7.6" width="13.6" height="6" rx="1.8"/><path d="M6 12.2h8v4.4H6z"/></svg>
+  Exportar PDF
+</button>
+{% endblock %}
+
+{% block barra %}
+<div class="tabsbar"><div class="wrap">
+  <div class="filters" style="margin-left:0">
+    <select id="fEquipo"></select>
+    <label class="mut" style="font-size:12px">Desde</label><input type="date" id="fDesde">
+    <label class="mut" style="font-size:12px">Hasta</label><input type="date" id="fHasta">
+    <button class="pillbtn" id="btnLimpiar">Limpiar</button>
+    <span class="mut" id="resumenFiltro" style="margin-left:auto;font-size:12px"></span>
+  </div>
+</div></div>
+{% endblock %}
+
+{% block contenido %}
+<div class="kpis">
+  <div class="kpi"><div class="lbl">Operaciones</div><div class="val acc" id="kN">0</div><div class="note" id="kNNota"></div></div>
+  <div class="kpi"><div class="lbl">Horas de vuelo</div><div class="val" id="kH">0</div><div class="note" id="kHNota"></div></div>
+  <div class="kpi"><div class="lbl">Hectáreas</div><div class="val" id="kHa">0</div><div class="note" id="kHaNota"></div></div>
+  <div class="kpi"><div class="lbl">Litros</div><div class="val" id="kL">0</div><div class="note" id="kLNota"></div></div>
+  <div class="kpi"><div class="lbl">Costo mantenimiento</div><div class="val" id="kM">0</div><div class="note" id="kMNota"></div></div>
+</div>
+
+<div class="panel-graficas">
+  <div class="card ancho">
+    <div class="card-cab"><h3>Evolución de la operación</h3>
+      <div class="der" id="evolucionRango"></div><span class="pista-clic"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6.4 3.6v8.9l2.2-2.1 1.7 4.2 2-.9-1.7-4.1h3z"/></svg>clic para el detalle</span></div>
+    <div class="lienzo-g" id="gEvolucion" style="height:250px"></div>
+    <div id="legEvolucion"></div>
+  </div>
+
+  <div class="card ancho" id="cardTipos">
+    <div class="card-cab"><h3>Drones vs aviones <span class="mut">misma métrica, lado a lado</span></h3>
+      <div class="der" id="tiposRango"></div></div>
+    <div class="leyenda-g" style="margin:-4px 0 14px">
+      <span><i style="background:#fdb913"></i>Drones</span><span><i style="background:var(--o-grafito,#1a1d24)"></i>Aviones</span>
+      <span class="mut">· la insignia marca cuál rinde mejor en cada indicador</span></div>
+    <div class="dva-grid" id="gTipos"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-cab"><h3>Horas por equipo</h3><div class="der">horas de vuelo acumuladas</div><span class="pista-clic"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6.4 3.6v8.9l2.2-2.1 1.7 4.2 2-.9-1.7-4.1h3z"/></svg>clic para el detalle</span></div>
+    <div id="gEquipoBarras" style="height:230px"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-cab"><h3>Productividad por equipo</h3><div class="der">hectáreas por hora de vuelo</div><span class="pista-clic"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6.4 3.6v8.9l2.2-2.1 1.7 4.2 2-.9-1.7-4.1h3z"/></svg>clic para el detalle</span></div>
+    <div id="gProductividad"></div>
+  </div>
+
+  <div class="card tercio">
+    <div class="card-cab"><h3>Estado de la flota</h3><span class="pista-clic"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6.4 3.6v8.9l2.2-2.1 1.7 4.2 2-.9-1.7-4.1h3z"/></svg>clic para el detalle</span></div>
+    <div id="gEstadoFlota" style="height:210px"></div>
+    <div id="legEstado"></div>
+  </div>
+
+  <div class="card tercio">
+    <div class="card-cab"><h3>Hectáreas por producto</h3><span class="pista-clic"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6.4 3.6v8.9l2.2-2.1 1.7 4.2 2-.9-1.7-4.1h3z"/></svg>clic para el detalle</span></div>
+    <div id="gProducto"></div>
+  </div>
+
+  <div class="card tercio">
+    <div class="card-cab"><h3>Reparto por zona</h3><span class="pista-clic"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6.4 3.6v8.9l2.2-2.1 1.7 4.2 2-.9-1.7-4.1h3z"/></svg>clic para el detalle</span></div>
+    <div id="gZona" style="height:210px"></div>
+    <div id="legZona"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-cab"><h3>Rendimiento por piloto</h3><div class="der">horas y hectáreas</div><span class="pista-clic"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6.4 3.6v8.9l2.2-2.1 1.7 4.2 2-.9-1.7-4.1h3z"/></svg>clic para el detalle</span></div>
+    <div id="gPiloto"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-cab"><h3>Clientes y fincas</h3><div class="der">hectáreas aplicadas</div><span class="pista-clic"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6.4 3.6v8.9l2.2-2.1 1.7 4.2 2-.9-1.7-4.1h3z"/></svg>clic para el detalle</span></div>
+    <div id="gCliente"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-cab"><h3>Piezas por equipo</h3><div class="der">recuento por nivel de desgaste</div><span class="pista-clic"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6.4 3.6v8.9l2.2-2.1 1.7 4.2 2-.9-1.7-4.1h3z"/></svg>clic para el detalle</span></div>
+    <div id="gFlotaBarras" style="height:230px"></div>
+    <div id="legFlota"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-cab"><h3>Próximos repuestos</h3>
+      <div class="der"><button class="pillbtn" id="btnVerRepuestos">Ver todo</button></div></div>
+    <div id="listaRepuestos"></div>
+  </div>
+
+  <div class="card ancho">
+    <div class="card-cab"><h3>Detalle por mes</h3><div class="der" id="detalleTotal"></div></div>
+    <div class="tabla-envoltura">
+      <table>
+        <thead><tr><th>Mes</th><th class="num">Operaciones</th><th class="num">Horas</th>
+          <th class="num">Hectáreas</th><th class="num">Litros</th><th class="num">Ha / h</th>
+          <th class="num">L / ha</th><th class="num">Mantenimientos</th><th class="num">Costo</th></tr></thead>
+        <tbody id="tMes"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let R = null;
+
+async function cargarEquipos(){
+  const eq = await api('/api/equipos');
+  document.getElementById('fEquipo').innerHTML = opcionesEquipos(eq, paramURL('equipo')||'', true);
+}
+
+function params(){
+  const p = new URLSearchParams();
+  const eq = document.getElementById('fEquipo').value;
+  const d = document.getElementById('fDesde').value, h = document.getElementById('fHasta').value;
+  if(eq) p.set('equipo_id', eq); if(d) p.set('desde', d); if(h) p.set('hasta', h);
+  return p;
+}
+
+async function cargar(){
+  R = await api('/api/reportes?' + params().toString());
+  pintarKpis();
+  pintarTodo();
+  cargarComparativo();
+  const f = R.filtros;
+  document.getElementById('resumenFiltro').textContent =
+    [f.desde && `desde ${fmtFecha(f.desde)}`, f.hasta && `hasta ${fmtFecha(f.hasta)}`]
+      .filter(Boolean).join(' · ') || 'Histórico completo';
+}
+
+function pintarKpis(){
+  const t = R.totales;
+  const nM = R.mantenimientos.reduce((a,m)=>a+m.n, 0);
+  const cM = R.mantenimientos.reduce((a,m)=>a+(m.costo||0), 0);
+  document.getElementById('kN').textContent = t.n;
+  document.getElementById('kNNota').textContent = `${fmt(t.despegues,0)} despegues`;
+  document.getElementById('kH').textContent = fmt(t.horas);
+  document.getElementById('kHNota').textContent = `${fmt(t.tiempo_total)} h de operación total`;
+  document.getElementById('kHa').textContent = fmt(t.hectareas, 0);
+  document.getElementById('kHaNota').textContent = t.horas ? `${fmt(t.hectareas/t.horas,1)} ha por hora de vuelo` : '';
+  document.getElementById('kL').textContent = fmt(t.litros, 0);
+  document.getElementById('kLNota').textContent = t.hectareas ? `${fmt(t.litros/t.hectareas,1)} L/ha promedio` : '';
+  document.getElementById('kM').textContent = fmt(cM, 0);
+  document.getElementById('kMNota').textContent = `${nM} mantenimiento(s) registrados`;
+}
+
+function pintarTodo(){
+  if(!R) return;
+  const meses = R.por_mes;
+
+  // Evolución: si hay pocos meses se muestra el detalle diario.
+  const usarDias = R.por_dia.length && R.por_dia.length <= 120;
+  const serie = usarDias
+    ? R.por_dia.map(d=>({x: fmtFecha(d.dia).slice(0,5), horas:d.horas, ha:d.hectareas}))
+    : meses.map(m=>({x: m.mes, horas:m.horas, ha:m.hectareas}));
+  document.getElementById('evolucionRango').textContent =
+    usarDias ? `${R.por_dia.length} días con operación` : `${meses.length} meses`;
+  graficoLinea('gEvolucion', [
+    {nombre:'Horas de vuelo', unidad:'h', color:PALETA_G[0], datos: serie.map(d=>({x:d.x, y:d.horas}))},
+    {nombre:'Hectáreas', unidad:'ha', eje:'derecha', color:PALETA_G[1], datos: serie.map(d=>({x:d.x, y:d.ha}))},
+  ], {alto:250, alClic: d=>desglose(usarDias ? 'dia' : 'mes',
+        usarDias ? R.por_dia[d.indice].dia : R.por_mes[d.indice].mes)});
+  leyendaGrafica('legEvolucion', [{nombre:'Horas de vuelo', color:PALETA_G[0]},
+                                  {nombre:'Hectáreas', color:PALETA_G[1]}]);
+
+  graficoBarras('gEquipoBarras', R.por_equipo.map(e=>e.equipo),
+    [{nombre:'Horas', unidad:'h', color:PALETA_G[0], datos:R.por_equipo.map(e=>e.horas)}],
+    {alto:230, alClic: d=>desglose('equipo', R.por_equipo[d.indice].equipo)});
+
+  graficoRanking('gProductividad', R.por_equipo.filter(e=>e.horas > 0).map(e=>({
+    etiqueta: e.equipo, valor: e.hectareas / e.horas,
+    detalle: `${fmt(e.horas)} h · ${fmt(e.hectareas,0)} ha`, color: PALETA_G[1],
+  })), {unidad:'ha/h', vacio:'Sin horas de vuelo en el período.',
+        alClic: d=>desglose('equipo', d.etiqueta)});
+
+  const a = R.alertas_resumen;
+  const totalPiezas = R.flota.reduce((s,f)=>s+f.ok+f.proximo+f.critico+f.vencido, 0);
+  graficoDona('gEstadoFlota', [
+    {etiqueta:'En vida útil', valor: totalPiezas - a.total, color: COLOR_NIVEL.ok},
+    {etiqueta:'Próximas', valor: a.proximo, color: COLOR_NIVEL.proximo},
+    {etiqueta:'Críticas', valor: a.critico, color: COLOR_NIVEL.critico},
+    {etiqueta:'Vencidas', valor: a.vencido, color: COLOR_NIVEL.vencido},
+  ], {alto:210, centro:'piezas',
+      alClic: d=>desglosePiezas({'En vida útil':'ok','Próximas':'proximo','Críticas':'critico',
+                                 'Vencidas':'vencido'}[d.etiqueta], d.etiqueta)});
+  leyendaGrafica('legEstado', [
+    {nombre:'En vida útil', color:COLOR_NIVEL.ok}, {nombre:'Próximas', color:COLOR_NIVEL.proximo},
+    {nombre:'Críticas', color:COLOR_NIVEL.critico}, {nombre:'Vencidas', color:COLOR_NIVEL.vencido}]);
+
+  graficoRanking('gProducto', R.por_producto.map(p=>({
+    etiqueta: p.producto, valor: p.hectareas, detalle: `${fmt(p.litros,0)} L`, color: PALETA_G[1],
+  })), {unidad:'ha', alClic: d=>desglose('producto', d.etiqueta)});
+
+  graficoDona('gZona', R.por_zona.map((z,i)=>({
+    etiqueta: z.zona, valor: z.hectareas, color: PALETA_G[i % PALETA_G.length],
+  })), {alto:210, centro:'ha', alClic: d=>desglose('zona', d.etiqueta)});
+  leyendaGrafica('legZona', R.por_zona.slice(0,6).map((z,i)=>({nombre:z.zona, color:PALETA_G[i % PALETA_G.length]})));
+
+  graficoRanking('gPiloto', R.por_piloto.map(p=>({
+    etiqueta: p.piloto, valor: p.horas, detalle: `${fmt(p.hectareas,0)} ha · ${p.n} op.`, color: PALETA_G[2],
+  })), {unidad:'h', alClic: d=>desglose('piloto', d.etiqueta)});
+
+  graficoRanking('gCliente', R.por_cliente.map(c=>({
+    etiqueta: c.cliente, valor: c.hectareas, detalle: `${c.n} op. · ${fmt(c.horas)} h`, color: PALETA_G[0],
+  })), {unidad:'ha', alClic: d=>desglose('cliente', d.etiqueta)});
+
+  // Recuento de piezas por nivel: barras agrupadas, una por nivel de desgaste.
+  graficoBarras('gFlotaBarras', R.flota.map(f=>f.equipo), [
+    {nombre:'Próximas', color:COLOR_NIVEL.proximo, datos:R.flota.map(f=>f.proximo)},
+    {nombre:'Críticas', color:COLOR_NIVEL.critico, datos:R.flota.map(f=>f.critico)},
+    {nombre:'Vencidas', color:COLOR_NIVEL.vencido, datos:R.flota.map(f=>f.vencido)},
+  ], {alto:230, vacio:'Sin equipos activos.',
+      alClic: d=>desglosePiezas({'Próximas':'proximo','Críticas':'critico','Vencidas':'vencido'}[d.serie],
+                                `${d.serie} · ${escapar(d.etiqueta)}`, R.flota[d.indice].equipo)});
+  leyendaGrafica('legFlota', [{nombre:'Próximas', color:COLOR_NIVEL.proximo},
+    {nombre:'Críticas', color:COLOR_NIVEL.critico}, {nombre:'Vencidas', color:COLOR_NIVEL.vencido}]);
+
+  document.getElementById('listaRepuestos').innerHTML = R.repuestos.length
+    ? R.repuestos.slice(0,7).map(p=>`<div class="repuesto u-${p.urgencia}">
+        <div><div class="nom">${escapar(p.nombre)}</div>
+          <div class="sub">${escapar(p.equipo)} · ${usoPieza(p)}</div></div>
+        <div class="cuando"><div class="dias">${fmtDias(p.dias_estimados)}</div>
+          <div class="fecha">${p.fecha_estimada ? fmtFecha(p.fecha_estimada) : '—'}</div></div>
+      </div>`).join('')
+    : '<div class="empty">Sin piezas próximas a cambio.</div>';
+
+  const costoMes = Object.fromEntries(R.mantenimientos_mes.map(m=>[m.mes, m]));
+  document.getElementById('detalleTotal').textContent = `${meses.length} mes(es)`;
+  document.getElementById('tMes').innerHTML = meses.map(m=>{
+    const mm = costoMes[m.mes] || {n:0, costo:0};
+    return `<tr class="clk" onclick="desglose('mes','${m.mes}')"><td><b>${m.mes}</b></td><td class="num">${m.n}</td><td class="num">${fmt(m.horas)}</td>
+      <td class="num">${fmt(m.hectareas)}</td><td class="num">${fmt(m.litros,0)}</td>
+      <td class="num">${m.horas ? fmt(m.hectareas/m.horas,1) : '—'}</td>
+      <td class="num">${m.hectareas ? fmt(m.litros/m.hectareas,1) : '—'}</td>
+      <td class="num">${mm.n || '—'}</td><td class="num">${mm.costo ? fmt(mm.costo,0) : '—'}</td></tr>`;
+  }).join('') || '<tr><td colspan="9" class="empty">Sin datos.</td></tr>';
+}
+
+async function verRepuestos(){
+  const eq = document.getElementById('fEquipo').value;
+  const v = ventana({titulo:'Próximos repuestos a cambiar', ancho:'ancha',
+    subtitulo:'Días estimados según el ritmo real de vuelo',
+    cuerpo:'<div id="rc"><div class="empty" style="padding:40px"><span class="cargador oscuro"></span> Calculando…</div></div>',
+    pie:'<div class="der"><button class="btn secundario" data-cerrar>Cerrar</button></div>'});
+  v.$('[data-cerrar]').onclick = v.cerrar;
+  const r = await api('/api/repuestos?limite=40' + (eq ? `&equipo_id=${eq}` : ''));
+  const f = r.resumen.franjas;
+  v.$('#rc').innerHTML = `<div class="repuestos-franjas">
+      <div class="franja vencido"><div class="n">${f.vencido}</div><div class="l">Vencidas</div></div>
+      <div class="franja inmediato"><div class="n">${f.inmediato}</div><div class="l">≤ 15 días</div></div>
+      <div class="franja corto"><div class="n">${f.corto}</div><div class="l">16 – 45 días</div></div>
+      <div class="franja medio"><div class="n">${f.medio}</div><div class="l">46 – 120 días</div></div>
+    </div>` + (r.lista.length ? r.lista.map(p=>`
+      <div class="repuesto u-${p.urgencia}">
+        <div><div class="nom">${escapar(p.nombre)}</div>
+          <div class="sub">${escapar(p.equipo)} · ${escapar(p.modulo)} · ${usoPieza(p)}</div></div>
+        <div class="cuando"><div class="dias">${fmtDias(p.dias_estimados)}</div>
+          <div class="fecha">${p.fecha_estimada ? fmtFecha(p.fecha_estimada) : '—'}</div></div>
+        <div class="barra ${p.nivel}"><i style="width:${Math.min(p.pct,100)}%"></i></div>
+      </div>`).join('') : '<div class="empty">Sin piezas próximas a cambio.</div>');
+}
+
+
+// ---------- Drones vs aviones ----------
+const DVA_CLAVES = 'rendimiento,costo_ha,ingreso_ha,dosis,cumplimiento,min_salida,horas,hectareas';
+const DVA_ORDEN = DVA_CLAVES.split(',');
+function dvaValor(i){
+  if(!i || i.valor === null || i.valor === undefined) return '<span>sin dato</span>';
+  const n = fmt(i.valor, i.decimales ?? 1);
+  if(i.unidad === '$/ha') return `$ ${n}<small>/ha</small>`;
+  return `${n}${i.unidad ? `<small>${escapar(i.unidad)}</small>` : ''}`;
+}
+async function cargarComparativo(){
+  const p = new URLSearchParams({agrupar:'tipo', claves: DVA_CLAVES});
+  const d = document.getElementById('fDesde').value, h = document.getElementById('fHasta').value;
+  if(d || h){ if(d) p.set('desde', d); if(h) p.set('hasta', h); } else p.set('periodo', 'todo');
+  const nodo = document.getElementById('gTipos');
+  document.getElementById('tiposRango').textContent =
+    [d && `desde ${fmtFecha(d)}`, h && `hasta ${fmtFecha(h)}`].filter(Boolean).join(' · ') || 'Histórico completo';
+  let r;
+  try { r = await api('/api/indicadores?' + p.toString()); }
+  catch(err){ nodo.innerHTML = `<div class="empty">No se pudo cargar la comparación: ${escapar(err.message)}</div>`; return; }
+  const T = r.por_tipo || {};
+  const dron = T.dron || {}, avion = T.avion || {};
+  const conDatos = x => ['horas','hectareas'].some(k => x[k] && x[k].valor);
+  if(!conDatos(avion) || !conDatos(dron)){
+    const falta = !conDatos(avion) ? 'aviones' : 'drones';
+    nodo.style.display = 'block';
+    nodo.innerHTML = `<div class="dva-vacio">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.4c.8 0 1.3.9 1.3 2.1v3.3l5.5 3.1v1.7l-5.5-1.6v3.3l1.8 1.4v1.4L10 16.4l-3.1.7v-1.4l1.8-1.4v-3.3l-5.5 1.6v-1.7l5.5-3.1V4.5c0-1.2.5-2.1 1.3-2.1z"/></svg>
+      <div><b>Todavía no hay con qué comparar.</b><br>No hay operaciones de ${falta} en este período. Cuando registres vuelos de ambos tipos
+      verás aquí rendimiento, costo e ingreso por hectárea, dosis y cumplimiento lado a lado.
+      ${falta === 'aviones' ? ' <a href="/flota">Ir a Flota</a> para registrar un avión.' : ''}</div></div>`;
+    return;
+  }
+  nodo.style.display = '';
+  nodo.innerHTML = DVA_ORDEN.map(k=>{
+    const a = dron[k], b = avion[k];
+    const ref = a || b; if(!ref) return '';
+    const va = a?.valor, vb = b?.valor;
+    const max = Math.max(Math.abs(va || 0), Math.abs(vb || 0)) || 1;
+    let gana = '';
+    if(va != null && vb != null && va !== vb && ref.mejor){
+      const dronMejor = ref.mejor === 'alto' ? va > vb : va < vb;
+      gana = `<span class="gana ${dronMejor ? '' : 'avion'}">mejor: ${dronMejor ? 'drones' : 'aviones'}</span>`;
+    }
+    let dif = '';
+    if(va && vb){
+      const x = Math.max(va, vb) / Math.min(va, vb);
+      dif = `${va > vb ? 'Drones' : 'Aviones'}: ${fmt(x, 1)}× el otro tipo`;
+      if(Math.abs(x - 1) < 0.05) dif = 'Prácticamente iguales';
+    }
+    const fila = (nom, i, v, color)=>`<div class="f ${v == null ? 'sin' : ''}"><span class="n">${nom}</span>
+      <span class="tr"><i style="width:${v == null ? 0 : Math.max(2, Math.abs(v)/max*100)}%;background:${color}"></i></span>
+      <span class="v">${dvaValor(i)}</span></div>`;
+    return `<div class="dva" title="${escapar(ref.formula || '')}">
+      <div class="t">${escapar(ref.nombre)}${gana}</div>
+      ${fila('Drones', a, va, '#fdb913')}${fila('Aviones', b, vb, '#1a1d24')}
+      <div class="dif">${dif || '&nbsp;'}</div></div>`;
+  }).join('');
+}
+
+// ---------- Desglose: se abre al pinchar cualquier gráfica ----------
+const ETIQUETA_DIM = {equipo:'Equipo', producto:'Producto', piloto:'Piloto', cliente:'Cliente',
+                      zona:'Zona', finca:'Finca', mes:'Mes', dia:'Día'};
+
+async function desglose(dim, valor){
+  const p = params();
+  p.set('dim', dim); p.set('valor', valor);
+  const titulo = `${ETIQUETA_DIM[dim] || dim}: ${escapar(valor)}`;
+  const v = ventana({titulo, ancho:'ancha', subtitulo:'Todo lo registrado bajo este filtro',
+    cuerpo:'<div id="dCuerpo"><div class="empty" style="padding:44px"><span class="cargador oscuro"></span> Cargando detalle…</div></div>',
+    pie:`<span class="mut" style="font-size:12px" id="dPie"></span>
+         <div class="der"><button class="btn secundario" data-excel>↓ Excel</button>
+         <button class="btn secundario" data-cerrar>Cerrar</button></div>`});
+  v.$('[data-cerrar]').onclick = v.cerrar;
+
+  const d = await api('/api/reportes/detalle?' + p.toString());
+  const t = d.totales;
+  const dias = t.dias || 1;
+
+  v.$('#dPie').textContent = `${t.n} operación(es) · ${t.primera ? fmtFecha(t.primera) : ''} → ${t.ultima ? fmtFecha(t.ultima) : ''}`;
+  v.$('[data-excel]').onclick = ()=>{
+    // El Excel del período completo; el desglose acota la lectura, no la exportación.
+    descargar('/api/operaciones/exportar.xlsx?' + params().toString());
+  };
+
+  v.$('#dCuerpo').innerHTML = `
+    <div class="desglose-kpis">
+      <div class="k"><div class="l">Operaciones</div><div class="v">${t.n}</div>
+        <div class="n">${dias} día(s) con vuelo</div></div>
+      <div class="k"><div class="l">Horas de vuelo</div><div class="v">${fmt(t.horas)}</div>
+        <div class="n">${fmt(t.horas/dias,2)} h por día activo</div></div>
+      <div class="k"><div class="l">Hectáreas</div><div class="v">${fmt(t.hectareas,0)}</div>
+        <div class="n">${t.horas ? fmt(t.hectareas/t.horas,1)+' ha/h' : ''}</div></div>
+      <div class="k"><div class="l">Litros</div><div class="v">${fmt(t.litros,0)}</div>
+        <div class="n">${t.hectareas ? fmt(t.litros/t.hectareas,1)+' L/ha' : ''}</div></div>
+      <div class="k"><div class="l">Despegues</div><div class="v">${fmt(t.despegues,0)}</div>
+        <div class="n">${t.n ? fmt(t.despegues/t.n,1)+' por operación' : ''}</div></div>
+      <div class="k"><div class="l">Tiempo total</div><div class="v">${fmt(t.tiempo_total)}</div>
+        <div class="n">${t.tiempo_total ? fmt(t.horas/t.tiempo_total*100,0)+' % en vuelo' : ''}</div></div>
+    </div>
+
+    <div class="card" style="box-shadow:none;border:.5px solid var(--line);margin-bottom:16px">
+      <div class="card-cab"><h3>Evolución mensual</h3><div class="der">${d.por_mes.length} mes(es)</div></div>
+      <div id="dEvolucion" style="height:190px"></div>
+      <div id="dLeg"></div>
+    </div>
+
+    <div class="desglose-cols" style="margin-bottom:18px">
+      <div><h4>Por equipo</h4><div id="dEquipo"></div></div>
+      <div><h4>Por producto</h4><div id="dProducto"></div></div>
+      <div><h4>Por piloto</h4><div id="dPiloto"></div></div>
+      <div><h4>Por finca</h4><div id="dFinca"></div></div>
+    </div>
+
+    <div class="card-cab"><h3>Operaciones (${d.operaciones.length}${d.operaciones.length===300?'+':''})</h3></div>
+    <div class="tabla-envoltura" style="max-height:340px;overflow:auto">
+      <table><thead><tr><th>Fecha</th><th>Equipo</th><th>Finca / cliente</th><th>Producto</th>
+        <th class="num">Vuelo</th><th class="num">Ha</th><th class="num">L</th><th>Piloto</th></tr></thead>
+        <tbody>${d.operaciones.map(o=>`<tr>
+          <td>${fmtFecha(o.fecha)}</td><td>${escapar(o.equipo)}</td>
+          <td>${escapar(o.lote||'—')}<div class="mut" style="font-size:11.5px">${escapar(o.cliente||'')}</div></td>
+          <td>${escapar(o.producto||'—')}</td><td class="num">${fmt(o.horas_vuelo,2)}</td>
+          <td class="num">${fmt(o.hectareas,1)}</td><td class="num">${fmt(o.litros,0)}</td>
+          <td>${escapar(o.piloto||'—')}</td></tr>`).join('')}</tbody></table>
+    </div>`;
+
+  graficoLinea('dEvolucion', [
+    {nombre:'Horas', unidad:'h', color:PALETA_G[0], datos:d.por_mes.map(m=>({x:m.mes, y:m.horas}))},
+    {nombre:'Hectáreas', unidad:'ha', eje:'derecha', color:PALETA_G[1], datos:d.por_mes.map(m=>({x:m.mes, y:m.hectareas}))},
+  ], {alto:190});
+  leyendaGrafica('dLeg', [{nombre:'Horas', color:PALETA_G[0]}, {nombre:'Hectáreas', color:PALETA_G[1]}]);
+
+  const rank = (destino, filas, campo, color)=>graficoRanking(destino, filas.map(f=>({
+    etiqueta: f[campo], valor: f.horas, detalle: `${fmt(f.hectareas,0)} ha · ${f.n} op.`, color,
+  })), {unidad:'h', alClic: x=>{ v.cerrar(); desglose(campo, x.etiqueta); }});
+  rank('dEquipo', d.por_equipo, 'equipo', PALETA_G[0]);
+  rank('dProducto', d.por_producto, 'producto', PALETA_G[1]);
+  rank('dPiloto', d.por_piloto, 'piloto', PALETA_G[2]);
+  rank('dFinca', d.por_finca, 'finca', PALETA_G[3]);
+}
+
+// Desglose del estado de la flota: qué piezas concretas están en ese nivel.
+async function desglosePiezas(nivel, titulo, equipoNombre){
+  const eq = document.getElementById('fEquipo').value;
+  const v = ventana({titulo:`Piezas · ${titulo}`, ancho:'ancha',
+    subtitulo:'Horas de uso frente a la vida útil recomendada, con la fecha estimada de cambio',
+    cuerpo:'<div id="pzCuerpo"><div class="empty" style="padding:44px"><span class="cargador oscuro"></span> Cargando piezas…</div></div>',
+    pie:'<div class="der"><button class="btn secundario" data-cerrar>Cerrar</button></div>'});
+  v.$('[data-cerrar]').onclick = v.cerrar;
+
+  const r = await api('/api/reportes/piezas?' + (nivel ? `nivel=${nivel}` : '') + (eq ? `&equipo_id=${eq}` : ''));
+  let piezas = r.piezas;
+  if(equipoNombre) piezas = piezas.filter(x=>x.equipo === equipoNombre);
+  if(!piezas.length){ v.$('#pzCuerpo').innerHTML = '<div class="empty" style="padding:40px">Ninguna pieza en este estado.</div>'; return; }
+
+  // Recuento por módulo: dice de un vistazo dónde se concentra el desgaste.
+  const porModulo = {};
+  piezas.forEach(x=>{ porModulo[x.modulo] = (porModulo[x.modulo] || 0) + 1; });
+
+  v.$('#pzCuerpo').innerHTML = `
+    <div class="desglose-kpis">
+      <div class="k"><div class="l">Piezas</div><div class="v">${piezas.length}</div></div>
+      <div class="k"><div class="l">Equipos afectados</div><div class="v">${new Set(piezas.map(x=>x.equipo)).size}</div></div>
+      <div class="k"><div class="l">Módulos</div><div class="v">${Object.keys(porModulo).length}</div></div>
+      <div class="k"><div class="l">Cambio más próximo</div>
+        <div class="v">${fmtDias(Math.min(...piezas.map(x=>x.dias_estimados ?? 1e9)))}</div></div>
+    </div>
+    <div class="card" style="box-shadow:none;border:.5px solid var(--line);margin-bottom:16px">
+      <div class="card-cab"><h3>Reparto por módulo</h3></div>
+      <div id="pzModulos"></div>
+    </div>
+    <div class="tabla-envoltura" style="max-height:380px;overflow:auto">
+      <table><thead><tr><th>Pieza</th><th>Equipo</th><th>Módulo</th><th class="num">Uso</th>
+        <th class="num">Vida útil</th><th style="width:110px">Desgaste</th>
+        <th class="num">Estimado</th><th>Fecha</th></tr></thead>
+        <tbody>${piezas.map(x=>`<tr>
+          <td><b>${escapar(x.nombre)}</b></td><td>${escapar(x.equipo)}</td><td>${escapar(x.modulo)}</td>
+          <td class="num">${x.vida_util_horas?fmt(x.horas_uso)+" h":fmt(x.meses_en_servicio)+" meses"}</td><td class="num">${vidaPieza(x)}</td>
+          <td><div class="barra ${x.nivel}"><i style="width:${Math.min(x.pct,100)}%"></i></div>
+            <div class="mut" style="font-size:11px">${x.pct} %</div></td>
+          <td class="num">${fmtDias(x.dias_estimados)}</td>
+          <td>${x.fecha_estimada ? fmtFecha(x.fecha_estimada) : '—'}</td></tr>`).join('')}</tbody></table>
+    </div>`;
+
+  graficoRanking('pzModulos', Object.entries(porModulo)
+    .sort((a,b)=>b[1]-a[1])
+    .map(([m,n])=>({etiqueta:m, valor:n, color: COLOR_NIVEL[nivel] || PALETA_G[0]})), {unidad:'piezas'});
+}
+
+function aplicarPeriodo(dias){
+  const hasta = document.getElementById('fHasta'), desde = document.getElementById('fDesde');
+  if(!dias){ desde.value = ''; hasta.value = ''; }
+  else {
+    const hoy = new Date();
+    const ini = new Date(hoy.getTime() - dias*86400000);
+    desde.value = ini.toISOString().slice(0,10);
+    hasta.value = hoy.toISOString().slice(0,10);
+  }
+  cargar();
+}
+
+document.getElementById('segPeriodo').addEventListener('click', e=>{
+  const b = e.target.closest('button'); if(!b) return;
+  document.querySelectorAll('#segPeriodo button').forEach(x=>x.classList.toggle('activo', x === b));
+  aplicarPeriodo(Number(b.dataset.p) || 0);
+});
+['fEquipo','fDesde','fHasta'].forEach(id=>document.getElementById(id).addEventListener('change', cargar));
+document.getElementById('btnLimpiar').onclick = ()=>{
+  ['fDesde','fHasta'].forEach(id=>document.getElementById(id).value = '');
+  document.getElementById('fEquipo').value = '';
+  document.querySelectorAll('#segPeriodo button').forEach(x=>x.classList.toggle('activo', !x.dataset.p));
+  cargar();
+};
+document.getElementById('btnPdf').onclick = ()=>{
+  window.open('/imprimir/reporte?' + params().toString(), '_blank', 'noopener');
+};
+document.getElementById('btnExcel').onclick = ()=>descargar('/api/operaciones/exportar.xlsx?' + params().toString());
+document.getElementById('btnVerRepuestos').onclick = verRepuestos;
+redibujarGraficas(pintarTodo);
+
+cargarEquipos().then(cargar);
+</script>
+{% endblock %}

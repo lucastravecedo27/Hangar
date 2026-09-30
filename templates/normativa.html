@@ -1,0 +1,163 @@
+{% extends "_layout.html" %}
+{% block titulo %}Normativa RAC{% endblock %}
+{% block encabezado %}Normativa RAC{% endblock %}
+{% block subtitulo %}Qué exige la Aerocivil a la operación, cómo va la empresa y los entregables listos para generar{% endblock %}
+
+{% block head %}
+<style>
+.nr-hero{display:grid;grid-template-columns:auto 1fr;gap:28px;align-items:center;margin-bottom:18px}
+.nr-anillo{position:relative;width:170px;height:170px}
+.nr-anillo svg{width:100%;height:100%;transform:rotate(-90deg)}
+.nr-anillo .c{position:absolute;inset:0;display:grid;place-items:center;text-align:center}
+.nr-anillo b{font-family:var(--font-marca);font-weight:800;font-size:40px;line-height:1;display:block}
+.nr-anillo span{font-size:11.5px;color:var(--mut);font-weight:650}
+.nr-cuenta{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0 12px}
+.nr-cuenta button{display:flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--bg2);border-radius:14px;
+  padding:10px 14px;cursor:pointer;font:inherit;color:inherit;text-align:left}
+.nr-cuenta button.act{border-color:var(--ink);box-shadow:0 0 0 2px var(--line2)}
+.nr-cuenta b{font-family:var(--font-marca);font-weight:800;font-size:22px}
+.nr-cuenta small{font-size:11.5px;color:var(--mut);display:block;line-height:1.2}
+.pto{width:10px;height:10px;border-radius:50%;flex:none}
+.pto.cumple{background:var(--green)}.pto.atencion{background:var(--amber)}.pto.falta{background:var(--red)}
+.pto.manual{background:var(--teal)}.pto.no_aplica{background:var(--line2)}
+.nr-versiones{display:flex;flex-wrap:wrap;gap:6px}
+.nr-versiones span{font-size:11.5px;padding:4px 10px;border-radius:980px;background:var(--o-gris,#f1f2f4);color:var(--ink2)}
+.nr-versiones b{font-weight:750}
+.nr-grupo{margin-bottom:20px}
+.nr-grupo h3{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--mut);margin:0 0 8px;display:flex;align-items:center;gap:10px}
+.nr-grupo h3::after{content:"";flex:1;height:.5px;background:var(--line)}
+.nr-lista{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px}
+.req{display:flex;flex-direction:column;gap:6px;text-align:left;border:1px solid var(--line);border-left:4px solid var(--line2);
+  background:var(--bg2);border-radius:14px;padding:13px 14px;cursor:pointer;font:inherit;color:inherit;transition:box-shadow .15s,transform .15s}
+.req:hover{box-shadow:var(--shadow);transform:translateY(-1px)}
+.req.cumple{border-left-color:var(--green)}.req.atencion{border-left-color:var(--amber)}
+.req.falta{border-left-color:var(--red)}.req.manual{border-left-color:var(--teal)}.req.no_aplica{opacity:.6}
+.req .num{font-size:11px;font-weight:750;color:var(--mut);letter-spacing:.04em}
+.req .tit{font-weight:750;font-size:14px}
+.req .det{font-size:12.5px;color:var(--ink2);line-height:1.45}
+.req .pie{display:flex;align-items:center;gap:8px;margin-top:auto;font-size:11.5px;color:var(--mut)}
+.est{font-size:11px;font-weight:750;padding:2px 8px;border-radius:980px}
+.est.cumple{background:rgba(47,143,78,.13);color:var(--o-tx-verde,#1d6b38)}
+.est.atencion{background:rgba(232,164,0,.15);color:var(--o-tx-ambar,#8a5f00)}
+.est.falta{background:rgba(224,71,62,.13);color:var(--o-tx-rojo,#a4271f)}
+.est.manual{background:rgba(13,148,136,.13);color:var(--o-tx-teal,#0b6b62)}
+.est.no_aplica{background:var(--o-gris,#f1f2f4);color:var(--mut)}
+.entregables{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.entr{display:flex;gap:12px;align-items:flex-start;border:1px solid var(--line);border-radius:16px;padding:14px;background:var(--bg2);
+  text-decoration:none;color:inherit;transition:box-shadow .15s,transform .15s}
+.entr:hover{box-shadow:var(--shadow);transform:translateY(-1px)}
+.entr .ic{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;background:var(--o-grafito,#1a1d24);color:var(--acc);flex:none}
+.entr .ic svg{width:20px;height:20px}
+.entr b{display:block;font-size:14px}.entr small{display:block;font-size:12px;color:var(--mut);line-height:1.4;margin-top:2px}
+.entr .rac{font-size:11px;font-weight:750;color:var(--acc-deep);margin-top:6px}
+.nr-filtros{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.nr-lista-det{margin:8px 0 0 18px;padding:0;font-size:13px;line-height:1.6}
+@media(max-width:720px){.nr-hero{grid-template-columns:1fr}.nr-anillo{margin:0 auto}}
+</style>
+{% endblock %}
+
+{% block barra %}
+<div class="tabsbar"><div class="wrap"><div class="nr-filtros">
+  <div class="segmento" id="segAplica">
+    <button data-a="" class="activo">Todo</button><button data-a="avion">Avión</button><button data-a="dron">Drones</button>
+    <button data-a="empresa">Empresa</button><button data-a="personal">Pilotos</button>
+  </div>
+  <span style="margin-left:auto;font-size:12px;color:var(--mut)" id="nrFecha"></span>
+</div></div></div>
+{% endblock %}
+
+{% block contenido %}
+<div class="card nr-hero">
+  <div class="nr-anillo" id="anillo"></div>
+  <div>
+    <h3 style="margin:0 0 2px;font-size:17px">Cumplimiento normativo de la operación</h3>
+    <p class="mut" style="margin:0;font-size:13px">Evaluado con los datos vivos de la app: inspecciones, directivas, documentos, tanqueos, operaciones y pilotos. Clic en cada requisito para ver qué falta y dónde se arregla.</p>
+    <div class="nr-cuenta" id="cuenta"></div>
+    <div class="nr-versiones" id="versiones"></div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-cab"><h3>Entregables RAC</h3><div class="der">se generan con la información al día · PDF y Excel</div></div>
+  <div class="entregables" id="entregables"></div>
+  <p class="mut" style="font-size:11.5px;margin:12px 0 0">La RAC define el contenido de cada libro y registro, no un formato de archivo de carga: los entregables salen con todos los campos exigidos, listos para firmar, imprimir o adjuntar en el trámite ante la Aerocivil.</p>
+</div>
+
+<div id="requisitos"></div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const EST_TXT = {cumple:'Cumple', atencion:'Atención', falta:'Falta dato', manual:'En campo', no_aplica:'No aplica'};
+const APLICA_TXT = {avion:'Avión', dron:'Drones', empresa:'Empresa', personal:'Pilotos'};
+const IC_DOC = `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11.6 2.8H5.6A1.6 1.6 0 0 0 4 4.4v11.2a1.6 1.6 0 0 0 1.6 1.6h8.8a1.6 1.6 0 0 0 1.6-1.6V7.2z"/><path d="M11.6 2.8v4.4H16M7 11h6M7 14h4"/></svg>`;
+// Entregables que exige la norma. Se generan en el módulo de Informes (PDF y Excel).
+const ENTREGABLES = [
+  {clave:'rac_libro_abordo', titulo:'Libro de a bordo', rac:'RAC 91.1410', txt:'Por vuelo: salida y llegada, tiempo, tripulación, propósito y firma. Se conserva 3 años.'},
+  {clave:'rac_libro_uas', titulo:'Libro de vuelo y mantenimiento del UA', rac:'RAC 100.005 · 100.510', txt:'Cada vuelo del dron con horas y piloto, más fallas y mantenimiento.'},
+  {clave:'rac_aplicaciones', titulo:'Registro de aplicaciones aéreas', rac:'RAC 137.71', txt:'Cliente, fechas, productos y cantidades aplicadas en cada operación. 12 meses.'},
+  {clave:'rac_horas_pilotos', titulo:'Horas y aptitud de pilotos', rac:'RAC 100.510 · 137.73', txt:'Horas por piloto y vencimientos de médico y colinesterasa.'},
+  {clave:'rac_fiaa', titulo:'Soporte del informe anual FIAA', rac:'RAC 91.1136', txt:'Horas y ciclos del año, estado de directivas y componentes de vida limitada.'},
+  {clave:'rac_registro_mant', titulo:'Registro de mantenimiento', rac:'RAC 91.1125 · 43.305', txt:'Tarea, horas y ciclos, referencia, fechas y firma con licencia.'},
+];
+let R = null, APLICA = '', ESTADO = '';
+
+async function cargar(){
+  try{ R = await api('/api/normativa'); }catch(e){ toast(e.message); return; }
+  document.getElementById('nrFecha').textContent = 'Evaluado el ' + fmtFecha(R.fecha);
+  pintarAnillo(); pintarVersiones(); pintarEntregables(); pintar();
+}
+
+function pintarAnillo(){
+  const v = R.indice, r = 70, L = 2*Math.PI*r;
+  const col = v==null ? 'var(--line2)' : v >= 85 ? 'var(--green)' : v >= 60 ? 'var(--amber)' : 'var(--red)';
+  document.getElementById('anillo').innerHTML = `<svg viewBox="0 0 170 170"><circle cx="85" cy="85" r="${r}" fill="none" stroke="var(--o-gris,#f1f2f4)" stroke-width="16"/>
+    <circle cx="85" cy="85" r="${r}" fill="none" stroke="${col}" stroke-width="16" stroke-linecap="round" stroke-dasharray="${L}" stroke-dashoffset="${L}" id="arco" style="transition:stroke-dashoffset 1.2s cubic-bezier(.2,.8,.2,1)"/></svg>
+    <div class="c"><div><b>${v==null?'—':v+' %'}</b><span>requisitos cumplidos</span></div></div>`;
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{ const a = document.getElementById('arco'); if(a) a.style.strokeDashoffset = L*(1-(v||0)/100); }));
+  const c = R.resumen;
+  document.getElementById('cuenta').innerHTML = ['atencion','falta','manual','cumple'].map(k=>
+    `<button type="button" data-e="${k}" class="${ESTADO===k?'act':''}"><i class="pto ${k}"></i><div><b>${c[k]||0}</b><small>${EST_TXT[k]}</small></div></button>`).join('');
+  document.querySelectorAll('#cuenta button').forEach(b=>b.onclick=()=>{ ESTADO = ESTADO===b.dataset.e ? '' : b.dataset.e; pintarAnillo(); pintar(); });
+}
+function pintarVersiones(){
+  document.getElementById('versiones').innerHTML = R.versiones.map(v=>`<span title="${escapar(v.titulo)}"><b>${escapar(v.rac)}</b> ${escapar(v.version)}</span>`).join('') +
+    `<span><a href="${R.fuente}" target="_blank" rel="noopener">Texto oficial en aerocivil.gov.co</a></span>`;
+}
+function pintarEntregables(){
+  document.getElementById('entregables').innerHTML = ENTREGABLES.map(e=>`<a class="entr" href="/informes?informe=${e.clave}">
+    <span class="ic">${IC_DOC}</span><div><b>${escapar(e.titulo)}</b><small>${escapar(e.txt)}</small><div class="rac">${escapar(e.rac)}</div></div></a>`).join('');
+}
+
+function pintar(){
+  const lista = R.requisitos.filter(q=>(!APLICA || q.aplica===APLICA) && (!ESTADO || q.estado===ESTADO));
+  const orden = {falta:0, atencion:1, manual:2, cumple:3, no_aplica:4};
+  const grupos = {};
+  lista.forEach(q=>{ const g = q.rac.split(' · ')[0]; (grupos[g] = grupos[g] || []).push(q); });
+  const cont = document.getElementById('requisitos');
+  if(!lista.length){ cont.innerHTML = `<div class="empty">Nada con ese filtro.</div>`; return; }
+  cont.innerHTML = Object.entries(grupos).map(([g, qs])=>`<div class="nr-grupo"><h3>${escapar(g)}</h3><div class="nr-lista">
+    ${qs.sort((a,b)=>orden[a.estado]-orden[b.estado]).map(q=>`<button class="req ${q.estado}" type="button" data-id="${q.id}">
+      <span class="num">${escapar(q.rac)} · ${escapar(q.numeral)}</span>
+      <span class="tit">${escapar(q.titulo)}</span>
+      <span class="det">${escapar(q.detalle[0]||'')}${q.detalle.length>1?` <span class="mut">y ${q.detalle.length-1} más</span>`:''}</span>
+      <span class="pie"><span class="est ${q.estado}">${EST_TXT[q.estado]}</span>${escapar(APLICA_TXT[q.aplica]||'')}</span>
+    </button>`).join('')}</div></div>`).join('');
+  cont.querySelectorAll('.req').forEach(b=>b.onclick=()=>abrir(R.requisitos.find(q=>q.id===b.dataset.id)));
+}
+
+function abrir(q){
+  const v = ventana({titulo: escapar(q.titulo), subtitulo: `${escapar(q.rac)} · numeral ${escapar(q.numeral)}`,
+    cuerpo: `<p style="font-size:14px;line-height:1.55;margin:0 0 14px"><b>Qué exige.</b> ${escapar(q.exige)}</p>
+      <div class="cfg-sec">Situación de la empresa <span class="est ${q.estado}" style="margin-left:6px">${EST_TXT[q.estado]}</span></div>
+      <ul class="nr-lista-det">${q.detalle.map(d=>`<li>${escapar(d)}</li>`).join('')}</ul>
+      <div class="cfg-sec" style="margin-top:16px">Dónde se lleva en la app</div>
+      <p style="font-size:13px;margin:0">${escapar(q.donde)}</p>`,
+    pie: `<a class="btn secundario" href="${R.fuente}" target="_blank" rel="noopener">Texto oficial</a><div class="der"><a class="btn" href="${q.enlace}">Ir a resolverlo</a></div>`});
+}
+
+document.getElementById('segAplica').onclick = e=>{ const b = e.target.closest('button'); if(!b) return;
+  APLICA = b.dataset.a; document.querySelectorAll('#segAplica button').forEach(x=>x.classList.toggle('activo', x===b)); pintar(); };
+cargar();
+</script>
+{% endblock %}

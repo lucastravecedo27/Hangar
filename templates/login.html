@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ 'Crea tu usuario' if primera_vez else 'Entrar' }} · {{ nombre_app|default('Hangar') }}</title>
+<link rel="icon" type="image/svg+xml" href="{{ url_for('favicon') }}">
+<meta name="theme-color" content="#ffffff">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;800&display=swap">
+<style>
+  :root{--ink:#1a1d24;--ink2:#3a3f4a;--mut:#737a86;--line:#e6e7ea;--acc:#fdb913;--acc-d:#e5a200;--acc-soft:#fff6db;--acc-txt:#1a1d24}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:#ffffff;color:var(--ink);display:grid;place-items:center;padding:24px;
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Arial,sans-serif;
+  }
+  /* Trazo de marca: las barras del logo, enormes y muy tenues, como textura de fondo */
+  .fondo{position:fixed;right:-6vw;bottom:-10vh;width:56vw;height:56vw;max-width:640px;max-height:640px;pointer-events:none;opacity:.05}
+  .caja{position:relative;width:min(420px,94vw);animation:sube .55s cubic-bezier(.22,.7,.25,1) both}
+  @keyframes sube{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+  .marca{display:flex;align-items:center;gap:12px;margin-bottom:30px}
+  .marca img{width:52px;height:52px}
+  .marca .n{font-family:"Manrope",sans-serif;font-size:30px;font-weight:800;letter-spacing:-.035em;line-height:1}
+  .marca .l{font-size:12px;color:var(--mut);margin-top:4px;letter-spacing:.02em}
+
+  .panel{background:#fff;border:1px solid var(--line);border-radius:18px;padding:26px 24px 24px;
+    box-shadow:0 1px 2px rgba(26,29,36,.04),0 24px 60px -24px rgba(26,29,36,.18)}
+  h1{font-family:"Manrope",sans-serif;font-size:20px;font-weight:800;letter-spacing:-.02em}
+  .hola{font-size:13.5px;color:var(--mut);margin-top:6px;line-height:1.55}
+  label{display:block;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--mut);margin:17px 0 6px}
+  input{width:100%;border:1px solid var(--line);border-radius:11px;padding:12px 14px;
+    font:inherit;font-size:15px;background:#fff;color:var(--ink);transition:.16s}
+  input::placeholder{color:#b3b8c2}
+  input:focus{border-color:var(--acc);outline:none;box-shadow:0 0 0 4px rgba(253,185,19,.28)}
+  button{width:100%;margin-top:22px;border:none;border-radius:12px;padding:13px;
+    background:var(--acc);color:var(--acc-txt);font:700 15px "Manrope",sans-serif;cursor:pointer;
+    box-shadow:0 8px 22px -8px rgba(197,140,0,.55);transition:.16s}
+  button:hover{background:var(--acc-d);transform:translateY(-1px)}
+  button:active{transform:none}
+  .error{margin-top:16px;background:#fdecea;border:1px solid #f5c2bd;color:#9b2c22;border-radius:11px;padding:11px 14px;font-size:13px}
+  .pie{margin-top:18px;text-align:center;font-size:11px;color:var(--mut)}
+  @media (prefers-reduced-motion: reduce){.caja{animation:none}}
+  .marca svg{width:52px;height:52px;flex:none}
+  /* Antes de entrar no se sabe quién es el usuario: la pantalla sigue al sistema operativo. */
+  @media screen and (prefers-color-scheme: dark){
+    :root{color-scheme:dark;--ink:#e8eaee;--ink2:#c3c7cf;--mut:#8b919c;--line:#2c313b;--acc-soft:rgba(253,185,19,.12)}
+    body{background:#0f1116}
+    .fondo{opacity:.07}
+    .fondo g,.marca .barra{fill:#e8eaee}
+    .panel{background:#171a21;box-shadow:0 1px 2px rgba(0,0,0,.4),0 24px 60px -24px rgba(0,0,0,.7)}
+    input{background:#12151a;border-color:#333844}
+    input::placeholder{color:#5f6571}
+    .error{background:rgba(239,91,83,.15);border-color:rgba(239,91,83,.45);color:#ff8a80}
+  }
+</style>
+</head>
+<body>
+<svg class="fondo" viewBox="0 0 120 120" aria-hidden="true">
+  <g transform="skewX(-14)" fill="#1a1d24">
+    <rect x="34" y="66" width="16" height="32" rx="4"/><rect x="60" y="44" width="16" height="54" rx="4"/>
+    <path d="M86 36 C86 26 94 14 94 14 C94 14 102 26 102 36 V94 A4 4 0 0 1 98 98 H90 A4 4 0 0 1 86 94 Z" fill="#fdb913"/>
+  </g>
+</svg>
+
+<div class="caja">
+  <div class="marca">
+    <svg viewBox="0 0 120 120" aria-hidden="true">
+      <defs><linearGradient id="marcaGrad" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#e5a200"/><stop offset=".55" stop-color="#fdb913"/></linearGradient></defs>
+      <g transform="skewX(-14)">
+        <rect class="barra" x="34" y="66" width="16" height="32" rx="4" fill="#1a1d24"/><rect class="barra" x="60" y="44" width="16" height="54" rx="4" fill="#1a1d24"/>
+        <path d="M86 36 C86 26 94 14 94 14 C94 14 102 26 102 36 V94 A4 4 0 0 1 98 98 H90 A4 4 0 0 1 86 94 Z" fill="url(#marcaGrad)"/>
+      </g>
+      <rect class="barra" x="20" y="104" width="86" height="6" rx="3" fill="#1a1d24" opacity=".35"/>
+    </svg>
+    <div><div class="n">{{ nombre_app|default('Hangar') }}</div><div class="l">{{ lema_app|default('Control de flota aérea agrícola') }}</div></div>
+  </div>
+
+  <div class="panel">
+    <h1>{{ 'Crea el superadministrador' if primera_vez else 'Bienvenido' }}</h1>
+    <div class="hola">{{ 'Es la primera vez que se abre Hangar. Este usuario administra la plataforma: desde su panel creará las empresas cliente y sus usuarios.' if primera_vez else 'Mantenimiento y operación de drones y avionetas agrícolas.' }}</div>
+    <form method="post" autocomplete="on">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      {% if primera_vez %}
+        <label>Usuario</label>
+        <input name="usuario" required autofocus autocomplete="username" placeholder="p. ej. ernesto">
+        <label>Contraseña</label>
+        <input name="password" type="password" required minlength="8" autocomplete="new-password">
+        <label>Repite la contraseña</label>
+        <input name="password2" type="password" required minlength="8" autocomplete="new-password">
+        <button>Crear superadministrador y entrar</button>
+      {% else %}
+        <label>Usuario</label>
+        <input name="usuario" required autofocus autocomplete="username">
+        <label>Contraseña</label>
+        <input name="password" type="password" required autocomplete="current-password">
+        <button>Entrar</button>
+      {% endif %}
+      {% if error %}<div class="error">{{ error }}</div>{% endif %}
+    </form>
+  </div>
+  <div class="pie">Acceso restringido al personal autorizado</div>
+</div>
+</body>
+</html>

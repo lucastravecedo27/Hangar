@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="es" data-tema="{{ tema|default('sistema') }}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block titulo %}Panel{% endblock %} · {{ nombre_app }}</title>
+<link rel="icon" type="image/svg+xml" href="{{ url_for('favicon') }}">
+<meta name="theme-color" content="#ffffff">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;800&display=swap">
+<meta name="csrf-token" content="{{ csrf_token }}">
+<link rel="stylesheet" href="{{ url_for('static_shell', archivo='estilos.css') }}">
+<link rel="stylesheet" href="{{ url_for('static_shell', archivo='shell.css') }}">
+<link rel="stylesheet" href="{{ url_for('static_shell', archivo='modulos.css') }}">
+<link rel="stylesheet" href="{{ url_for('static_shell', archivo='ui.css') }}">
+{% block head %}{% endblock %}
+</head>
+<body class="with-side {% block clase_body %}{% endblock %}">
+{% include "_sidebar.html" %}
+
+<main>
+  <div class="wrap">
+    <div class="pagina-cab">
+      <div class="pagina-tit">
+        <h1>{% block encabezado %}{% endblock %}</h1>
+        <p>{% block subtitulo %}{% endblock %}</p>
+      </div>
+      <div class="pagina-acciones">{% block acciones %}{% endblock %}</div>
+    </div>
+  </div>
+  {% block barra %}{% endblock %}
+  <div class="wrap">
+    {% block contenido %}{% endblock %}
+  </div>
+</main>
+
+<div class="toast" id="toast"></div>
+<script src="{{ url_for('static_shell', archivo='app.js') }}"></script>
+<script src="{{ url_for('static_shell', archivo='ui.js') }}"></script>
+<script src="{{ url_for('static_shell', archivo='graficos.js') }}"></script>
+<script src="{{ url_for('static_shell', archivo='tanques.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

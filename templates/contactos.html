@@ -1,0 +1,250 @@
+{% extends "_layout.html" %}
+{% block titulo %}Contactos{% endblock %}
+{% block encabezado %}Contactos{% endblock %}
+{% block subtitulo %}Directorio de todas las personas: personal propio, pilotos, clientes y proveedores, con su rol en la app y su cargo{% endblock %}
+
+{% block acciones %}
+<button class="btn secundario" id="btnExcel">Excel</button>
+<button class="btn" id="btnNuevo">＋ Nuevo contacto</button>
+{% endblock %}
+
+{% block barra %}
+<div class="tabsbar"><div class="wrap">
+  <div class="segmento" id="segRol">
+    <button data-r="" class="activo">Todos</button>
+    <button data-r="operativos">Reciben órdenes</button>
+    <button data-r="piloto">Pilotos</button>
+    <button data-r="tecnico">Técnicos</button>
+    <button data-r="cliente">Clientes</button>
+    <button data-r="proveedor">Proveedores</button>
+  </div>
+  <div class="filters">
+    <label class="fila-flex" style="font-size:12.5px;color:var(--ink2);gap:6px">
+      <input type="checkbox" id="fInactivos" style="width:16px;height:16px;accent-color:var(--acc-d)">
+      Ver inactivos
+    </label>
+    <input type="search" id="fBuscar" placeholder="Buscar nombre, cargo, empresa, correo o teléfono…" style="min-width:270px">
+  </div>
+</div></div>
+{% endblock %}
+
+{% block contenido %}
+<div class="kpis">
+  <div class="kpi"><div class="lbl">Contactos activos</div><div class="val acc" id="kActivos">0</div><div class="note" id="kTotalNota"></div></div>
+  <div class="kpi"><div class="lbl">Reciben órdenes</div><div class="val" id="kOperativos">0</div><div class="note">pilotos, técnicos, operarios y administradores</div></div>
+  <div class="kpi"><div class="lbl">Sin correo</div><div class="val ambar" id="kSinCorreo">0</div><div class="note">no se les puede enviar una orden</div></div>
+  <div class="kpi"><div class="lbl">Licencias vencidas</div><div class="val rojo" id="kLicencias">0</div><div class="note">revisar antes de programar vuelo</div></div>
+</div>
+
+<div class="ordenes-grid" id="grid"></div>
+<div class="card vacio-rico" id="vacio" style="display:none">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="12" cy="8" r="3.4"/><path d="M5 19.2a7 7 0 0 1 14 0"/></svg>
+  <b>Todavía no hay contactos</b>
+  <p>Registra al personal, los pilotos y la gente de fuera para poder asignarles órdenes y tener sus datos a mano.</p>
+  <button class="btn" onclick="abrirFicha()">＋ Nuevo contacto</button>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let CONTACTOS = [], RESUMEN = null, ROLES = {};
+
+function opcionesRol(sel){
+  return Object.entries(ROLES).map(([v,t])=>
+    `<option value="${escapar(v)}" ${String(sel)===v?'selected':''}>${escapar(t)}</option>`).join('');
+}
+
+async function cargar(){
+  const r = await api('/api/contactos');
+  CONTACTOS = r.lista; RESUMEN = r.resumen; ROLES = r.resumen.roles;
+  document.getElementById('kActivos').textContent = RESUMEN.activos;
+  document.getElementById('kTotalNota').textContent = `${RESUMEN.total} en total`;
+  document.getElementById('kOperativos').textContent = RESUMEN.operativos;
+  document.getElementById('kSinCorreo').textContent = RESUMEN.sin_correo;
+  document.getElementById('kLicencias').textContent = RESUMEN.licencias_vencidas;
+  pintar();
+}
+
+function filtrar(){
+  const rol = document.querySelector('#segRol button.activo').dataset.r;
+  const q = document.getElementById('fBuscar').value.trim().toLowerCase();
+  const verInactivos = document.getElementById('fInactivos').checked;
+  return CONTACTOS.filter(c=>{
+    if(!verInactivos && !c.activo) return false;
+    if(rol === 'operativos' && !c.operativo) return false;
+    if(rol && rol !== 'operativos' && c.rol !== rol) return false;
+    if(q && ![c.nombre,c.cargo,c.empresa,c.email,c.telefono,c.telefono2,c.documento,c.ciudad,c.rol_txt]
+              .join(' ').toLowerCase().includes(q)) return false;
+    return true;
+  });
+}
+
+function iniciales(nombre){
+  return (nombre||'?').trim().split(/\s+/).slice(0,2).map(p=>p[0]||'').join('').toUpperCase();
+}
+
+function pintar(){
+  const lista = filtrar();
+  document.getElementById('vacio').style.display = CONTACTOS.length ? 'none' : 'block';
+  document.getElementById('grid').innerHTML = lista.map(c=>`
+    <div class="contacto-card ${c.activo?'':'inactivo'}" onclick="abrirFicha(${c.id})">
+      <div class="avatar">${escapar(iniciales(c.nombre))}</div>
+      <div class="datos">
+        <div class="nom">${escapar(c.nombre)}${c.activo?'':' <span class="tag gray">Inactivo</span>'}</div>
+        <div class="cargo">${escapar(c.cargo || c.rol_txt)}${c.empresa?` · ${escapar(c.empresa)}`:''}</div>
+        <div class="contacto-lineas">
+          ${c.email?`<span>${escapar(c.email)}</span>`:'<span class="mut">sin correo</span>'}
+          ${c.telefono?`<span>${escapar(c.telefono)}</span>`:''}
+        </div>
+      </div>
+      <div class="pie">
+        <span class="tag ${c.operativo?'acc':'gray'}">${escapar(c.rol_txt)}</span>
+        ${c.licencia_vencida?'<span class="tag vencido">Licencia vencida</span>':''}
+        ${c.ot_abiertas?`<span class="tag proximo">${c.ot_abiertas} OT abierta(s)</span>`:''}
+        ${c.os_abiertas?`<span class="tag proximo">${c.os_abiertas} OS abierta(s)</span>`:''}
+        ${c.vuelos?`<span class="mut" style="font-size:11.5px">${c.vuelos} vuelos · ${fmt(c.horas_vuelo)} h</span>`:''}
+      </div>
+    </div>`).join('') || (CONTACTOS.length ? '<div class="card empty">Ningún contacto con este filtro.</div>' : '');
+}
+
+// ---------- Ficha: alta y edición ----------
+function abrirFicha(id){
+  const c = id ? CONTACTOS.find(x=>x.id === id) : null;
+  const v = ventana({
+    titulo: c ? escapar(c.nombre) : 'Nuevo contacto',
+    subtitulo: c ? 'Datos de contacto, rol en la app y cargo' : 'Todos los campos salvo el nombre son opcionales',
+    ancho: 'ancha',
+    cuerpo: `<form id="formC">
+      <div class="seccion-form">
+        <div class="titulo"><span class="n">1</span> Identificación</div>
+        <div class="form-grid">
+          <div class="campo"><label>Nombre completo *</label><input name="nombre" required value="${escapar(c?.nombre||'')}"></div>
+          <div class="campo"><label>Documento</label><input name="documento" placeholder="Cédula, NIT o pasaporte" value="${escapar(c?.documento||'')}"></div>
+          <div class="campo"><label>Rol en la app</label><select name="rol">${opcionesRol(c?.rol||'tecnico')}</select>
+            <div class="pista" style="margin:6px 0 0">Pilotos, técnicos, operarios y administradores aparecen al asignar órdenes.</div></div>
+          <div class="campo"><label>Cargo</label><input name="cargo" placeholder="Jefe de operaciones, piloto RPAS…" value="${escapar(c?.cargo||'')}"></div>
+          <div class="campo"><label>Empresa</label><input name="empresa" value="${escapar(c?.empresa||'')}"></div>
+          <div class="campo"><label>Fecha de ingreso</label><input type="date" name="ingreso" value="${escapar(c?.ingreso||'')}"></div>
+        </div>
+      </div>
+
+      <div class="seccion-form">
+        <div class="titulo"><span class="n">2</span> Contacto</div>
+        <div class="form-grid">
+          <div class="campo"><label>Correo</label><input type="email" name="email" value="${escapar(c?.email||'')}"></div>
+          <div class="campo"><label>Teléfono</label><input name="telefono" value="${escapar(c?.telefono||'')}"></div>
+          <div class="campo"><label>Teléfono alterno</label><input name="telefono2" value="${escapar(c?.telefono2||'')}"></div>
+          <div class="campo"><label>Ciudad</label><input name="ciudad" value="${escapar(c?.ciudad||'')}"></div>
+          <div class="campo ancho"><label>Dirección</label><input name="direccion" value="${escapar(c?.direccion||'')}"></div>
+        </div>
+      </div>
+
+      <div class="seccion-form">
+        <div class="titulo"><span class="n">3</span> Licencia y observaciones</div>
+        <div class="form-grid">
+          <div class="campo"><label>Licencia / certificación</label><input name="licencia" placeholder="Licencia RPAS, número" value="${escapar(c?.licencia||'')}"></div>
+          <div class="campo"><label>Vence</label><input type="date" name="licencia_vence" value="${escapar(c?.licencia_vence||'')}"></div>
+          <div class="campo ancho"><label>Notas</label><textarea name="nota" placeholder="Disponibilidad, especialidad, contacto de emergencia…">${escapar(c?.nota||'')}</textarea></div>
+        </div>
+        <label class="fila-flex" style="font-size:13px;color:var(--ink2)">
+          <input type="checkbox" name="activo" id="cActivo" ${(!c || c.activo)?'checked':''} style="width:16px;height:16px;accent-color:var(--acc-d)">
+          Activo — puede recibir órdenes y aparece en los desplegables
+        </label>
+      </div>
+    </form>`,
+    pie: `${c?'<button class="btn secundario rojo" data-borrar>Eliminar</button>':''}
+          <div class="der"><button class="btn secundario" data-cerrar>Cancelar</button>
+          <button class="btn" data-guardar>${c?'Guardar cambios':'Crear contacto'}</button></div>`,
+  });
+  v.$('[data-cerrar]').onclick = v.cerrar;
+
+  v.$('[data-guardar]').onclick = async ()=>{
+    const form = v.$('#formC');
+    if(!form.reportValidity()) return;
+    const cuerpo = Object.fromEntries(new FormData(form).entries());
+    cuerpo.activo = v.$('#cActivo').checked ? 1 : 0;
+    try{
+      if(c) await api(`/api/personal/${c.id}`, {method:'PUT', body:cuerpo});
+      else   await api('/api/personal', {method:'POST', body:cuerpo});
+      toast(c ? 'Contacto actualizado' : 'Contacto creado');
+      await v.cerrar(); cargar();
+    }catch(err){ toast(err.message); }
+  };
+
+  const borrar = v.$('[data-borrar]');
+  if(borrar) borrar.onclick = async ()=>{
+    if(!await confirmar({titulo:'Eliminar contacto', peligro:true, aceptar:'Eliminar',
+      mensaje:`Se elimina <b>${escapar(c.nombre)}</b> del directorio. Las órdenes ya emitidas a su nombre se conservan.<br><br>
+               Si sólo quieres que deje de aparecer al asignar trabajo, desmarca «Activo» en vez de borrarlo.`})) return;
+    await api(`/api/personal/${c.id}`, {method:'DELETE'});
+    toast('Contacto eliminado'); await v.cerrar(); cargar();
+  };
+}
+
+// ---------- Excel: descargar el directorio al día, corregirlo y volver a subirlo ----------
+function abrirExcel(){
+  const v = ventana({
+    titulo: 'Excel de contactos',
+    subtitulo: 'Descarga con los contactos al día, corrige o añade, y vuelve a subir',
+    cuerpo: `
+      <div class="pasos">
+        <div class="paso"><span class="n">1</span><div>Descarga el archivo: viene <b>con todos los contactos registrados hasta hoy</b>, no en blanco.
+          Es el mismo que se sube a Drive, así que sirve de copia fiel del directorio.</div></div>
+        <div class="paso"><span class="n">2</span><div>Corrige lo que haga falta y añade los contactos nuevos al final. La columna <b>ID</b> no se toca:
+          con ID la fila actualiza ese contacto, vacía crea uno nuevo. El <b>Rol</b> se elige de la lista desplegable.</div></div>
+        <div class="paso"><span class="n">3</span><div>Sube el mismo archivo aquí abajo. Nada se borra: sólo se crea y se actualiza.</div></div>
+      </div>
+      <div class="fila-flex" style="margin-bottom:18px">
+        <button class="btn secundario" data-descargar>↓ Descargar contactos</button>
+      </div>
+      <div class="soltar" id="zonaSoltar">
+        <input type="file" id="archivoExcel" accept=".xlsx,.xlsm" hidden>
+        <b>Arrastra aquí el archivo .xlsx</b>
+        <span>o haz clic para elegirlo</span>
+      </div>
+      <div id="informe" style="margin-top:14px"></div>`,
+    pie: `<div class="der"><button class="btn secundario" data-cerrar>Cerrar</button></div>`,
+  });
+  v.$('[data-cerrar]').onclick = v.cerrar;
+  v.$('[data-descargar]').onclick = ()=>descargar('/api/personal/exportar.xlsx');
+
+  const zona = v.$('#zonaSoltar'), campo = v.$('#archivoExcel'), informe = v.$('#informe');
+  zona.onclick = ()=>campo.click();
+  zona.ondragover = e=>{ e.preventDefault(); zona.classList.add('sobre'); };
+  zona.ondragleave = ()=>zona.classList.remove('sobre');
+  zona.ondrop = e=>{ e.preventDefault(); zona.classList.remove('sobre');
+    if(e.dataTransfer.files[0]) subir(e.dataTransfer.files[0]); };
+  campo.onchange = ()=>{ if(campo.files[0]) subir(campo.files[0]); };
+
+  async function subir(archivo){
+    informe.innerHTML = '<div class="aviso gris"><span class="cargador oscuro"></span> Leyendo el archivo…</div>';
+    const datos = new FormData(); datos.append('archivo', archivo);
+    const r = await fetch('/api/personal/importar', {method:'POST', body:datos});
+    const res = await r.json().catch(()=>({ok:false, error:'Respuesta ilegible del servidor.'}));
+    if(!res.ok){
+      informe.innerHTML = `<div class="aviso rojo"><b>No se pudo importar.</b> ${escapar(res.error||'')}</div>`;
+      return;
+    }
+    const errores = (res.errores||[]).slice(0, 12);
+    informe.innerHTML = `<div class="aviso verde"><b>${escapar(res.mensaje)}</b></div>`
+      + (errores.length ? `<div class="aviso gris" style="margin-top:10px"><b>Filas no importadas</b>
+          <ul style="margin:6px 0 0 18px">${errores.map(e=>`<li>Fila ${e.fila}: ${escapar(e.motivo)}</li>`).join('')}</ul>
+          ${(res.errores||[]).length > errores.length ? `<div class="mut" style="margin-top:6px">y ${(res.errores||[]).length - errores.length} más</div>` : ''}</div>` : '');
+    toast(res.mensaje);
+    cargar();
+  }
+}
+
+document.getElementById('btnExcel').onclick = abrirExcel;
+document.getElementById('btnNuevo').onclick = ()=>abrirFicha();
+document.getElementById('segRol').addEventListener('click', e=>{
+  const b = e.target.closest('button'); if(!b) return;
+  document.querySelectorAll('#segRol button').forEach(x=>x.classList.toggle('activo', x === b));
+  pintar();
+});
+document.getElementById('fBuscar').addEventListener('input', pintar);
+document.getElementById('fInactivos').addEventListener('change', pintar);
+
+cargar();
+</script>
+{% endblock %}

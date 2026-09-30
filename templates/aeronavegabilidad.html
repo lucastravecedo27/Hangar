@@ -1,0 +1,975 @@
+{% extends "_layout.html" %}
+{% block titulo %}Aeronavegabilidad{% endblock %}
+{% block encabezado %}Aeronavegabilidad{% endblock %}
+{% block subtitulo %}¿Qué puede volar hoy y qué hay que resolver?{% endblock %}
+
+{% block head %}
+<style>
+/* ---- KPIs de estado (semáforo) ---- */
+.ae-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:22px}
+.ae-kpi{position:relative;overflow:hidden;background:var(--bg2);border:1px solid var(--line);border-radius:18px;padding:18px 20px 16px;
+  cursor:pointer;text-align:left;font-family:var(--font);color:var(--ink);display:grid;grid-template-columns:auto 1fr;gap:4px 16px;align-items:center;
+  transition:border-color .2s,box-shadow .2s,transform .2s cubic-bezier(.22,.7,.25,1)}
+.ae-kpi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--c)}
+.ae-kpi:hover{box-shadow:0 10px 30px rgba(0,0,0,.07);transform:translateY(-2px)}
+.ae-kpi.sel{border-color:var(--c);box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 22%,transparent)}
+.ae-kpi .luz{grid-row:1/span 3;width:54px;height:54px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff8 0,transparent 42%),var(--c);
+  box-shadow:0 0 0 6px color-mix(in srgb,var(--c) 16%,transparent),0 6px 22px color-mix(in srgb,var(--c) 45%,transparent)}
+.ae-kpi .lbl{font-size:10.5px;font-weight:700;color:var(--mut);letter-spacing:.08em;text-transform:uppercase}
+.ae-kpi .val{font-family:var(--font-marca);font-size:44px;font-weight:800;letter-spacing:-.045em;line-height:1;color:var(--ci);font-variant-numeric:tabular-nums}
+.ae-kpi .note{font-size:12px;color:var(--mut)}
+.ae-kpi.apto{--c:#2f8f4e;--ci:var(--o-tx-verde,#1d6b38)}.ae-kpi.observaciones{--c:#e8a400;--ci:var(--o-tx-ambar,#8a5f00)}.ae-kpi.no_apto{--c:#e0473e;--ci:var(--o-tx-rojo,#a4271f)}
+.ae-kpi.vacio .luz{filter:grayscale(1);opacity:.35}
+.ae-proporcion{display:flex;height:8px;border-radius:980px;overflow:hidden;background:rgba(115,122,134,.14);margin:-8px 0 22px}
+.ae-proporcion i{display:block;height:100%;transition:width .5s ease}
+
+/* ---- Barra de pestañas ---- */
+.ae-tabs .wrap{justify-content:space-between}
+.ae-tabs .segmento button .n{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;margin-left:6px;border-radius:980px;
+  font-size:10.5px;font-weight:700;background:rgba(115,122,134,.16);color:var(--ink2)}
+.ae-tabs .segmento button .n.rojo{background:var(--red);color:#fff}
+.ae-tabs .segmento button .n.ambar{background:var(--acc);color:var(--acc-txt)}
+.ic-tipo{width:16px;height:16px;vertical-align:-3px;flex:none}
+
+/* ---- Tablero de despacho ---- */
+.ae-tablero{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:14px}
+.ae-activo{position:relative;display:flex;gap:16px;background:var(--bg2);border:1px solid var(--line);border-radius:18px;padding:16px 16px 14px;
+  text-decoration:none;color:inherit;transition:.18s;border-top:4px solid var(--c)}
+.ae-activo:hover{box-shadow:var(--shadow-l);transform:translateY(-2px);border-color:var(--line2);border-top-color:var(--c)}
+.ae-activo.apto{--c:#2f8f4e}.ae-activo.observaciones{--c:#e8a400}.ae-activo.no_apto{--c:#e0473e}
+.semaforo-g{flex:none;display:flex;flex-direction:column;gap:6px;padding:8px 7px;background:var(--o-grafito,#1a1d24);border-radius:14px;align-self:flex-start;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 4px 12px rgba(26,29,36,.25)}
+.semaforo-g i{width:20px;height:20px;border-radius:50%;background:#3a3f4a;opacity:.55}
+.semaforo-g i.on{opacity:1}
+.semaforo-g i.r.on{background:#ff5a4f;box-shadow:0 0 12px 2px rgba(255,90,79,.75)}
+.semaforo-g i.a.on{background:#ffc21f;box-shadow:0 0 12px 2px rgba(255,194,31,.75)}
+.semaforo-g i.v.on{background:#3fc26a;box-shadow:0 0 12px 2px rgba(63,194,106,.7)}
+.ae-activo .cuerpo{flex:1;min-width:0;display:flex;flex-direction:column}
+.ae-activo .tit{display:flex;align-items:center;gap:7px;font-size:16px;font-weight:700;letter-spacing:-.02em}
+.ae-activo .tit span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ae-activo .meta{font-size:12px;color:var(--mut);margin-top:2px}
+.ae-activo .estado{display:inline-flex;align-self:flex-start;margin-top:8px;padding:3px 10px;border-radius:980px;font-size:11.5px;font-weight:700;
+  background:color-mix(in srgb,var(--c) 15%,transparent);color:color-mix(in srgb,var(--c) 70%,var(--o-mezcla,#000))}
+.ae-activo .motivos{list-style:none;margin:10px 0 0;display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--ink2)}
+.ae-activo .motivos li{display:flex;gap:7px;align-items:baseline;line-height:1.35}
+.ae-activo .motivos li::before{content:"";flex:none;width:6px;height:6px;border-radius:50%;background:var(--c);transform:translateY(-1px)}
+.ae-activo .motivos li.mas{color:var(--mut);font-size:11.5px}
+.ae-activo .motivos li.mas::before{background:transparent}
+.ae-activo .ok-txt{margin-top:10px;font-size:12.5px;color:var(--o-tx-verde,#1d6b38)}
+.ae-activo .contadores{display:flex;gap:6px;flex-wrap:wrap;margin-top:auto;padding-top:12px}
+.ae-activo .contadores div{background:rgba(115,122,134,.08);border-radius:10px;padding:6px 10px;min-width:70px}
+.ae-activo .contadores b{display:block;font-family:var(--font-marca);font-size:15px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.ae-activo .contadores span{font-size:10px;color:var(--mut);text-transform:uppercase;letter-spacing:.05em;font-weight:650}
+.ae-activo .ir{position:absolute;right:14px;top:14px;font-size:11.5px;font-weight:650;color:var(--acc-ink);opacity:0;transition:.15s}
+.ae-activo:hover .ir{opacity:1}
+
+/* ---- Pendientes ---- */
+.ae-filtros{display:flex;gap:8px 14px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.ae-filtros .grupo{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.ae-filtros .grupo > span{font-size:10.5px;font-weight:700;color:var(--mut);letter-spacing:.07em;text-transform:uppercase;margin-right:2px}
+.pillbtn .c{opacity:.7;margin-left:4px;font-variant-numeric:tabular-nums}
+.ae-pend{display:flex;flex-direction:column;gap:6px;max-height:620px;overflow:auto;padding-right:2px}
+.ae-pend .item{cursor:pointer;gap:14px}
+.ae-pend .item .punto{width:12px;height:12px}
+.ae-pend .item .cuerpo b{white-space:normal}
+.ae-pend .plazo{font-weight:650;color:var(--ink);font-size:12.5px}
+.ae-pend .plazo.vencido,.ae-pend .plazo.critico{color:var(--o-tx-rojo,#a4271f)}
+.ae-pend .plazo.proximo{color:var(--o-tx-ambar,#7a5400)}
+.tag.fuente{background:var(--o-tinte,rgba(26,29,36,.07));color:var(--ink2)}
+.tag.fuente.directiva{background:rgba(151,87,201,.13);color:var(--o-tx-morado,#6a3a94)}
+.tag.fuente.documento{background:rgba(13,148,136,.13);color:var(--o-tx-teal,#0b6b62)}
+.tag.fuente.inspeccion{background:rgba(59,111,182,.13);color:var(--o-tx-azul,#2c5288)}
+
+/* ---- Directivas ---- */
+.ae-dir{border:1px solid var(--line);border-radius:18px;background:var(--bg2);margin-bottom:14px;overflow:hidden}
+.ae-dir .cab{display:flex;gap:14px;align-items:flex-start;padding:16px 18px;border-bottom:.5px solid var(--line);flex-wrap:wrap}
+.ae-dir .sello{flex:none;width:52px;height:52px;border-radius:14px;display:grid;place-items:center;font-family:var(--font-marca);font-weight:800;font-size:16px;letter-spacing:-.02em}
+.ae-dir .sello.AD{background:var(--o-grafito,#1a1d24);color:var(--acc)}
+.ae-dir .sello.SB{background:var(--acc);color:var(--acc-txt)}
+.ae-dir .info{flex:1;min-width:220px}
+.ae-dir .num{font-size:11.5px;font-weight:700;color:var(--mut);letter-spacing:.04em}
+.ae-dir .titulo{font-size:15px;font-weight:680;letter-spacing:-.015em;margin-top:1px}
+.ae-dir .desc{font-size:12.5px;color:var(--ink2);margin-top:4px;max-width:80ch}
+.ae-dir .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.ae-dir .acc{display:flex;gap:6px;flex-wrap:wrap}
+.ae-dir .fila{display:grid;grid-template-columns:28px minmax(140px,1.1fr) minmax(170px,1.5fr) minmax(150px,1.2fr) auto;gap:12px;align-items:center;
+  padding:12px 18px;border-bottom:.5px solid var(--line)}
+.ae-dir .fila:last-child{border-bottom:none}
+.ae-dir .fila .luz{width:18px;height:18px;border-radius:50%;background:var(--c);box-shadow:0 0 0 4px color-mix(in srgb,var(--c) 18%,transparent)}
+.ae-dir .fila.ok{--c:#2f8f4e}.ae-dir .fila.proximo{--c:#e8a400}.ae-dir .fila.critico{--c:#e0473e}.ae-dir .fila.vencido{--c:#b3261e}.ae-dir .fila.no_aplica{--c:#9aa0aa}
+.ae-dir .fila .avion b{display:block;font-size:13.5px}
+.ae-dir .fila .avion span,.ae-dir .fila .firma span{font-size:11.5px;color:var(--mut)}
+.ae-dir .fila .plazo{font-size:12.5px;font-weight:620}
+.ae-dir .fila .firma{font-size:12.5px}
+.ae-dir .fila .acc{justify-content:flex-end}
+.ae-dir .sin-aviones{padding:14px 18px;font-size:12.5px;color:var(--mut)}
+.ae-dir.resaltar{box-shadow:0 0 0 3px rgba(253,185,19,.45)}
+@media(max-width:900px){
+  .ae-dir .fila{grid-template-columns:24px 1fr;row-gap:6px}
+  .ae-dir .fila > :nth-child(n+3){grid-column:2}
+  .ae-dir .fila .acc{justify-content:flex-start}
+}
+
+/* ---- Documentos ---- */
+.ae-docs table{min-width:820px}
+.ae-docs .dias{display:inline-flex;align-items:center;gap:8px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.ae-docs .dias i{width:14px;height:14px;border-radius:50%;background:var(--c);box-shadow:0 0 0 4px color-mix(in srgb,var(--c) 18%,transparent)}
+.ae-docs .dias.ok{--c:#2f8f4e}.ae-docs .dias.proximo{--c:#e8a400}.ae-docs .dias.critico{--c:#e0473e}.ae-docs .dias.vencido{--c:#b3261e}.ae-docs .dias.sin{--c:#9aa0aa}
+.ae-docs .dias small{font-size:11px;color:var(--mut);font-weight:520}
+.ae-docs .de{display:flex;align-items:center;gap:7px}
+.ae-docs .de svg{width:16px;height:16px;color:var(--mut);flex:none}
+.adjunto{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:620;text-decoration:none;color:var(--acc-ink);
+  background:var(--acc-soft);border-radius:9px;padding:5px 10px;white-space:nowrap}
+.adjunto svg{width:14px;height:14px}
+.ae-err[hidden]{display:none}
+.ae-oculto{display:none!important}
+.chk{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:560;cursor:pointer;text-transform:none;letter-spacing:0;color:var(--ink)}
+.chk input{width:16px!important;height:16px}
+.bloque-cond{border:.5px solid var(--line2);border-radius:14px;padding:14px 14px 2px;margin-bottom:14px;background:rgba(115,122,134,.04)}
+.bloque-cond > .t{font-size:11px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px}
+
+/* ---- Disponibilidad histórica ---- */
+.dp-resumen{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr) minmax(0,1.6fr);gap:14px;margin-bottom:18px}
+.dp-resumen .kpi .val small{font-size:15px;font-weight:700;color:var(--mut);margin-left:3px;letter-spacing:-.01em}
+.dp-resumen .kpi .val.grande{font-size:46px}
+.dp-barra{height:8px;border-radius:980px;background:var(--line);overflow:hidden;margin-top:6px;display:flex}
+.dp-barra i{display:block;height:100%}
+.dp-nota{background:var(--bg2);border:1px solid var(--line);border-radius:18px;padding:16px 18px;font-size:12.5px;line-height:1.55;color:var(--ink2)}
+.dp-nota b{color:var(--ink)}
+.dp-nota .lbl{font-size:10.5px;font-weight:700;color:var(--mut);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px}
+.dp-leyenda{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:11.5px;color:var(--ink2)}
+.dp-leyenda span{display:inline-flex;align-items:center;gap:6px}
+.dp-leyenda i{width:11px;height:11px;border-radius:3px;display:inline-block}
+.dp-c-apto{background:var(--green)}
+.dp-c-observaciones{background:var(--amber)}
+.dp-c-no_apto{background:var(--red)}
+.dp-c-taller{background:var(--ink2)}
+.dp-c-baja{background:var(--mut);opacity:.55}
+.dp-c-vacio{background:var(--line)}
+.dp-lista{display:flex;flex-direction:column}
+.dp-fila{display:grid;grid-template-columns:minmax(170px,230px) 86px minmax(0,1fr);gap:16px;align-items:center;padding:12px 4px;border-bottom:1px solid var(--line)}
+.dp-fila:last-child{border-bottom:0}
+.dp-nom{min-width:0;display:flex;gap:9px;align-items:center;text-decoration:none;color:inherit}
+.dp-nom:hover b{color:var(--acc-ink)}
+.dp-nom .ic-tipo{color:var(--mut)}
+.dp-nom b{display:block;font-size:13.5px;font-weight:680;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dp-nom span.mut{font-size:11.5px}
+.dp-pct{font-family:var(--font-marca);font-size:22px;font-weight:800;letter-spacing:-.035em;text-align:right;font-variant-numeric:tabular-nums;line-height:1}
+.dp-pct small{display:block;font-family:var(--font);font-size:10.5px;font-weight:600;color:var(--mut);letter-spacing:0;margin-top:3px}
+.dp-pct.verde{color:var(--green)}.dp-pct.ambar{color:var(--o-tx-ambar,#b9651c)}.dp-pct.rojo{color:var(--red)}.dp-pct.sin{color:var(--mut)}
+.dp-franja{display:grid;height:26px;border-radius:6px;overflow:hidden;cursor:crosshair}
+.dp-franja i{display:block;height:100%;min-width:0}
+.dp-franja i.hoy{box-shadow:inset 0 -3px 0 var(--acc)}
+.dp-eje{display:flex;justify-content:space-between;font-size:10.5px;color:var(--mut);margin-top:4px;font-variant-numeric:tabular-nums}
+.dp-cab{display:grid;grid-template-columns:minmax(170px,230px) 86px minmax(0,1fr);gap:16px;padding:0 4px 8px;border-bottom:1px solid var(--line);
+  font-size:10.5px;font-weight:700;color:var(--mut);letter-spacing:.07em;text-transform:uppercase}
+.dp-cab .num{text-align:right}
+.dp-tip{position:fixed;z-index:200;pointer-events:none;background:var(--ink);color:var(--bg2);font-size:12px;line-height:1.4;padding:7px 10px;border-radius:9px;
+  max-width:300px;box-shadow:0 8px 24px rgba(0,0,0,.18);opacity:0;transition:opacity .1s}
+.dp-tip.ver{opacity:1}
+.dp-tip b{font-weight:700}
+@media(max-width:980px){.dp-resumen{grid-template-columns:repeat(2,minmax(0,1fr))}.dp-resumen .dp-nota{grid-column:1/-1}}
+@media(max-width:640px){
+  .dp-resumen{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+  .dp-resumen .kpi .val.grande{font-size:34px}
+  .dp-fila{grid-template-columns:minmax(0,1fr) auto;gap:8px 12px}
+  .dp-fila .dp-tira{grid-column:1/-1}
+  .dp-cab{display:none}
+  #tabDisponibilidad .card-cab{flex-wrap:wrap;gap:8px}
+  #tabDisponibilidad .card-cab .der{width:100%;min-width:0}
+  #segDpPeriodo{max-width:100%;overflow-x:auto}
+  .dp-eje .medio{display:none}
+}
+
+@media(max-width:760px){
+  .ae-kpis{grid-template-columns:1fr;gap:10px}
+  .ae-kpi{padding:14px 16px}
+  .ae-kpi .luz{width:40px;height:40px}
+  .ae-kpi .val{font-size:34px}
+  .ae-tablero{grid-template-columns:1fr}
+  .ae-tabs .segmento{max-width:100%;overflow-x:auto}
+}
+</style>
+{% endblock %}
+
+{% block acciones %}
+<button class="btn secundario" id="btnActualizar"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M16 10a6 6 0 1 1-1.8-4.3"/><path d="M16.2 3.4v3.2H13"/></svg> Actualizar</button>
+{% endblock %}
+
+{% block barra %}
+<div class="tabsbar ae-tabs"><div class="wrap">
+  <div class="segmento" id="segTab">
+    <button data-t="despacho" class="activo">Despacho y pendientes</button>
+    <button data-t="directivas">Directivas AD/SB <span class="n" id="nDir">0</span></button>
+    <button data-t="documentos">Documentos <span class="n" id="nDoc">0</span></button>
+    <button data-t="disponibilidad">Disponibilidad</button>
+  </div>
+  <div class="segmento" id="segTipo">
+    <button data-v="" class="activo">Todos</button>
+    <button data-v="dron">Drones</button>
+    <button data-v="avion">Aviones</button>
+  </div>
+</div></div>
+{% endblock %}
+
+{% block contenido %}
+<div class="ae-kpis" id="kpis">
+  <button class="ae-kpi apto" data-e="apto"><span class="luz"></span><span class="lbl">Apto</span><span class="val" id="kApto">–</span><span class="note" id="kAptoN">Puede despachar hoy</span></button>
+  <button class="ae-kpi observaciones" data-e="observaciones"><span class="luz"></span><span class="lbl">Con observaciones</span><span class="val" id="kObs">–</span><span class="note" id="kObsN">Vuela, pero hay algo por resolver</span></button>
+  <button class="ae-kpi no_apto" data-e="no_apto"><span class="luz"></span><span class="lbl">No recomendado volar</span><span class="val" id="kNo">–</span><span class="note" id="kNoN">recomendamos no volarlos</span></button>
+</div>
+<div class="ae-proporcion" id="proporcion" title="Proporción de la flota por estado"></div>
+
+<!-- ===== Despacho ===== -->
+<section id="tabDespacho">
+  <div class="card">
+    <div class="card-cab"><h3>Tablero de despacho <span class="mut" id="tabCuenta"></span></h3>
+      <span class="der" id="tabFiltroTxt"></span></div>
+    <div class="ae-tablero" id="tablero"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-cab"><h3>Pendientes por resolver <span class="mut" id="pendCuenta"></span></h3>
+      <span class="der">Piezas, inspecciones, directivas y documentos en un solo lugar</span></div>
+    <div class="ae-filtros">
+      <div class="grupo" id="fFuente"></div>
+      <div class="grupo" id="fNivel"></div>
+    </div>
+    <div class="ae-pend" id="pendientes"></div>
+  </div>
+</section>
+
+<!-- ===== Directivas ===== -->
+<section id="tabDirectivas" class="ae-oculto">
+  <div class="kpis" id="dirKpis"></div>
+  <div class="card">
+    <div class="card-cab"><h3>Directivas de aeronavegabilidad y boletines de servicio</h3>
+      <div class="der" style="display:flex;gap:8px;align-items:center">
+        <div class="segmento" id="segDirEstado">
+          <button data-v="" class="activo">Todas</button><button data-v="pendiente">Pendientes</button><button data-v="cumplida">Cumplidas</button><button data-v="no_aplica">No aplica</button>
+        </div>
+        <button class="btn" id="btnNuevaDir">＋ Nueva directiva</button>
+      </div>
+    </div>
+    <div class="aviso gris" style="margin-bottom:16px"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="7"/><path d="M10 9v4.5M10 6.5v.01"/></svg>
+      <div>Cada AD/SB se registra una vez por <b>modelo</b> y se sigue en cada avión de ese modelo. El cumplimiento lo firma un
+      mecánico certificador (o el administrador) con su nombre y número de licencia; «No aplica» deja constancia sin firma.</div></div>
+    <div id="directivas"></div>
+  </div>
+</section>
+
+<!-- ===== Documentos ===== -->
+<section id="tabDocumentos" class="ae-oculto">
+  <div class="kpis" id="docKpis"></div>
+  <div class="card ae-docs">
+    <div class="card-cab"><h3>Documentos con vencimiento <span class="mut" id="docCuenta"></span></h3>
+      <div class="der" style="display:flex;gap:8px;align-items:center">
+        <div class="segmento" id="segDocDe">
+          <button data-v="" class="activo">Todos</button><button data-v="activo">De activos</button><button data-v="persona">De personas</button>
+        </div>
+        <button class="btn" id="btnNuevoDoc">＋ Nuevo documento</button>
+      </div>
+    </div>
+    <div class="tabla-envoltura"><table>
+      <thead><tr><th style="width:150px">Vence en</th><th>Documento</th><th>De</th><th>Emitido</th><th>Vence</th><th>Soporte</th><th></th></tr></thead>
+      <tbody id="tablaDocs"></tbody>
+    </table></div>
+    <div class="empty" id="docsVacio" style="display:none">No hay documentos registrados con este filtro.</div>
+  </div>
+</section>
+<!-- ===== Disponibilidad histórica ===== -->
+<section id="tabDisponibilidad" class="ae-oculto">
+  <div class="dp-resumen" id="dpResumen"></div>
+  <div class="card">
+    <div class="card-cab"><h3>Disponibilidad por activo <span class="mut" id="dpCuenta"></span></h3>
+      <div class="der" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <div class="segmento" id="segDpPeriodo">
+          <button type="button" data-v="30d">30 días</button>
+          <button type="button" data-v="90d" class="activo">90 días</button>
+          <button type="button" data-v="anio">Este año</button>
+          <button type="button" data-v="todo">Todo</button>
+        </div>
+      </div></div>
+    <div class="dp-leyenda" style="margin-bottom:14px">
+      <span><i class="dp-c-apto"></i>Apto</span>
+      <span><i class="dp-c-observaciones"></i>Con observaciones (disponible)</span>
+      <span><i class="dp-c-no_apto"></i>No recomendado volar</span>
+      <span><i class="dp-c-taller"></i>En taller</span>
+      <span><i class="dp-c-baja"></i>De baja</span>
+      <span><i class="dp-c-vacio"></i>Sin registro</span>
+    </div>
+    <div id="dpLista"><div class="empty"><span class="cargador oscuro"></span> Cargando…</div></div>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const ES_ADMIN = {{ 'true' if es_admin else 'false' }};
+const ROL = {{ (rol_actual or '')|tojson }};
+
+// ---- Textos e iconos ----
+const IC_DRON = '<svg class="ic-tipo" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="4.5" cy="4.5" r="2.3"/><circle cx="15.5" cy="4.5" r="2.3"/><circle cx="4.5" cy="15.5" r="2.3"/><circle cx="15.5" cy="15.5" r="2.3"/><path d="M6.3 6.3 8.3 8.3M13.7 6.3l-2 2M6.3 13.7l2-2M13.7 13.7l-2-2"/><rect x="8" y="8" width="4" height="4" rx="1"/></svg>';
+const IC_AVION = '<svg class="ic-tipo" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.5c.8 0 1.2.9 1.2 2v3.3l6.3 2v1.6l-6.3-1.2v3.4l2 1.5V16.6L10 15.8l-3.2.8v-1.5l2-1.5V10.2L2.5 11.4V9.8l6.3-2V4.5c0-1.1.4-2 1.2-2z"/></svg>';
+const IC_PERSONA = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="7" r="3.2"/><path d="M3.8 16.8c.9-3 3.3-4.6 6.2-4.6s5.3 1.6 6.2 4.6"/></svg>';
+const IC_CLIP = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 9.5 10 15a3.6 3.6 0 0 1-5.1-5.1l6-6a2.4 2.4 0 0 1 3.4 3.4l-6 6a1.2 1.2 0 0 1-1.7-1.7l5.4-5.4"/></svg>';
+const IC_ERR = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="7"/><path d="M10 6v5M10 13.6v.01"/></svg>';
+const icTipo = t => t === 'avion' ? IC_AVION : IC_DRON;
+
+const CONT = {horas_vuelo:['Horas de vuelo','h','Horas'], despegues:['Despegues','','Despegues'], hobbs:['Hobbs','h','Hobbs'],
+              tach:['Tach','h','Tach'], aterrizajes:['Aterrizajes','','Aterrizajes'], arranques:['Arranques de motor','','Arranques']};
+const CONT_PRINCIPALES = {dron:['horas_vuelo','despegues'], avion:['hobbs','tach','aterrizajes']};
+const FUENTES = {pieza:'Pieza', inspeccion:'Inspección', directiva:'Directiva', documento:'Documento'};
+const FUENTES_PL = {pieza:'Piezas', inspeccion:'Inspecciones', directiva:'Directivas', documento:'Documentos'};
+const NIVELES = {vencido:'Vencido', critico:'Crítico', proximo:'Próximo'};
+const ORDEN_EST = {no_apto:0, observaciones:1, apto:2};
+const ORDEN_NIV = {vencido:0, critico:1, proximo:2, ok:3};
+const ESTADO_TXT = {apto:'Apto', observaciones:'Con observaciones', no_apto:'No recomendado volar'};
+
+// ---- Estado de la página ----
+let TIPO = paramURL('tipo') || '';
+let TAB = paramURL('tab') || 'despacho';
+let F_ESTADO = '', F_FUENTE = '', F_NIVEL = '', F_DIR = '', F_DOC = '';
+let AERO = null, DIR = {directivas:[], estado:[]}, DOCS = {documentos:[], tipos:{}};
+let EQUIPOS = [], PERSONAL = [], TIPO_DE = {}, MODELOS_AVION = null;
+
+// api() de app.js, pero conservando el código HTTP para explicar el error (403 sin permiso, 400 datos).
+async function llamar(url, opts={}){
+  const r = await fetch(url, opts.body ? {...opts, headers:{'Content-Type':'application/json'}, body:JSON.stringify(opts.body)} : opts);
+  let d = null; try{ d = await r.json(); }catch(e){}
+  if(r.status === 401){ location.href = '/login'; throw new Error('Sesión caducada'); }
+  if(!r.ok){ const e = new Error((d && d.error) || `Error ${r.status}`); e.status = r.status; throw e; }
+  return d;
+}
+function mostrarError(v, err){
+  const caja = v.$('[data-error]'); if(!caja){ toast(err.message); return; }
+  const titulo = err.status === 403 ? 'Sin permiso' : err.status === 400 ? 'Revisa los datos' : err.status === 409 ? 'No se puede' : 'No se pudo guardar';
+  caja.innerHTML = `${IC_ERR}<div><b>${titulo}.</b> ${escapar(err.message)}${err.status ? ` <span style="opacity:.7">(${err.status})</span>` : ''}</div>`;
+  caja.hidden = false;
+  caja.scrollIntoView({block:'nearest'});
+}
+const cajaError = '<div class="aviso rojo ae-err" data-error hidden></div>';
+
+function diasTxt(d, fem=true){
+  if(d === null || d === undefined) return '';
+  if(d < 0) return `${fem?'vencida':'vencido'} hace ${-d} ${-d===1?'día':'días'}`;
+  if(d === 0) return 'vence hoy';
+  return `faltan ${d} ${d===1?'día':'días'}`;
+}
+function nombreCont(c){ return (CONT[c]||[c||'horas'])[0]; }
+function unidadCont(c){ return (CONT[c]||['','h'])[1]; }
+
+// ================= Carga =================
+async function cargar(){
+  const q = TIPO ? `?tipo=${TIPO}` : '';
+  const [aero, dir, docs] = await Promise.all([
+    api('/api/aeronavegabilidad' + q), api('/api/directivas'), api('/api/documentos')]);
+  AERO = aero; DIR = dir; DOCS = docs;
+  pintarKpis(); pintarTablero(); pintarPendientes(); pintarDirectivas(); pintarDocumentos(); pintarContadoresTabs();
+  // La disponibilidad se pide sólo si su pestaña está a la vista; si no, se pedirá al abrirla.
+  if(TAB === 'disponibilidad') cargarDisp(); else DISP = null;
+}
+async function cargarBase(){
+  const [eqs, pers] = await Promise.all([api('/api/equipos'), api('/api/personal').catch(()=>[])]);
+  EQUIPOS = eqs; PERSONAL = pers || [];
+  EQUIPOS.forEach(e => TIPO_DE[e.id] = e.tipo_activo || 'dron');
+}
+
+// ================= KPIs =================
+function pintarKpis(){
+  const c = AERO.conteo, total = (c.apto||0) + (c.observaciones||0) + (c.no_apto||0);
+  const pct = n => total ? Math.round(n/total*100) : 0;
+  const pon = (id, n, nota)=>{ document.getElementById(id).textContent = n;
+    document.getElementById(id+'N').textContent = total ? `${pct(n)} % de ${total} ${total===1?'activo':'activos'} · ${nota}` : nota; };
+  pon('kApto', c.apto||0, 'puede despachar');
+  pon('kObs', c.observaciones||0, 'vuela con algo por resolver');
+  pon('kNo', c.no_apto||0, 'no debe volar');
+  document.querySelectorAll('.ae-kpi').forEach(k=>{
+    k.classList.toggle('sel', F_ESTADO === k.dataset.e);
+    k.classList.toggle('vacio', !c[k.dataset.e]);
+  });
+  document.getElementById('proporcion').innerHTML = total ?
+    `<i style="width:${pct(c.apto)}%;background:#2f8f4e"></i><i style="width:${pct(c.observaciones)}%;background:#e8a400"></i><i style="width:${100-pct(c.apto)-pct(c.observaciones)}%;background:#e0473e"></i>` : '';
+}
+document.querySelectorAll('.ae-kpi').forEach(k => k.onclick = ()=>{
+  F_ESTADO = F_ESTADO === k.dataset.e ? '' : k.dataset.e;
+  if(TAB !== 'despacho') cambiarTab('despacho');
+  pintarKpis(); pintarTablero();
+  document.getElementById('tablero').scrollIntoView({behavior:'smooth', block:'nearest'});
+});
+
+// ================= Tablero de despacho =================
+function semaforo(estado){
+  return `<div class="semaforo-g" aria-label="${ESTADO_TXT[estado]||estado}">
+    <i class="r ${estado==='no_apto'?'on':''}"></i><i class="a ${estado==='observaciones'?'on':''}"></i><i class="v ${estado==='apto'?'on':''}"></i></div>`;
+}
+function pintarTablero(){
+  const lista = AERO.equipos.filter(e => !F_ESTADO || e.estado === F_ESTADO)
+    .sort((a,b)=> (ORDEN_EST[a.estado]-ORDEN_EST[b.estado]) || (a.tipo_activo===b.tipo_activo?0:a.tipo_activo==='avion'?-1:1) || a.nombre.localeCompare(b.nombre));
+  document.getElementById('tabCuenta').textContent = `· ${lista.length} ${lista.length===1?'activo':'activos'}`;
+  document.getElementById('tabFiltroTxt').innerHTML = F_ESTADO
+    ? `Mostrando sólo <b>${ESTADO_TXT[F_ESTADO]}</b> · <a href="#" id="quitarEst">ver todos</a>` : 'Toca un indicador para filtrar';
+  const q = document.getElementById('quitarEst'); if(q) q.onclick = e=>{ e.preventDefault(); F_ESTADO=''; pintarKpis(); pintarTablero(); };
+  const cont = document.getElementById('tablero');
+  if(!lista.length){ cont.innerHTML = `<div class="empty" style="grid-column:1/-1">No hay activos ${F_ESTADO?'en este estado':'en servicio'} con este filtro.</div>`; return; }
+  cont.innerHTML = lista.map(e=>{
+    const tipo = e.tipo_activo || 'dron';
+    const motivos = e.motivos || [];
+    const visibles = motivos.slice(0, 4);
+    const contadores = (CONT_PRINCIPALES[tipo]||[]).filter(k => e.contadores && e.contadores[k] != null).map(k =>
+      `<div><b>${fmt(e.contadores[k], CONT[k][1]==='h'?1:0)}${CONT[k][1]==='h'?' h':''}</b><span>${CONT[k][2]}</span></div>`).join('');
+    return `<a class="ae-activo ${e.estado}" href="/flota/${e.id}">
+      ${semaforo(e.estado)}
+      <div class="cuerpo">
+        <div class="tit">${icTipo(tipo)}<span>${escapar(e.nombre)}</span></div>
+        <div class="meta">${e.matricula ? `<b style="color:var(--ink2)">${escapar(e.matricula)}</b> · ` : ''}${escapar(e.modelo||'')} · ${tipo==='avion'?'Avión':'Dron'}${e.estado_equipo && e.estado_equipo!=='activo' ? ' · '+escapar(e.estado_equipo) : ''}</div>
+        <span class="estado">${escapar(e.estado_txt || ESTADO_TXT[e.estado] || e.estado)}</span>
+        ${motivos.length ? `<ul class="motivos">${visibles.map(m=>`<li>${escapar(m)}</li>`).join('')}
+            ${motivos.length > visibles.length ? `<li class="mas">y ${motivos.length - visibles.length} más…</li>` : ''}</ul>`
+          : '<div class="ok-txt">Sin pendientes que impidan el vuelo.</div>'}
+        <div class="contadores">${contadores}</div>
+      </div>
+      <span class="ir">Ver ficha →</span>
+    </a>`;
+  }).join('');
+}
+
+// ================= Pendientes =================
+function pintarPendientes(){
+  const todas = AERO.alertas || [];
+  const porFuente = k => todas.filter(a => !k || a.fuente === k).filter(a => !F_NIVEL || a.nivel === F_NIVEL).length;
+  const porNivel = k => todas.filter(a => !F_FUENTE || a.fuente === F_FUENTE).filter(a => !k || a.nivel === k).length;
+  document.getElementById('fFuente').innerHTML = '<span>Fuente</span>' + [['', 'Todas'], ...Object.entries(FUENTES_PL)].map(([k,t]) =>
+    `<button class="pillbtn ${F_FUENTE===k?'active':''}" data-f="${k}">${t}<span class="c">${porFuente(k)}</span></button>`).join('');
+  document.getElementById('fNivel').innerHTML = '<span>Nivel</span>' + [['', 'Todos'], ...Object.entries(NIVELES)].map(([k,t]) =>
+    `<button class="pillbtn ${F_NIVEL===k?'active':''}" data-n="${k}">${t}<span class="c">${porNivel(k)}</span></button>`).join('');
+  document.querySelectorAll('#fFuente [data-f]').forEach(b => b.onclick = ()=>{ F_FUENTE = b.dataset.f; pintarPendientes(); });
+  document.querySelectorAll('#fNivel [data-n]').forEach(b => b.onclick = ()=>{ F_NIVEL = b.dataset.n; pintarPendientes(); });
+
+  const lista = todas.filter(a => (!F_FUENTE || a.fuente === F_FUENTE) && (!F_NIVEL || a.nivel === F_NIVEL))
+    .sort((a,b)=> (ORDEN_NIV[a.nivel]-ORDEN_NIV[b.nivel]) || ((b.pct||0)-(a.pct||0)));
+  document.getElementById('pendCuenta').textContent = `· ${lista.length}`;
+  const cont = document.getElementById('pendientes');
+  if(!lista.length){
+    cont.innerHTML = `<div class="vacio-rico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="12" cy="12" r="9"/><path d="m8 12.4 2.6 2.6L16 9.6"/></svg>
+      <b>Nada pendiente con este filtro</b><p>Todas las piezas, inspecciones, directivas y documentos están dentro de su plazo.</p></div>`;
+    return;
+  }
+  cont.innerHTML = lista.map((a,i) => `<div class="item clk" data-i="${i}">
+      <span class="punto ${a.nivel}"></span>
+      <div class="cuerpo"><b>${escapar(a.nombre)}</b>
+        <div class="mut">${icTipo(a.tipo_activo)} ${escapar(a.equipo)} · ${escapar(a.modulo||'')}</div></div>
+      <div class="der" style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+        <span class="plazo ${a.nivel}">${escapar(a.plazo_txt || '—')}</span>
+        <span style="display:flex;gap:5px"><span class="tag fuente ${a.fuente}">${FUENTES[a.fuente]||a.fuente}</span>${tagNivel(a.nivel)}</span>
+      </div></div>`).join('');
+  cont.querySelectorAll('.item').forEach(el => el.onclick = ()=>{
+    const a = lista[Number(el.dataset.i)];
+    if(a.fuente === 'directiva'){ cambiarTab('directivas'); resaltarDirectiva(a.id); }
+    else if(a.fuente === 'documento'){ cambiarTab('documentos'); }
+    else location.href = `/flota/${a.equipo_id}`;
+  });
+}
+
+// ================= Directivas =================
+function recurrenciaTxt(d){
+  if(!d.recurrente) return 'Una sola vez';
+  const p = [];
+  if(d.intervalo_valor) p.push(`cada ${fmt(d.intervalo_valor)} ${unidadCont(d.intervalo_contador)} de ${nombreCont(d.intervalo_contador)}`);
+  if(d.intervalo_dias) p.push(`cada ${d.intervalo_dias} días`);
+  return 'Recurrente ' + (p.join(' o ') || '(sin intervalo)') + (p.length > 1 ? ', lo que ocurra primero' : '');
+}
+function limiteTxt(d){
+  const p = [];
+  if(d.limite_fecha) p.push(`antes del ${fmtFecha(d.limite_fecha)}`);
+  if(d.limite_valor) p.push(`antes de ${fmt(d.limite_valor)} ${unidadCont(d.intervalo_contador)} de ${nombreCont(d.intervalo_contador)}`);
+  return p.length ? 'Cumplir ' + p.join(' o ') : 'Sin límite fijado';
+}
+function plazoDirectiva(r){
+  const u = unidadCont(r.intervalo_contador), cn = nombreCont(r.intervalo_contador);
+  if(r.estado === 'no_aplica') return 'No aplica a este avión';
+  if(r.estado === 'cumplida'){
+    if(!r.recurrente) return 'Cumplida · no se repite';
+    const p = [];
+    if(r.restante != null) p.push(r.restante < 0 ? `pasada ${fmt(-r.restante)} ${u} de ${cn}` : `quedan ${fmt(r.restante)} ${u} de ${cn}`);
+    if(r.proxima) p.push(`próxima ${fmtFecha(r.proxima)} (${diasTxt(r.dias_restantes)})`);
+    return p.join(' · ') || 'Recurrente · sin lectura de contador al cumplir';
+  }
+  const p = [];
+  if(r.limite_fecha) p.push(`límite ${fmtFecha(r.limite_fecha)} · ${diasTxt(r.dias_restantes)}`);
+  if(r.limite_valor) p.push(r.restante != null ? (r.restante < 0 ? `pasada ${fmt(-r.restante)} ${u} de ${cn}` : `quedan ${fmt(r.restante)} ${u} de ${cn}`) : `límite ${fmt(r.limite_valor)} ${u}`);
+  return p.length ? p.join(' · ') : 'Sin plazo: decidir si aplica y cumplirla';
+}
+function nivelFila(r){ return r.estado === 'no_aplica' ? 'no_aplica' : (r.nivel || 'ok'); }
+
+function pintarDirectivas(){
+  const filas = DIR.estado.filter(r => !TIPO || (TIPO_DE[r.equipo_id]||'dron') === TIPO);
+  const pend = filas.filter(r => r.estado === 'pendiente');
+  const malas = filas.filter(r => ['vencido','critico'].includes(r.nivel) && r.estado !== 'no_aplica');
+  const cumplidas = filas.filter(r => r.estado !== 'pendiente');
+  document.getElementById('dirKpis').innerHTML = `
+    <div class="kpi"><div class="lbl">AD/SB registradas</div><div class="val">${DIR.directivas.length}</div><div class="note">${DIR.directivas.filter(d=>d.tipo==='AD').length} AD · ${DIR.directivas.filter(d=>d.tipo==='SB').length} SB</div></div>
+    <div class="kpi"><div class="lbl">Pendientes</div><div class="val acc">${pend.length}</div><div class="note">por avión, sin cumplir</div></div>
+    <div class="kpi"><div class="lbl">Vencidas o críticas</div><div class="val rojo">${malas.length}</div><div class="note">hacen que no recomendemos volar el avión o lo dejan con observaciones</div></div>
+    <div class="kpi"><div class="lbl">Cumplidas / no aplica</div><div class="val verde">${cumplidas.length}</div><div class="note">con registro firmado</div></div>`;
+
+  const cont = document.getElementById('directivas');
+  let lista = DIR.directivas.map(d => ({d, filas: filas.filter(r => r.id === d.id)}));
+  if(TIPO) lista = lista.filter(x => x.filas.length);
+  if(F_DIR) lista = lista.map(x => ({...x, filas: x.filas.filter(r => r.estado === F_DIR)})).filter(x => x.filas.length);
+  lista.sort((a,b)=> Math.min(...a.filas.map(r=>ORDEN_NIV[nivelFila(r)]??4), 9) - Math.min(...b.filas.map(r=>ORDEN_NIV[nivelFila(r)]??4), 9) || a.d.numero.localeCompare(b.d.numero));
+  if(!lista.length){
+    cont.innerHTML = `<div class="vacio-rico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>
+      <b>${TIPO==='dron' ? 'Las directivas AD/SB se siguen en los aviones' : 'Sin directivas con este filtro'}</b>
+      <p>${TIPO==='dron' ? 'Cambia el filtro a «Aviones» o «Todos» para verlas.' : 'Registra las AD y SB que publica la autoridad o el fabricante para cada modelo de avión.'}</p>
+      ${TIPO!=='dron' ? '<button class="btn" onclick="editarDirectiva()">＋ Nueva directiva</button>' : ''}</div>`;
+    return;
+  }
+  cont.innerHTML = lista.map(({d, filas}) => `
+    <div class="ae-dir" id="dir-${d.id}">
+      <div class="cab">
+        <div class="sello ${d.tipo==='SB'?'SB':'AD'}">${d.tipo==='SB'?'SB':'AD'}</div>
+        <div class="info">
+          <div class="num">${escapar(d.numero)} · MODELO ${escapar(d.modelo || 'todos')}</div>
+          <div class="titulo">${escapar(d.titulo)}</div>
+          ${d.descripcion ? `<div class="desc">${escapar(d.descripcion)}</div>` : ''}
+          <div class="chips">
+            <span class="tag ${d.recurrente?'acc':'gray'}">${recurrenciaTxt(d)}</span>
+            <span class="tag gray">${limiteTxt(d)}</span>
+            ${d.fuente ? `<span class="tag gray">Fuente: ${escapar(d.fuente)}</span>` : ''}
+            ${d.url ? `<a class="tag acc" href="${escapar(d.url)}" target="_blank" rel="noopener">Ver documento ↗</a>` : ''}
+          </div>
+        </div>
+        <div class="acc">
+          <button class="btn secundario peq" onclick="verHistorial(${d.id})">Historial</button>
+          <button class="btn secundario peq" onclick="editarDirectiva(${d.id})">Editar</button>
+          <button class="btn-icono" title="Eliminar directiva" onclick="borrarDirectiva(${d.id})">✕</button>
+        </div>
+      </div>
+      ${filas.length ? filas.map(r => `
+        <div class="fila ${nivelFila(r)}">
+          <span class="luz" title="${escapar(r.estado_txt)}"></span>
+          <div class="avion"><b>${escapar(r.matricula || r.equipo)}</b><span>${escapar(r.equipo)}</span></div>
+          <div><div class="plazo">${escapar(plazoDirectiva(r))}</div>
+            <div style="margin-top:4px">${r.estado==='pendiente' ? tagNivel(r.nivel) : `<span class="tag ${r.estado==='cumplida'?'ok':'gray'}">${escapar(r.estado_txt)}</span>`}</div></div>
+          <div class="firma">${r.fecha_cumpl ? `${fmtFecha(r.fecha_cumpl)}${r.firmado_por ? ` · ${escapar(r.firmado_por)}` : ''}
+              <span style="display:block">${r.licencia ? 'Lic. ' + escapar(r.licencia) : ''}${r.valor_contador!=null ? ` · a ${fmt(r.valor_contador)} ${r.unidad}` : ''}</span>`
+            : '<span>Sin registro de cumplimiento</span>'}</div>
+          <div class="acc"><button class="btn peq ${r.estado==='pendiente'?'':'secundario'}" onclick="cumplir(${d.id}, ${r.equipo_id})">Registrar cumplimiento</button></div>
+        </div>`).join('')
+      : `<div class="sin-aviones">Ningún activo de la flota es del modelo <b>${escapar(d.modelo||'—')}</b>.</div>`}
+    </div>`).join('');
+}
+function resaltarDirectiva(id){
+  const el = document.getElementById('dir-' + id); if(!el) return;
+  el.classList.add('resaltar'); el.scrollIntoView({behavior:'smooth', block:'center'});
+  setTimeout(()=>el.classList.remove('resaltar'), 2200);
+}
+
+async function modelosAvion(){
+  if(MODELOS_AVION) return MODELOS_AVION;
+  try{
+    const r = await api('/api/modelos-activo?tipo=avion');
+    MODELOS_AVION = r.modelos.filter(m => !m.es_plantilla).map(m => ({v:m.clave, t:`${m.nombre} · ${m.clave}${m.n_equipos?` (${m.n_equipos} ${m.n_equipos===1?'avión':'aviones'})`:''}`}));
+  }catch(e){
+    // Sin permiso para ver el catálogo: se ofrecen los modelos de los aviones de la flota.
+    MODELOS_AVION = [...new Set(EQUIPOS.filter(e => e.tipo_activo === 'avion').map(e => e.modelo))].map(m => ({v:m, t:m}));
+  }
+  return MODELOS_AVION;
+}
+
+async function editarDirectiva(id){
+  const d = id ? DIR.directivas.find(x => x.id === id) : {tipo:'AD', recurrente:0, intervalo_contador:'tach'};
+  const modelos = await modelosAvion();
+  if(d.modelo && !modelos.some(m => m.v === d.modelo)) modelos.unshift({v:d.modelo, t:d.modelo});
+  const contAvion = ['hobbs','tach','aterrizajes','arranques'].map(k => ({v:k, t:CONT[k][0]}));
+  const v = ventana({
+    titulo: id ? `Editar ${escapar(d.tipo)} ${escapar(d.numero)}` : 'Nueva directiva o boletín',
+    subtitulo: 'Se aplica a todos los aviones del modelo elegido', ancho:'ancha',
+    cuerpo: `${cajaError}<form id="fDir">
+      <div class="seccion-form"><div class="titulo"><span class="n">1</span> Identificación</div>
+      <div class="form-grid">
+        <div class="campo"><label>Modelo *</label><select name="modelo" required>${opciones(modelos, d.modelo || modelos[0]?.v)}</select></div>
+        <div class="campo"><label>Tipo</label><select name="tipo">${opciones([{v:'AD',t:'AD · Directiva de aeronavegabilidad'},{v:'SB',t:'SB · Boletín de servicio'}], d.tipo)}</select></div>
+        <div class="campo"><label>Número *</label><input name="numero" required value="${escapar(d.numero||'')}" placeholder="2024-12-05"></div>
+        <div class="campo ancho"><label>Título *</label><input name="titulo" required value="${escapar(d.titulo||'')}" placeholder="Inspección de los cables de mando del timón"></div>
+        <div class="campo ancho"><label>Descripción</label><textarea name="descripcion" placeholder="Qué exige y cómo se cumple">${escapar(d.descripcion||'')}</textarea></div>
+        <div class="campo"><label>Fuente</label><input name="fuente" value="${escapar(d.fuente||'')}" placeholder="Aerocivil, FAA, Textron…"></div>
+        <div class="campo"><label>Enlace al documento</label><input name="url" value="${escapar(d.url||'')}" placeholder="https://…"></div>
+      </div></div>
+      <div class="seccion-form"><div class="titulo"><span class="n">2</span> Plazos</div>
+      <div class="form-grid">
+        <div class="campo"><label>Contador de referencia</label><select name="intervalo_contador">${opciones(contAvion, d.intervalo_contador || 'tach')}</select></div>
+        <div class="campo" style="justify-content:flex-end"><label class="chk"><input type="checkbox" name="recurrente" ${d.recurrente?'checked':''}> Recurrente (se repite)</label></div>
+      </div>
+      <div class="bloque-cond" data-rec><div class="t">Repetición · lo que ocurra primero</div><div class="form-grid">
+        <div class="campo"><label>Cada (valor del contador)</label><input type="number" step="any" min="0" name="intervalo_valor" value="${d.intervalo_valor??''}" placeholder="100"></div>
+        <div class="campo"><label>Cada (días)</label><input type="number" step="1" min="0" name="intervalo_dias" value="${d.intervalo_dias??''}" placeholder="365"></div>
+      </div></div>
+      <div class="bloque-cond"><div class="t">Límite para el primer cumplimiento · lo que ocurra primero</div><div class="form-grid">
+        <div class="campo"><label>Antes de la fecha</label><input type="date" name="limite_fecha" value="${escapar((d.limite_fecha||'').slice(0,10))}"></div>
+        <div class="campo"><label>Antes del valor del contador</label><input type="number" step="any" min="0" name="limite_valor" value="${d.limite_valor??''}" placeholder="4400"></div>
+      </div></div>
+      </div></form>`,
+    pie: `<span class="mut" style="font-size:12px">Una pendiente sin límite se marca crítica hasta decidir si aplica.</span>
+          <div class="der"><button class="btn secundario" data-no>Cancelar</button><button class="btn" data-si>${id?'Guardar cambios':'Crear directiva'}</button></div>`,
+  });
+  const f = v.$('#fDir');
+  const rec = ()=>{ v.$('[data-rec]').style.display = f.recurrente.checked ? '' : 'none'; };
+  f.recurrente.onchange = rec; rec();
+  v.$('[data-no]').onclick = v.cerrar;
+  v.$('[data-si]').onclick = async ()=>{
+    if(!f.reportValidity()) return;
+    const c = Object.fromEntries(new FormData(f).entries());
+    c.recurrente = f.recurrente.checked;
+    if(!c.recurrente){ c.intervalo_valor = ''; c.intervalo_dias = ''; }
+    try{
+      await llamar(id ? `/api/directivas/${id}` : '/api/directivas', {method: id ? 'PUT' : 'POST', body:c});
+      toast(id ? 'Directiva actualizada' : 'Directiva creada'); await v.cerrar(); cargar();
+    }catch(err){ mostrarError(v, err); }
+  };
+}
+
+async function borrarDirectiva(id){
+  const d = DIR.directivas.find(x => x.id === id);
+  if(!await confirmar({titulo:'Eliminar directiva', peligro:true, aceptar:'Eliminar',
+    mensaje:`Se elimina <b>${escapar(d.tipo)} ${escapar(d.numero)}</b> y deja de seguirse en los aviones del modelo. El historial de cumplimiento se pierde.`})) return;
+  try{ await llamar(`/api/directivas/${id}`, {method:'DELETE'}); toast('Directiva eliminada'); cargar(); }
+  catch(err){ toast((err.status===403?'Sin permiso: ':'') + err.message); }
+}
+
+function cumplir(id, equipoId){
+  const d = DIR.directivas.find(x => x.id === id);
+  const filas = DIR.estado.filter(r => r.id === id);
+  const aviones = filas.map(r => ({v:r.equipo_id, t:`${r.matricula || r.equipo} · ${r.equipo} · ${r.estado_txt}`}));
+  const puedeFirmar = ES_ADMIN || ROL === 'certificador';
+  const v = ventana({
+    titulo: `Registrar cumplimiento · ${escapar(d.tipo)} ${escapar(d.numero)}`, subtitulo: escapar(d.titulo),
+    cuerpo: `${cajaError}
+      ${!puedeFirmar ? `<div class="aviso ambar">${IC_ERR}<div>Sólo un <b>mecánico certificador</b> o un administrador puede firmar «Cumplida». Puedes registrar «No aplica».</div></div>` : ''}
+      <form id="fCum"><div class="form-grid">
+        <div class="campo ancho"><label>Avión *</label><select name="equipo_id">${opciones(aviones, equipoId)}</select></div>
+        <div class="campo ancho"><label>Resultado</label>
+          <div class="segmento" id="segRes"><button type="button" data-v="cumplida" class="activo">Cumplida</button><button type="button" data-v="no_aplica">No aplica</button><button type="button" data-v="pendiente">Reabrir (pendiente)</button></div></div>
+        <div class="campo"><label>Fecha *</label><input type="date" name="fecha" value="${hoyISO()}" max="${hoyISO()}" required></div>
+        <div class="campo" data-firma><label>Firmado por *</label><input name="firmado_por" placeholder="Nombre del certificador"></div>
+        <div class="campo" data-firma><label>Licencia *</label><input name="licencia" placeholder="N.º de licencia"></div>
+        <div class="campo ancho"><label>Nota</label><textarea name="nota" placeholder="Trabajo realizado, referencia de la orden, motivo por el que no aplica…"></textarea></div>
+      </div></form>
+      <div class="aviso gris" style="margin:0">${IC_ERR}<div>Al cumplir se guarda la lectura actual del contador (${nombreCont(d.intervalo_contador)}) para calcular la próxima repetición.</div></div>`,
+    pie: `<div class="der"><button class="btn secundario" data-no>Cancelar</button><button class="btn verde" data-si>Registrar</button></div>`,
+  });
+  let estado = 'cumplida';
+  v.$$('#segRes button').forEach(b => b.onclick = ()=>{
+    estado = b.dataset.v; v.$$('#segRes button').forEach(x => x.classList.toggle('activo', x === b));
+    v.$$('[data-firma]').forEach(c => c.style.display = estado === 'cumplida' ? '' : 'none');
+  });
+  v.$('[data-no]').onclick = v.cerrar;
+  v.$('[data-si]').onclick = async ()=>{
+    const c = Object.fromEntries(new FormData(v.$('#fCum')).entries());
+    c.estado = estado;
+    try{
+      await llamar(`/api/directivas/${id}/cumplir`, {method:'POST', body:c});
+      toast('Cumplimiento registrado'); await v.cerrar(); cargar();
+    }catch(err){ mostrarError(v, err); }
+  };
+}
+
+async function verHistorial(id){
+  const d = DIR.directivas.find(x => x.id === id);
+  const v = ventana({titulo:`Historial · ${escapar(d.tipo)} ${escapar(d.numero)}`, subtitulo: escapar(d.titulo), ancho:'ancha',
+    cuerpo:'<div id="hCuerpo"><div class="empty"><span class="cargador oscuro"></span> Cargando…</div></div>',
+    pie:'<div class="der"><button class="btn secundario" data-no>Cerrar</button></div>'});
+  v.$('[data-no]').onclick = v.cerrar;
+  try{
+    const h = await llamar(`/api/directivas/${id}/historial`);
+    const est = {cumplida:['ok','Cumplida'], no_aplica:['gray','No aplica'], pendiente:['critico','Reabierta']};
+    v.$('#hCuerpo').innerHTML = h.length ? `<div class="tabla-envoltura"><table style="min-width:720px"><thead><tr><th>Fecha</th><th>Avión</th><th>Resultado</th><th class="num">Contador</th><th>Firmado por</th><th>Licencia</th><th>Nota</th></tr></thead><tbody>
+      ${h.map(x => `<tr><td>${fmtFecha(x.fecha)}</td><td><b>${escapar(x.matricula||x.equipo)}</b></td>
+        <td><span class="tag ${(est[x.estado]||['gray'])[0]}">${(est[x.estado]||[0,x.estado])[1]}</span></td>
+        <td class="num">${x.valor_contador!=null ? fmt(x.valor_contador)+' '+unidadCont(d.intervalo_contador) : '—'}</td>
+        <td>${escapar(x.firmado_por||'—')}</td><td>${escapar(x.licencia||'—')}</td><td>${escapar(x.nota||'')}</td></tr>`).join('')}
+      </tbody></table></div>` : '<div class="empty">Todavía no hay registros de cumplimiento para esta directiva.</div>';
+  }catch(err){ v.$('#hCuerpo').innerHTML = `<div class="aviso rojo">${IC_ERR}<div>${escapar(err.message)}</div></div>`; }
+}
+
+// ================= Documentos =================
+function pintarDocumentos(){
+  let docs = DOCS.documentos.filter(d => d.personal_id ? true : (!TIPO || (TIPO_DE[d.equipo_id]||'dron') === TIPO));
+  const kpi = k => docs.filter(d => d.nivel === k).length;
+  document.getElementById('docKpis').innerHTML = `
+    <div class="kpi"><div class="lbl">Vencidos</div><div class="val rojo">${kpi('vencido')}</div><div class="note">recomendamos no volar el activo</div></div>
+    <div class="kpi"><div class="lbl">Vencen en 15 días</div><div class="val rojo">${kpi('critico')}</div><div class="note">renovar ya</div></div>
+    <div class="kpi"><div class="lbl">Vencen en 30 días</div><div class="val ambar">${kpi('proximo')}</div><div class="note">programar renovación</div></div>
+    <div class="kpi"><div class="lbl">Al día</div><div class="val verde">${kpi('ok')}</div><div class="note">de ${docs.length} documentos</div></div>`;
+  if(F_DOC === 'activo') docs = docs.filter(d => d.equipo_id);
+  if(F_DOC === 'persona') docs = docs.filter(d => d.personal_id);
+  docs.sort((a,b)=> (a.dias_restantes ?? 1e9) - (b.dias_restantes ?? 1e9));
+  document.getElementById('docCuenta').textContent = `· ${docs.length}`;
+  document.getElementById('docsVacio').style.display = docs.length ? 'none' : 'block';
+  document.getElementById('tablaDocs').innerHTML = docs.map(d => {
+    const dr = d.dias_restantes;
+    const dias = dr == null ? `<span class="dias sin"><i></i>Sin fecha</span>`
+      : `<span class="dias ${d.nivel}"><i></i>${dr < 0 ? `${-dr} d` : `${dr} d`}<small>${dr < 0 ? 'vencido' : dr === 0 ? 'hoy' : 'restantes'}</small></span>`;
+    const de = d.personal_id
+      ? `<span class="de">${IC_PERSONA}<span><b>${escapar(d.persona || 'Persona')}</b><br><span class="mut" style="font-size:11.5px">Personal</span></span></span>`
+      : `<span class="de">${icTipo(TIPO_DE[d.equipo_id])}<span><b>${escapar(d.matricula || d.equipo || '—')}</b><br><span class="mut" style="font-size:11.5px">${escapar(d.equipo||'')}</span></span></span>`;
+    return `<tr>
+      <td>${dias}</td>
+      <td><b>${escapar(d.tipo_txt)}</b><div class="mut" style="font-size:12px">${d.numero ? 'N.º ' + escapar(d.numero) : 'Sin número'}${d.nota ? ' · ' + escapar(d.nota) : ''}</div></td>
+      <td>${de}</td>
+      <td>${fmtFecha(d.emitido)}</td>
+      <td><b>${fmtFecha(d.vence)}</b></td>
+      <td>${d.archivo ? `<a class="adjunto" href="/archivos/${encodeURIComponent(d.archivo)}" target="_blank" rel="noopener">${IC_CLIP} ${/\.pdf$/i.test(d.archivo)?'PDF':'Foto'}</a>`
+            : `<button class="btn secundario peq" onclick="adjuntarRapido(${d.id})">${IC_CLIP.replace('<svg','<svg style="width:14px;height:14px"')} Adjuntar</button>`}</td>
+      <td style="white-space:nowrap;text-align:right"><button class="btn secundario peq" onclick="editarDocumento(${d.id})">Editar</button>
+        <button class="btn-icono" title="Eliminar documento" onclick="borrarDocumento(${d.id})">✕</button></td>
+    </tr>`;
+  }).join('');
+}
+
+async function subirArchivo(file){
+  const fd = new FormData(); fd.append('archivo', file);
+  const r = await fetch('/api/archivos', {method:'POST', body:fd});
+  let d = null; try{ d = await r.json(); }catch(e){}
+  if(!r.ok){ const e = new Error((d && d.error) || `Error ${r.status}`); e.status = r.status; throw e; }
+  return d;
+}
+function elegirArchivo(){
+  return new Promise(res=>{
+    const i = document.createElement('input'); i.type = 'file'; i.accept = '.pdf,.jpg,.jpeg,.png,.webp,.heic,application/pdf,image/*';
+    i.onchange = ()=> res(i.files[0] || null); i.click();
+  });
+}
+async function adjuntarRapido(id){
+  const f = await elegirArchivo(); if(!f) return;
+  try{ const r = await subirArchivo(f); await llamar(`/api/documentos/${id}`, {method:'PUT', body:{archivo:r.archivo}}); toast('Soporte adjuntado'); cargar(); }
+  catch(err){ toast(err.message); }
+}
+
+function editarDocumento(id){
+  const d = id ? DOCS.documentos.find(x => x.id === id) : {tipo:'aeronavegabilidad'};
+  let de = d.personal_id ? 'persona' : 'activo';
+  let archivo = d.archivo || '';
+  const tipos = Object.entries(DOCS.tipos).map(([v,t]) => ({v,t}));
+  const eqs = EQUIPOS.filter(e => e.estado !== 'baja').map(e => ({v:e.id, t:`${e.matricula ? e.matricula + ' · ' : ''}${e.nombre} · ${e.modelo}`}));
+  const pers = PERSONAL.map(p => ({v:p.id, t:`${p.nombre}${p.cargo ? ' · ' + p.cargo : ''}`}));
+  const v = ventana({
+    titulo: id ? 'Editar documento' : 'Nuevo documento', subtitulo:'Certificados, pólizas, permisos y licencias con fecha de vencimiento',
+    cuerpo: `${cajaError}<form id="fDoc"><div class="form-grid">
+        <div class="campo ancho"><label>Pertenece a</label>
+          <div class="segmento" id="segDe"><button type="button" data-v="activo">${IC_AVION} Un activo</button><button type="button" data-v="persona">${IC_PERSONA.replace('<svg','<svg class="ic-tipo"')} Una persona</button></div></div>
+        <div class="campo ancho" data-de="activo"><label>Activo *</label><select name="equipo_id">${opciones(eqs, d.equipo_id || (EQUIPOS.find(e => e.estado !== 'baja' && e.tipo_activo === (TIPO || 'avion')) || {}).id)}</select></div>
+        <div class="campo ancho" data-de="persona"><label>Persona *</label>${pers.length ? `<select name="personal_id">${opciones(pers, d.personal_id)}</select>`
+            : '<div class="aviso gris" style="margin:0">No hay personal registrado. Agrégalo en Contactos.</div>'}</div>
+        <div class="campo"><label>Tipo *</label><select name="tipo">${opciones(tipos, d.tipo)}</select></div>
+        <div class="campo"><label>Número</label><input name="numero" value="${escapar(d.numero||'')}"></div>
+        <div class="campo"><label>Emitido</label><input type="date" name="emitido" value="${escapar((d.emitido||'').slice(0,10))}"></div>
+        <div class="campo"><label>Vence</label><input type="date" name="vence" value="${escapar((d.vence||'').slice(0,10))}"></div>
+        <div class="campo ancho"><label>Nota</label><input name="nota" value="${escapar(d.nota||'')}" placeholder="Aseguradora, autoridad que lo emite…"></div>
+        <div class="campo ancho"><label>Soporte (PDF o foto)</label><div id="zonaArchivo"></div></div>
+      </div></form>`,
+    pie: `<div class="der"><button class="btn secundario" data-no>Cancelar</button><button class="btn" data-si>${id?'Guardar':'Crear documento'}</button></div>`,
+  });
+  const pintarDe = ()=>{
+    v.$$('#segDe button').forEach(b => b.classList.toggle('activo', b.dataset.v === de));
+    v.$$('[data-de]').forEach(c => c.style.display = c.dataset.de === de ? '' : 'none');
+  };
+  v.$$('#segDe button').forEach(b => b.onclick = ()=>{ de = b.dataset.v; pintarDe(); });
+  pintarDe();
+  const zona = v.$('#zonaArchivo');
+  const pintarArchivo = ()=>{
+    zona.innerHTML = archivo
+      ? `<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><a class="adjunto" href="/archivos/${encodeURIComponent(archivo)}" target="_blank" rel="noopener">${IC_CLIP} ${escapar(archivo)}</a>
+           <button type="button" class="btn secundario peq" data-cambiar>Cambiar</button><button type="button" class="btn secundario peq" data-quitar>Quitar</button></div>`
+      : `<div class="soltar" data-soltar><b>Arrastra aquí el PDF o la foto</b><span>o haz clic para elegirlo · jpg, png, webp, heic o pdf</span></div>`;
+    const subir = async (file)=>{
+      if(!file) return;
+      zona.innerHTML = '<div class="empty" style="padding:16px"><span class="cargador oscuro"></span> Subiendo…</div>';
+      try{ archivo = (await subirArchivo(file)).archivo; toast('Archivo subido'); }
+      catch(err){ mostrarError(v, err); }
+      pintarArchivo();
+    };
+    const s = zona.querySelector('[data-soltar]');
+    if(s){
+      s.onclick = async ()=> subir(await elegirArchivo());
+      s.ondragover = e=>{ e.preventDefault(); s.classList.add('encima'); };
+      s.ondragleave = ()=> s.classList.remove('encima');
+      s.ondrop = e=>{ e.preventDefault(); s.classList.remove('encima'); subir(e.dataTransfer.files[0]); };
+    }
+    const c = zona.querySelector('[data-cambiar]'); if(c) c.onclick = async ()=> subir(await elegirArchivo());
+    const q = zona.querySelector('[data-quitar]'); if(q) q.onclick = ()=>{ archivo = ''; pintarArchivo(); };
+  };
+  pintarArchivo();
+  v.$('[data-no]').onclick = v.cerrar;
+  v.$('[data-si]').onclick = async ()=>{
+    const f = v.$('#fDoc');
+    const c = {tipo:f.tipo.value, numero:f.numero.value, emitido:f.emitido.value, vence:f.vence.value, nota:f.nota.value, archivo};
+    if(de === 'activo'){ c.equipo_id = f.equipo_id?.value || null; c.personal_id = null; }
+    else { c.personal_id = f.personal_id?.value || null; c.equipo_id = null; }
+    try{
+      await llamar(id ? `/api/documentos/${id}` : '/api/documentos', {method: id ? 'PUT' : 'POST', body:c});
+      toast(id ? 'Documento actualizado' : 'Documento creado'); await v.cerrar(); cargar();
+    }catch(err){ mostrarError(v, err); }
+  };
+}
+async function borrarDocumento(id){
+  const d = DOCS.documentos.find(x => x.id === id);
+  if(!await confirmar({titulo:'Eliminar documento', peligro:true, aceptar:'Eliminar',
+    mensaje:`Se elimina <b>${escapar(d.tipo_txt)} ${escapar(d.numero||'')}</b> de ${escapar(d.matricula||d.equipo||d.persona||'')}.`})) return;
+  try{ await llamar(`/api/documentos/${id}`, {method:'DELETE'}); toast('Documento eliminado'); cargar(); }
+  catch(err){ toast((err.status===403?'Sin permiso: ':'') + err.message); }
+}
+
+// ================= Disponibilidad histórica =================
+// Cada día el sistema guarda una foto del estado de cada activo (estado_diario). La disponibilidad
+// es días apto o con observaciones ÷ días con foto; los días anteriores a la primera foto no cuentan.
+const DP_TXT = {apto:'Apto', observaciones:'Con observaciones (disponible)', no_apto:'No recomendado volar', taller:'En taller', baja:'De baja'};
+let DP_PERIODO = '90d', DISP = null;
+const dpISO = d => d.toISOString().slice(0, 10);
+const dpFecha = iso => { const [y, m, d] = iso.split('-').map(Number); return new Date(Date.UTC(y, m - 1, d)); };
+const dpCorta = iso => dpFecha(iso).toLocaleDateString('es-CO', {day:'numeric', month:'short', timeZone:'UTC'});
+const dpClase = v => v == null ? 'sin' : v >= 85 ? 'verde' : v >= 60 ? 'ambar' : 'rojo';
+function dpDias(desde, hasta){
+  const out = []; if(!desde || !hasta) return out;
+  for(let d = dpFecha(desde), fin = dpFecha(hasta); d <= fin; d.setUTCDate(d.getUTCDate() + 1)) out.push(dpISO(d));
+  return out;
+}
+
+async function cargarDisp(){
+  const p = new URLSearchParams({periodo: DP_PERIODO});
+  if(TIPO) p.set('tipo', TIPO);
+  try{ DISP = await api('/api/disponibilidad?' + p); }
+  catch(err){ document.getElementById('dpLista').innerHTML = `<div class="empty">${escapar(err.message)}</div>`; return; }
+  pintarDisp();
+}
+
+function pintarDisp(){
+  const r = DISP, activos = r.activos || [];
+  const hoy = dpISO(new Date(Date.now() - new Date().getTimezoneOffset() * 60000));
+  const desde = r.desde || r.primer_dia;   // «Todo» no trae fecha de inicio: arranca en la primera foto.
+  const hasta = r.hasta || hoy;
+  const dias = dpDias(desde, hasta);
+  // Totales de la flota (días-activo) para la barra de proporción.
+  const t = activos.reduce((a, e) => {
+    a.reg += e.dias_registrados || 0; a.ok += e.dias_disponible || 0;
+    a.no += e.dias_no_recomendado || 0; a.taller += e.dias_taller || 0; return a;
+  }, {reg:0, ok:0, no:0, taller:0});
+  const pct = n => t.reg ? (n / t.reg * 100).toFixed(2) : 0;
+  const m = r.mttr || {};
+  const txtPer = {'30d':'últimos 30 días', '90d':'últimos 90 días', 'anio':'este año', 'todo':'todo el historial'}[DP_PERIODO];
+  document.getElementById('dpResumen').innerHTML = `
+    <div class="kpi"><div class="lbl">Disponibilidad de la flota</div>
+      <div class="val grande ${r.total == null ? '' : dpClase(r.total)}">${r.total == null ? '—' : `${fmt(r.total, 1)}<small>%</small>`}</div>
+      <div class="note">${t.reg ? `${fmt(t.ok, 0)} de ${fmt(t.reg, 0)} días-activo disponibles · ${txtPer}` : 'Aún no hay días registrados en este período'}</div>
+      ${t.reg ? `<div class="dp-barra" title="Disponible ${pct(t.ok)} % · No recomendado ${pct(t.no)} % · Taller ${pct(t.taller)} %">
+        <i class="dp-c-apto" style="width:${pct(t.ok)}%"></i><i class="dp-c-no_apto" style="width:${pct(t.no)}%"></i><i class="dp-c-taller" style="width:${pct(t.taller)}%"></i></div>` : ''}
+    </div>
+    <div class="kpi"><div class="lbl">Tiempo medio de reparación (MTTR)</div>
+      <div class="val grande">${m.dias == null ? '—' : `${fmt(m.dias, 1)}<small>días</small>`}</div>
+      <div class="note">${m.n ? `promedio de ${m.n} ${m.n === 1 ? 'OT correctiva cerrada' : 'OT correctivas cerradas'} · ${txtPer}` : 'Sin OT correctivas o por daño cerradas en el período'}</div>
+    </div>
+    <div class="dp-nota"><div class="lbl">Cómo se calcula</div>
+      Cada día el sistema guarda una <b>foto del estado</b> de cada activo. Disponibilidad = días <b>apto</b> o <b>con observaciones</b> ÷ días con foto.
+      MTTR = días entre abrir y cerrar las OT correctivas (o por daño).
+      ${r.primer_dia ? `<br>El historial empieza el <b>${fmtFecha(r.primer_dia)}</b>, cuando el sistema empezó a tomar la foto diaria: los días anteriores aparecen vacíos y <b>no cuentan</b>.`
+                     : '<br>Todavía no hay fotos diarias: el historial empieza a contarse desde hoy.'}
+    </div>`;
+  document.getElementById('dpCuenta').textContent = `· ${activos.length} ${activos.length === 1 ? 'activo' : 'activos'}`;
+  const lista = document.getElementById('dpLista');
+  if(!activos.length){
+    lista.innerHTML = `<div class="empty">${TIPO === 'avion' ? 'No hay aviones en servicio.' : TIPO === 'dron' ? 'No hay drones en servicio.' : 'No hay activos en servicio.'}</div>`;
+    return;
+  }
+  // Separación de 1 px sólo si cada día tiene sitio (≥ 5 px); si no, la franja se ve rayada.
+  const gap = (lista.clientWidth * 0.7) / Math.max(dias.length, 1) >= 5 ? 1 : 0;
+  lista.innerHTML = `<div class="dp-cab"><span>Activo</span><span class="num">Disponible</span><span>Día a día · ${dias.length ? `${dpCorta(dias[0])} – ${dpCorta(dias[dias.length - 1])}` : ''}</span></div>
+    <div class="dp-lista">${activos.map(e => {
+      const por = {}; (e.dias || []).forEach(d => por[d.fecha] = d);
+      const celdas = dias.map(f => {
+        const d = por[f];
+        return `<i class="dp-c-${d ? (DP_TXT[d.estado] ? d.estado : 'vacio') : 'vacio'}${f === hoy ? ' hoy' : ''}" data-f="${f}"></i>`;
+      }).join('');
+      const v = e.disponibilidad;
+      return `<div class="dp-fila" data-eq="${e.id}">
+        <a class="dp-nom" href="/flota/${e.id}">${icTipo(e.tipo_activo)}<span style="min-width:0"><b>${escapar(e.matricula || e.nombre)}</b>
+          <span class="mut">${escapar(e.matricula ? e.nombre : (e.modelo || ''))}</span></span></a>
+        <div class="dp-pct ${dpClase(v)}">${v == null ? '—' : `${fmt(v, v % 1 ? 1 : 0)}%`}
+          <small>${e.dias_registrados ? `${e.dias_disponible}/${e.dias_registrados} días` : 'sin registro'}</small></div>
+        <div class="dp-tira"><div class="dp-franja" style="grid-template-columns:repeat(${dias.length || 1},minmax(0,1fr));gap:${gap}px">${celdas}</div>
+          <div class="dp-eje"><span>${dias.length ? dpCorta(dias[0]) : ''}</span>${e.dias_taller || e.dias_no_recomendado
+            ? `<span class="medio">${e.dias_no_recomendado ? `${e.dias_no_recomendado} no recomendado` : ''}${e.dias_no_recomendado && e.dias_taller ? ' · ' : ''}${e.dias_taller ? `${e.dias_taller} en taller` : ''}</span>` : ''}
+            <span>${dias.length ? (dias[dias.length - 1] === hoy ? 'hoy' : dpCorta(dias[dias.length - 1])) : ''}</span></div></div>
+      </div>`;
+    }).join('')}</div>`;
+}
+
+// Etiqueta flotante de la franja: «fecha · estado · motivos».
+(function(){
+  const tip = document.createElement('div'); tip.className = 'dp-tip'; document.body.appendChild(tip);
+  const lista = document.getElementById('dpLista');
+  function mostrar(ev){
+    const c = ev.target.closest('.dp-franja i'); if(!c || !DISP){ tip.classList.remove('ver'); return; }
+    const fila = c.closest('.dp-fila'), e = (DISP.activos || []).find(x => String(x.id) === fila.dataset.eq);
+    const d = e && (e.dias || []).find(x => x.fecha === c.dataset.f);
+    const f = fmtFecha(c.dataset.f);
+    tip.innerHTML = d ? `<b>${f}</b> · ${escapar(DP_TXT[d.estado] || d.estado)}${d.motivos ? `<br><span style="opacity:.8">${escapar(d.motivos)}</span>` : ''}`
+      : `<b>${f}</b> · sin registro${DISP.primer_dia && c.dataset.f < DISP.primer_dia ? ' (antes de empezar el historial)' : ''}`;
+    const x = Math.min(ev.clientX + 12, window.innerWidth - tip.offsetWidth - 8);
+    const y = ev.clientY + 16 + tip.offsetHeight > window.innerHeight ? ev.clientY - tip.offsetHeight - 10 : ev.clientY + 16;
+    tip.style.left = Math.max(8, x) + 'px'; tip.style.top = y + 'px';
+    tip.classList.add('ver');
+  }
+  lista.addEventListener('pointermove', mostrar);
+  lista.addEventListener('pointerdown', mostrar);
+  lista.addEventListener('pointerleave', () => tip.classList.remove('ver'));
+  window.addEventListener('scroll', () => tip.classList.remove('ver'), {passive:true});
+})();
+document.querySelectorAll('#segDpPeriodo button').forEach(b => b.onclick = () => {
+  DP_PERIODO = b.dataset.v;
+  document.querySelectorAll('#segDpPeriodo button').forEach(x => x.classList.toggle('activo', x === b));
+  cargarDisp();
+});
+
+// ================= Pestañas y filtros =================
+function pintarContadoresTabs(){
+  const filas = DIR.estado.filter(r => !TIPO || (TIPO_DE[r.equipo_id]||'dron') === TIPO);
+  const malasDir = filas.filter(r => r.estado === 'pendiente' && ['vencido','critico'].includes(r.nivel)).length;
+  const pendDir = filas.filter(r => r.estado === 'pendiente').length;
+  const nd = document.getElementById('nDir'); nd.textContent = pendDir; nd.className = 'n ' + (malasDir ? 'rojo' : pendDir ? 'ambar' : '');
+  const docs = DOCS.documentos.filter(d => d.personal_id || !TIPO || (TIPO_DE[d.equipo_id]||'dron') === TIPO);
+  const malDoc = docs.filter(d => ['vencido','critico'].includes(d.nivel)).length, proxDoc = docs.filter(d => d.nivel === 'proximo').length;
+  const nc = document.getElementById('nDoc'); nc.textContent = malDoc + proxDoc; nc.className = 'n ' + (malDoc ? 'rojo' : proxDoc ? 'ambar' : '');
+}
+function cambiarTab(t){
+  TAB = t;
+  document.querySelectorAll('#segTab button').forEach(b => b.classList.toggle('activo', b.dataset.t === t));
+  document.getElementById('tabDespacho').classList.toggle('ae-oculto', t !== 'despacho');
+  document.getElementById('tabDirectivas').classList.toggle('ae-oculto', t !== 'directivas');
+  document.getElementById('tabDocumentos').classList.toggle('ae-oculto', t !== 'documentos');
+  document.getElementById('tabDisponibilidad').classList.toggle('ae-oculto', t !== 'disponibilidad');
+  if(t === 'disponibilidad' && !DISP) cargarDisp();
+  const u = new URL(location.href); u.searchParams.set('tab', t); history.replaceState(null, '', u);
+}
+document.querySelectorAll('#segTab button').forEach(b => b.onclick = ()=> cambiarTab(b.dataset.t));
+document.querySelectorAll('#segTipo button').forEach(b => {
+  b.classList.toggle('activo', b.dataset.v === TIPO);
+  b.onclick = ()=>{
+    TIPO = b.dataset.v;
+    document.querySelectorAll('#segTipo button').forEach(x => x.classList.toggle('activo', x === b));
+    const u = new URL(location.href); if(TIPO) u.searchParams.set('tipo', TIPO); else u.searchParams.delete('tipo'); history.replaceState(null, '', u);
+    cargar();
+  };
+});
+const seg = (id, fn)=> document.querySelectorAll(`#${id} button`).forEach(b => b.onclick = ()=>{
+  document.querySelectorAll(`#${id} button`).forEach(x => x.classList.toggle('activo', x === b)); fn(b.dataset.v); });
+seg('segDirEstado', v => { F_DIR = v; pintarDirectivas(); });
+seg('segDocDe', v => { F_DOC = v; pintarDocumentos(); });
+document.getElementById('btnNuevaDir').onclick = ()=> editarDirectiva();
+document.getElementById('btnNuevoDoc').onclick = ()=> editarDocumento();
+document.getElementById('btnActualizar').onclick = ()=> cargar().then(()=>toast('Estado actualizado'));
+
+cambiarTab(['despacho','directivas','documentos','disponibilidad'].includes(TAB) ? TAB : 'despacho');
+cargarBase().then(cargar).catch(err => toast(err.message));
+</script>
+{% endblock %}

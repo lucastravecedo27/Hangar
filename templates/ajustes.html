@@ -1,0 +1,90 @@
+{% extends "_layout.html" %}
+{% block titulo %}Ajustes{% endblock %}
+{% block encabezado %}Ajustes{% endblock %}
+{% block subtitulo %}Apariencia de la app y tu cuenta de acceso{% endblock %}
+
+{% block contenido %}
+<style>
+  .temas{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+  .tema-op{border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--bg2);cursor:pointer;
+    text-align:left;font:inherit;color:inherit;transition:border-color .15s,box-shadow .15s,transform .15s}
+  .tema-op:hover{border-color:var(--o-linea-hover,#b9bdc6);box-shadow:var(--o-sombra-hover,0 10px 28px rgba(26,29,36,.10),0 2px 6px rgba(26,29,36,.05));transform:translateY(-3px)}
+  .tema-op[aria-pressed="true"]{border-color:var(--acc);box-shadow:0 0 0 2px var(--acc) inset}
+  .tema-op b{display:block;margin-top:10px;font-size:14px}
+  .tema-op span{display:block;font-size:12px;color:var(--mut);margin-top:2px}
+  .muestra{height:74px;border-radius:8px;overflow:hidden;display:flex;border:1px solid var(--o-linea-hover,rgba(0,0,0,.08))}
+  .muestra .lado{width:28%;padding:8px 6px;display:flex;flex-direction:column;gap:5px}
+  .muestra .cuerpo{flex:1;padding:8px;display:flex;flex-direction:column;gap:6px}
+  .muestra i{display:block;height:7px;border-radius:4px}
+  .m-claro .lado{background:#1A1D24}.m-claro .lado i{background:#3A3F4A}.m-claro .lado i:first-child{background:#FDB913}
+  .m-claro .cuerpo{background:#f5f6f8}.m-claro .cuerpo i{background:#fff;height:16px;border:1px solid #e3e5ea}
+  .m-oscuro .lado{background:#0f1116}.m-oscuro .lado i{background:#2a2e37}.m-oscuro .lado i:first-child{background:#FDB913}
+  .m-oscuro .cuerpo{background:#161920}.m-oscuro .cuerpo i{background:#1f232b;height:16px;border:1px solid #2c313b}
+  .m-sistema{position:relative}
+  .m-sistema .mitad{position:absolute;inset:0;display:flex}
+  .m-sistema .mitad>div{flex:1;display:flex;overflow:hidden}
+  @media (max-width:640px){.temas{grid-template-columns:1fr}}
+</style>
+
+<div class="grid2">
+  <div>
+    <div class="card">
+      <div class="card-cab"><h3>Apariencia</h3><div class="der"><span class="pista" style="margin:0">Sólo cambia en tu cuenta</span></div></div>
+      <div class="temas" id="temas">
+        <button type="button" class="tema-op" data-tema="claro" aria-pressed="false">
+          <div class="muestra m-claro"><div class="lado"><i></i><i></i><i></i></div><div class="cuerpo"><i></i><i></i></div></div>
+          <b>Claro</b><span>Fondo blanco, ideal en oficina y a pleno sol</span>
+        </button>
+        <button type="button" class="tema-op" data-tema="oscuro" aria-pressed="false">
+          <div class="muestra m-oscuro"><div class="lado"><i></i><i></i><i></i></div><div class="cuerpo"><i></i><i></i></div></div>
+          <b>Oscuro</b><span>Descansa la vista de noche y en el hangar</span>
+        </button>
+        <button type="button" class="tema-op" data-tema="sistema" aria-pressed="false">
+          <div class="muestra m-sistema"><div class="mitad">
+            <div class="m-claro"><div class="lado"><i></i><i></i></div><div class="cuerpo"><i></i></div></div>
+            <div class="m-oscuro"><div class="cuerpo"><i></i><i></i></div></div></div></div>
+          <b>Automático</b><span>Sigue el modo de tu computador o celular</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="card">
+      <div class="card-cab"><h3>Mi contraseña</h3><div class="der"><span class="tag gray">{{ usuario_actual }} · {{ rol_actual }}</span></div></div>
+      <form id="formPass" class="form-grid" style="margin-bottom:0">
+        <div class="campo"><label>Contraseña actual</label><input type="password" name="actual" required autocomplete="current-password"></div>
+        <div class="campo"><label>Nueva contraseña (mín. 8)</label><input type="password" name="nueva" required minlength="8" autocomplete="new-password"></div>
+        <div class="campo"><label>Repite la nueva</label><input type="password" name="nueva2" required minlength="8" autocomplete="new-password"></div>
+        <div class="campo ancho"><button class="btn" type="submit">Cambiar contraseña</button></div>
+      </form>
+      <div class="pista" style="margin-top:12px">Los usuarios, sus perfiles y el correo de la empresa los gestiona el
+        administrador de la plataforma. Si necesitas una cuenta nueva o cambiar permisos, pídeselo.</div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const botones = [...document.querySelectorAll('.tema-op')];
+function marcar(tema){ botones.forEach(b=>b.setAttribute('aria-pressed', b.dataset.tema === tema ? 'true' : 'false')); }
+marcar(document.documentElement.dataset.tema || 'sistema');
+botones.forEach(b=>b.onclick = async ()=>{
+  const tema = b.dataset.tema, antes = document.documentElement.dataset.tema;
+  document.documentElement.dataset.tema = tema; marcar(tema);
+  try{ await api('/api/cuenta/tema', {method:'PUT', body:{tema}}); toast('Apariencia guardada'); }
+  catch(err){ document.documentElement.dataset.tema = antes; marcar(antes); toast(err.message); }
+});
+
+document.getElementById('formPass').onsubmit = async e=>{
+  e.preventDefault();
+  const d = Object.fromEntries(new FormData(e.target).entries());
+  if(d.nueva !== d.nueva2){ toast('Las contraseñas nuevas no coinciden'); return; }
+  try{
+    await api('/api/cuenta/password', {method:'POST', body:{actual:d.actual, nueva:d.nueva}});
+    toast('Contraseña cambiada'); e.target.reset();
+  }catch(err){ toast(err.message); }
+};
+</script>
+{% endblock %}

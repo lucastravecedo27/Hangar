@@ -1,0 +1,1291 @@
+{% extends "_layout.html" %}
+{% block titulo %}Bodega{% endblock %}
+{% block encabezado %}Bodega{% endblock %}
+{% block subtitulo %}Repuestos e insumos de operación en cada hangar, pista y base: lo que hay, lo que vale, lo que hay que comprar y lo que se consume{% endblock %}
+
+{% block acciones %}
+<button class="btn secundario" id="btnAyuda" type="button">Cómo funciona</button>
+<button class="btn secundario" id="btnUbic" type="button">Ubicaciones</button>
+{% if es_admin %}<button class="btn secundario" id="btnNuevo" type="button">Nuevo artículo</button>{% endif %}
+<button class="btn" id="btnMov" type="button">Registrar movimiento</button>
+{% endblock %}
+
+{% block head %}
+<style>
+/* ======================= KPIs de gerencia ======================= */
+.kpis.bd{grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+.kpis.bd .kpi{cursor:pointer;text-align:left;display:flex;flex-direction:column;align-items:flex-start;font:inherit;color:inherit}
+.kpis.bd .kpi .lbl{display:flex;align-items:center;gap:6px;width:100%}
+.kpis.bd .kpi .val{font-size:25px;white-space:nowrap}
+.kpis.bd .kpi .val small{font-size:13px;font-weight:700;color:var(--mut);margin-left:3px;letter-spacing:0}
+.kpis.bd .kpi .val.rojo{color:var(--o-tx-rojo,#a4271f)}.kpis.bd .kpi .val.ambar{color:var(--o-tx-ambar,#8a5f00)}
+.kpis.bd .kpi .val.verde{color:var(--o-tx-verde,#1d6b38)}
+.ayuda{margin-left:auto;width:20px;height:20px;border-radius:50%;border:1px solid var(--line2);background:transparent;color:var(--mut);
+  font:700 11px var(--font);cursor:pointer;flex:none;display:grid;place-items:center}
+.ayuda:hover{color:var(--ink);border-color:var(--ink)}
+.kpi-ic{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;background:var(--o-gris,#f1f2f4);color:var(--ink2);margin-bottom:8px}
+.kpi-ic svg{width:17px;height:17px}
+
+/* ======================= Pestañas ======================= */
+.pane{display:none}.pane.ver{display:block;animation:entra .25s ease}
+@keyframes entra{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.bd-barra{display:flex;align-items:center;gap:10px 14px;flex-wrap:wrap;width:100%}
+.bd-filtros{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.bd-filtros input[type=search]{min-width:240px}
+
+/* ======================= Tanques de insumos ======================= */
+.bd-tanques{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px}
+.bd-tanques.mini{grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:10px}
+.bd-tanques.mini .tanque{padding:10px 8px}
+.bd-tanques.mini .tanque .cil{transform:scale(.82);margin:-8px 0 -4px}
+.bd-tanques .tanque .pct{font-size:20px}
+.tanque .chip-cont{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:2px 8px 2px 5px;border-radius:980px;
+  background:var(--o-gris,#f1f2f4);margin-top:5px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chip-cont i,.bd-punto{width:10px;height:10px;border-radius:50%;flex:none;display:inline-block;vertical-align:middle}
+
+/* ======================= Compras ======================= */
+.compra{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 14px;padding:12px 4px;border-bottom:.5px solid var(--line);cursor:pointer;
+  border-radius:10px;transition:background .12s}
+.compra:hover{background:var(--acc-soft)}
+.compra:last-child{border-bottom:0}
+.compra .nom{font-weight:680;font-size:13.5px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.compra .eq{font-size:12px;color:var(--ink2);font-variant-numeric:tabular-nums}
+.compra .eq b{color:var(--ink)}
+.compra .pedir{text-align:right}
+.compra .pedir .n{font-family:var(--font-marca);font-weight:800;font-size:18px;font-variant-numeric:tabular-nums}
+.compra .pedir .c{font-size:11.5px;color:var(--mut)}
+.compra .ev{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:4px}
+.ev-chip{font-size:10.5px;padding:1px 7px;border-radius:980px;background:var(--o-gris,#f1f2f4);color:var(--ink2)}
+.ev-chip.vencido,.ev-chip.critico{background:rgba(224,71,62,.14);color:var(--o-tx-rojo,#a4271f)}
+.ev-chip.proximo{background:var(--o-suave-ambar,#fff3d1);color:var(--o-tx-ambar,#7a5400)}
+.urg{font-size:10px;font-weight:750;text-transform:uppercase;letter-spacing:.06em;color:var(--o-tx-rojo,#a4271f)}
+
+/* ======================= Tablas de existencias ======================= */
+.bd-tabla tr.fila{cursor:pointer}
+.bd-tabla tr.fila:hover td{background:var(--acc-soft)}
+.bd-tabla td{vertical-align:middle}
+.bd-tabla td.num,.bd-tabla td .tag{white-space:nowrap}
+.bd-tabla .art b{display:block;font-size:13.5px}
+.bd-tabla .art small{font-size:11.5px;color:var(--mut)}
+.ex-chip{display:inline-flex;gap:4px;align-items:baseline;font-size:11.5px;padding:2px 8px;border-radius:980px;background:var(--o-gris,#f1f2f4);margin:1px 3px 1px 0;white-space:nowrap}
+.ex-chip b{font-variant-numeric:tabular-nums}
+.ex-chip.neg{background:rgba(224,71,62,.14);color:var(--o-tx-rojo,#a4271f)}
+.tox{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:650;white-space:nowrap}
+.tox i{width:22px;height:8px;border-radius:2px;display:inline-block}
+.cat-chip{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;white-space:nowrap}
+
+/* ======================= Control de consumo ======================= */
+.dif{font-weight:700;font-variant-numeric:tabular-nums}
+.dif.critico{color:var(--o-tx-rojo,#a4271f)}.dif.proximo{color:var(--o-tx-ambar,#8a5f00)}.dif.ok{color:var(--o-tx-verde,#1d6b38)}
+.dosis{display:flex;flex-direction:column;gap:3px;min-width:120px}
+.dosis .trk{height:6px;border-radius:3px;background:var(--o-gris,#f1f2f4);position:relative}
+.dosis .trk i{position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:var(--teal)}
+.dosis .trk em{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--ink)}
+.dosis small{font-size:11px;color:var(--mut)}
+.rac{display:flex;gap:14px;align-items:flex-start}
+.rac .ic{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:var(--o-gris,#f1f2f4);flex:none}
+.rac .ic svg{width:22px;height:22px}
+.rac p{font-size:13px;color:var(--ink2);line-height:1.55;margin:0 0 10px}
+
+/* ======================= Kardex ======================= */
+.ico-mov{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:8px;background:var(--o-gris,#f1f2f4);vertical-align:middle;margin-right:8px}
+.ico-mov svg{width:15px;height:15px}
+.ico-mov.entrada{color:var(--o-tx-verde,#1d6b38)}.ico-mov.salida{color:var(--ink2)}.ico-mov.traslado{color:var(--o-tx-teal,#0b6b62)}
+.ico-mov.ajuste{color:var(--purple)}.ico-mov.baja{color:var(--red)}
+.kardex td{white-space:nowrap;font-variant-numeric:tabular-nums}
+.kardex tr{cursor:pointer}.kardex tr:hover td{background:var(--acc-soft)}
+.cant-pos{color:var(--o-tx-verde,#1d6b38);font-weight:700}.cant-neg{color:var(--ink);font-weight:700}
+
+/* ======================= Asistentes ======================= */
+.bd-pasos{display:flex;gap:6px;margin:-2px 0 16px}
+.bd-pasos span{flex:1;height:4px;border-radius:2px;background:var(--line)}
+.bd-pasos span.hecho{background:var(--acc)}
+.paso-tit{font-family:var(--font-marca);font-weight:800;font-size:18px;margin:0 0 4px}
+.paso-sub{font-size:12.5px;color:var(--mut);margin:0 0 14px;line-height:1.5}
+.eleccion{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}
+.eleccion.cols2{grid-template-columns:repeat(auto-fill,minmax(240px,1fr))}
+.opc{border:1.5px solid var(--line);border-radius:16px;padding:14px;background:var(--bg2);cursor:pointer;text-align:left;
+  font:inherit;color:inherit;display:flex;flex-direction:column;gap:6px;transition:border-color .12s,transform .12s;position:relative}
+.opc:hover{border-color:var(--acc-d);transform:translateY(-1px)}
+.opc.sel{border-color:var(--acc);box-shadow:0 0 0 3px var(--acc-soft)}
+.opc[disabled]{opacity:.45;cursor:not-allowed;transform:none}
+.opc .ic{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;background:var(--o-gris,#f1f2f4);color:var(--ink2)}
+.opc .ic svg{width:20px;height:20px}
+.opc b{font-size:14px}.opc small{font-size:11.5px;color:var(--mut);line-height:1.35}
+.opc .cant{font-family:var(--font-marca);font-weight:800;font-size:18px;font-variant-numeric:tabular-nums}
+.opc .candado{position:absolute;top:10px;right:10px;font-size:10px;color:var(--mut);font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+.lista-art{display:grid;gap:8px;max-height:380px;overflow:auto;padding:2px}
+.art-opc{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;border:1.5px solid var(--line);border-radius:14px;
+  padding:10px 12px;background:var(--bg2);cursor:pointer;text-align:left;font:inherit;color:inherit}
+.art-opc:hover{border-color:var(--acc-d)}
+.art-opc .ic{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:var(--o-gris,#f1f2f4)}
+.art-opc .ic svg{width:19px;height:19px}
+.art-opc b{font-size:13.5px;display:block}.art-opc small{font-size:11.5px;color:var(--mut)}
+.art-opc .s{text-align:right;font-variant-numeric:tabular-nums;font-weight:700}
+.cant-grande{display:flex;align-items:baseline;gap:10px;background:var(--o-gris,#f1f2f4);border-radius:16px;padding:12px 16px;margin-bottom:10px}
+.cant-grande input{flex:1;min-width:0;background:transparent;border:0;outline:0;box-shadow:none!important;font-family:var(--font-marca);font-weight:800;font-size:36px;
+  color:var(--ink);font-variant-numeric:tabular-nums;padding:0}
+.cant-grande .u{font-weight:700;color:var(--mut);font-size:15px}
+.rapidos{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 12px}
+.rapidos button{border:.5px solid var(--line2);border-radius:980px;padding:5px 12px;background:var(--bg2);color:var(--ink2);font:inherit;font-weight:600;font-size:12px;cursor:pointer}
+.rapidos button:hover{border-color:var(--acc);color:var(--acc-ink)}
+.aviso-vivo{font-size:12.5px;padding:9px 12px;border-radius:12px;margin-top:10px;display:none;line-height:1.45}
+.aviso-vivo.ver{display:block}
+.aviso-vivo.rojo{background:var(--o-suave-rojo,#fdecea);color:var(--o-tx-rojo,#a4271f)}
+.aviso-vivo.ambar{background:var(--o-suave-ambar,#fffbef);color:var(--o-tx-ambar,#8a5f00)}
+.aviso-vivo.gris{background:var(--o-gris,#f1f2f4);color:var(--ink2)}
+.sub-tit{font-size:11px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.06em;margin:16px 0 8px}
+.recibo{max-width:380px;margin:0 auto;background:var(--bg2);border:1px solid var(--line);border-radius:6px;padding:20px 20px 24px;font-size:13px;box-shadow:var(--shadow);
+  -webkit-mask:radial-gradient(circle 7px at 50% 100%,transparent 6.5px,#000 7px) 0 0/18px 100% repeat-x;
+          mask:radial-gradient(circle 7px at 50% 100%,transparent 6.5px,#000 7px) 0 0/18px 100% repeat-x}
+.recibo h4{text-align:center;font-family:var(--font-marca);font-weight:800;letter-spacing:.14em;margin:0 0 2px;font-size:13px}
+.recibo .c{text-align:center;color:var(--mut);font-size:11.5px;margin-bottom:12px}
+.recibo .l{display:flex;justify-content:space-between;gap:10px;padding:4px 0;border-bottom:1px dashed var(--line)}
+.recibo .l span{color:var(--mut)}.recibo .l b{text-align:right;font-variant-numeric:tabular-nums}
+.recibo .tot{display:flex;justify-content:space-between;align-items:baseline;margin-top:10px;font-family:var(--font-marca);font-weight:800;font-size:20px}
+.sello-ok{width:58px;height:58px;border-radius:50%;margin:0 auto 12px;display:grid;place-items:center;background:rgba(47,143,78,.12);color:var(--green)}
+.sello-ok svg{width:30px;height:30px}
+.colores{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.colores button{width:26px;height:26px;border-radius:50%;border:2px solid var(--bg2);box-shadow:0 0 0 1px var(--line2);cursor:pointer}
+.colores button.sel{box-shadow:0 0 0 2px var(--ink)}
+.colores input[type=color]{width:34px;height:28px;padding:0;border:0;background:transparent;cursor:pointer}
+.tq-form{display:grid;grid-template-columns:170px 1fr;gap:18px;align-items:start}
+.tq-form .tanque{cursor:default;pointer-events:none}
+
+/* ======================= Detalle de artículo ======================= */
+.det-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.det-kpis .k{border-radius:12px;padding:10px 12px;background:rgba(115,122,134,.07);border:.5px solid var(--line)}
+.det-kpis .l{font-size:10px;font-weight:680;color:var(--mut);text-transform:uppercase;letter-spacing:.04em}
+.det-kpis .v{font-family:var(--font-marca);font-size:19px;font-weight:800;font-variant-numeric:tabular-nums}
+.det-kpis .n{font-size:11px;color:var(--mut)}
+.acciones-det{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.ubic-fila{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:.5px solid var(--line);font-size:13px}
+.ubic-fila:last-child{border-bottom:0}
+.ubic-fila .ic{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;background:var(--o-gris,#f1f2f4);flex:none}
+.ubic-fila .ic svg{width:16px;height:16px}
+.ubic-fila b{margin-left:auto;font-variant-numeric:tabular-nums}
+.flujo{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:6px 0 14px}
+.flujo button{border:1.5px solid var(--line);background:var(--bg2);border-radius:14px;padding:12px 8px;cursor:pointer;font:inherit;color:inherit;display:flex;flex-direction:column;align-items:center;gap:6px;position:relative}
+.flujo button:not(:last-child)::after{content:"›";position:absolute;right:-9px;top:50%;transform:translateY(-50%);color:var(--mut);font-size:18px;font-weight:700}
+.flujo button.sel{border-color:var(--acc);box-shadow:0 0 0 3px var(--acc-soft)}
+.flujo .ic{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:var(--o-gris,#f1f2f4)}
+.flujo .ic svg{width:20px;height:20px}
+.flujo b{font-size:12.5px;text-align:center}
+.flujo-txt{font-size:13.5px;line-height:1.6;color:var(--ink2);min-height:120px}
+.flujo-txt .ej{margin-top:12px;padding:12px 14px;border-radius:12px;background:var(--o-gris,#f1f2f4);font-size:13px}
+.concil-fila{border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:10px;background:var(--bg2)}
+.concil-fila .cab{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;font-size:13px}
+.concil-fila .cab b{font-size:13.5px}
+.concil-prod{display:grid;grid-template-columns:minmax(0,1.4fr) 110px 110px minmax(0,1.2fr) auto;gap:8px;align-items:center;margin-top:8px}
+.concil-prod select,.concil-prod input{width:100%;padding:6px 9px;font-size:12.5px}
+.concil-prod .t{font-size:12px;color:var(--ink2);font-variant-numeric:tabular-nums}
+@media(max-width:900px){.tq-form,.concil-prod{grid-template-columns:1fr}.flujo{grid-template-columns:repeat(2,1fr)}.det-kpis{grid-template-columns:1fr 1fr}}
+</style>
+{% endblock %}
+
+{% block barra %}
+<div class="tabsbar"><div class="wrap">
+  <div class="bd-barra">
+    <div class="segmento" id="segTab">
+      <button data-t="panorama" class="activo">Panorama</button>
+      <button data-t="repuestos">Repuestos</button>
+      <button data-t="insumos">Insumos de operación</button>
+      <button data-t="control">Control de consumo</button>
+      <button data-t="kardex">Kardex</button>
+    </div>
+    <div class="segmento" id="segPeriodo" style="margin-left:auto">
+      <button data-p="30d">30 días</button><button data-p="90d" class="activo">90 días</button>
+      <button data-p="anio">Este año</button><button data-p="todo">Todo</button>
+    </div>
+    <div style="font-size:12px;color:var(--mut)" id="rangoTxt"></div>
+  </div>
+</div></div>
+{% endblock %}
+
+{% block contenido %}
+<!-- ===================== Panorama (gerencia) ===================== -->
+<section class="pane ver" data-pane="panorama">
+  <div class="kpis bd" id="kpis"></div>
+  <div class="grid2">
+    <div class="card">
+      <div class="card-cab"><h3>Qué comprar ya</h3><div class="der" id="compraNota"></div></div>
+      <div id="compraLista"></div>
+    </div>
+    <div class="card">
+      <div class="card-cab"><h3>Tanques de insumos</h3><div class="der"><a href="#" data-ir="insumos">ver insumos</a></div></div>
+      <div class="bd-tanques mini" id="tanquesMini"></div>
+    </div>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <div class="card-cab"><h3>Consumo teórico frente a salidas de bodega</h3><div class="der">clic en un producto para ver el detalle</div></div>
+      <div id="gControl"></div><div id="leyControl"></div>
+    </div>
+    <div class="card">
+      <div class="card-cab"><h3>Vencimientos</h3><div class="der" id="venceNota"></div></div>
+      <div id="venceLista"></div>
+      <div class="sub-tit">Valor por ubicación</div>
+      <div id="gUbic"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== Repuestos ===================== -->
+<section class="pane" data-pane="repuestos">
+  <div class="card">
+    <div class="card-cab"><h3>Lo que pide la flota</h3><div class="der" id="flotaNota"></div></div>
+    <p class="mut" style="font-size:12.5px;margin:-6px 0 10px">Cruce de la proyección de repuestos (ritmo real de vuelo) con las existencias:
+      vas a necesitar <b>X</b>, tienes <b>Y</b>, pide <b>Z</b>. Incluye lo apartado en órdenes de trabajo abiertas y el stock mínimo.</p>
+    <div id="flotaLista"></div>
+  </div>
+  <div class="card">
+    <div class="card-cab"><h3>Existencias de repuestos</h3><div class="der" id="repNota"></div></div>
+    <div class="bd-filtros">
+      <input type="search" id="fRep" placeholder="Buscar pieza, código DJI o modelo…">
+      <select id="fRepUbic"></select>
+      <select id="fRepModelo"></select>
+      <label class="mut" style="font-size:12.5px;display:flex;gap:6px;align-items:center"><input type="checkbox" id="fRepBajo"> Sólo con alerta</label>
+    </div>
+    <div class="tabla-envoltura"><table class="bd-tabla" id="tRep" style="min-width:900px"></table></div>
+  </div>
+</section>
+
+<!-- ===================== Insumos ===================== -->
+<section class="pane" data-pane="insumos">
+  <div class="card">
+    <div class="card-cab"><h3>Tanques y tambores</h3><div class="der">el nivel se calcula con cada movimiento · clic para ver o configurar</div></div>
+    <div class="bd-tanques" id="tanques"></div>
+  </div>
+  <div class="card">
+    <div class="card-cab"><h3>Productos</h3><div class="der" id="insNota"></div></div>
+    <div class="bd-filtros">
+      <input type="search" id="fIns" placeholder="Buscar producto, ingrediente activo o registro ICA…">
+      <select id="fInsCat"></select>
+      <select id="fInsUbic"></select>
+    </div>
+    <div class="tabla-envoltura"><table class="bd-tabla" id="tIns" style="min-width:980px"></table></div>
+  </div>
+</section>
+
+<!-- ===================== Control de consumo ===================== -->
+<section class="pane" data-pane="control">
+  <div class="kpis bd" id="kpisCtrl"></div>
+  <div class="card">
+    <div class="card-cab"><h3>Aplicado según operaciones frente a lo que salió de bodega</h3><div class="der" id="ctrlNota"></div></div>
+    <div class="tabla-envoltura"><table class="bd-tabla" id="tCtrl" style="min-width:960px"></table></div>
+  </div>
+  <div class="card">
+    <div class="rac">
+      <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4M9 11h7M9 14.5h7M9 18h4"/></svg></div>
+      <div><h3 style="margin-bottom:6px">Registro de productos aplicados · RAC 137.71(3)</h3>
+        <p>La norma pide conservar, al menos 12 meses, el nombre y la cantidad de los productos aplicados en cada operación.
+          Cada producto que registras en una operación (o concilias aquí) queda en este registro con su dosis, su cantidad y el lote que salió de bodega.</p>
+        <div class="fila-flex"><button class="btn secundario" id="btnRac" type="button">Descargar registro del período (CSV)</button>
+          <button class="btn secundario" id="btnConciliar2" type="button">Conciliar operaciones</button></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== Kardex ===================== -->
+<section class="pane" data-pane="kardex">
+  <div class="card">
+    <div class="card-cab"><h3>Kardex</h3><div class="der" id="kardexNota"></div></div>
+    <div class="bd-filtros">
+      <div class="segmento" id="segTipo"></div>
+      <select id="fKClase"><option value="">Repuestos e insumos</option><option value="repuesto">Sólo repuestos</option><option value="insumo">Sólo insumos</option></select>
+      <select id="fKUbic"></select>
+    </div>
+    <div class="tabla-envoltura"><table class="kardex" id="tKardex" style="min-width:980px"></table></div>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const IC = {
+  entrada:`<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3v9M6 8.4l4 4 4-4"/><path d="M3.4 13.4v2a1.4 1.4 0 0 0 1.4 1.4h10.4a1.4 1.4 0 0 0 1.4-1.4v-2"/></svg>`,
+  salida:`<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13V4M6 7.6l4-4 4 4"/><path d="M3.4 13.4v2a1.4 1.4 0 0 0 1.4 1.4h10.4a1.4 1.4 0 0 0 1.4-1.4v-2"/></svg>`,
+  traslado:`<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3.4 7h12.4M12.6 3.8 15.8 7l-3.2 3.2"/><path d="M16.6 13H4.2M7.4 9.8 4.2 13l3.2 3.2"/></svg>`,
+  ajuste:`<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4.4" y="3.6" width="11.2" height="13.6" rx="1.6"/><path d="M7.6 3.6V2.6h4.8v1"/><path d="m7.4 11 1.9 1.9 3.5-3.6"/></svg>`,
+  baja:`<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.6h12M8 5.6V4h4v1.6M5.4 5.6l.8 10.6a1.2 1.2 0 0 0 1.2 1.1h5.2a1.2 1.2 0 0 0 1.2-1.1l.8-10.6"/><path d="M8.6 8.6v5.6M11.4 8.6v5.6"/></svg>`,
+  repuesto:`<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="2.6"/><path d="M10 2.6v2.2M10 15.2v2.2M2.6 10h2.2M15.2 10h2.2M4.8 4.8l1.5 1.5M13.7 13.7l1.5 1.5M4.8 15.2l1.5-1.5M13.7 6.3l1.5-1.5"/></svg>`,
+  insumo:`<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7.4 2.6h5.2M8.2 2.6v2.6L5.2 8.6v7.2a1.6 1.6 0 0 0 1.6 1.6h6.4a1.6 1.6 0 0 0 1.6-1.6V8.6l-3-3.4V2.6"/><path d="M5.2 11.4h9.6"/></svg>`,
+  hangar:`<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2.6 16.6V8.8C2.6 5.8 6 3.4 10 3.4s7.4 2.4 7.4 5.4v7.8"/><path d="M5.6 16.6v-5h8.8v5M1.8 16.6h16.4"/></svg>`,
+  pista:`<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17.4 8.6 2.6h2.8L13 17.4z"/><path d="M10 5v1.6M10 9v1.6M10 13v1.6"/></svg>`,
+  base:`<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 17.6s-5.4-4.8-5.4-9A5.4 5.4 0 0 1 15.4 8.6c0 4.2-5.4 9-5.4 9z"/><circle cx="10" cy="8.4" r="2"/></svg>`,
+  vehiculo:`<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2.6 13.6V6.2h9v7.4M11.6 8.6h3.2l2.6 2.8v2.2h-1.2"/><circle cx="6" cy="14.4" r="1.6"/><circle cx="14" cy="14.4" r="1.6"/><path d="M7.6 14h4.8"/></svg>`,
+  otro:`<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.4 6.4 10 3l6.6 3.4v7.2L10 17l-6.6-3.4z"/><path d="M3.4 6.4 10 9.8l6.6-3.4M10 9.8V17"/></svg>`,
+  tanque:`<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="10" cy="5" rx="6" ry="2.2"/><path d="M4 5v10c0 1.2 2.7 2.2 6 2.2s6-1 6-2.2V5"/><path d="M4 10c0 1.2 2.7 2.2 6 2.2s6-1 6-2.2"/></svg>`,
+  mas:`<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M10 4v12M4 10h12"/></svg>`,
+  ok:`<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m4.6 10.4 3.4 3.4 7.4-7.6"/></svg>`,
+  dinero:`<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2.6" y="5" width="14.8" height="10" rx="1.6"/><circle cx="10" cy="10" r="2.2"/><path d="M5.4 7.6v.01M14.6 12.4v.01"/></svg>`,
+  carrito:`<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2.6 3.4h2l1.8 9h9l1.6-6.2H5.6"/><circle cx="8" cy="16" r="1.2"/><circle cx="14.4" cy="16" r="1.2"/></svg>`,
+  reloj:`<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10.6" r="6.4"/><path d="M10 7.4v3.4l2.2 1.4M8 2.6h4"/></svg>`,
+  balanza:`<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3v14M5.6 17h8.8M4 6.4h12M4 6.4 1.8 11.6a2.4 2.4 0 0 0 4.4 0zM16 6.4l-2.2 5.2a2.4 2.4 0 0 0 4.4 0z"/></svg>`,
+  hectarea:`<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2.6 15.4 7 4.6h6l4.4 10.8z"/><path d="M4.8 10h10.4M10 4.6v10.8"/></svg>`,
+  alerta:`<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3.2 17.4 16H2.6z"/><path d="M10 8.2v3.6M10 14v.01"/></svg>`,
+  ot:`<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4.4" y="3.2" width="11.2" height="14" rx="1.6"/><path d="M7.4 7.4h5.2M7.4 10.4h5.2M7.4 13.4h3"/></svg>`,
+  escudo:`<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.8 16 5v4.6c0 3.6-2.6 6.2-6 7.6-3.4-1.4-6-4-6-7.6V5z"/></svg>`,
+};
+const ES_ADMIN = {{ 'true' if es_admin else 'false' }};
+const EST = {tab:'panorama', periodo:'90d', tipoK:''};
+let D = null, CFG = null, KARDEX = [];
+
+const dinero = v => (v===null||v===undefined||isNaN(v)) ? '—' : '$ ' + Number(v).toLocaleString('es-CO',{maximumFractionDigits:0});
+const cant = (v, u, dec=2) => (v===null||v===undefined) ? '—' : `${fmt(v, dec)} ${u||''}`.trim();
+const icUbic = t => IC[t] || IC.otro;
+const catInfo = k => (CFG && CFG.categorias[k]) || {nombre:k||'—', color:'#737a86'};
+const chipCat = it => it.clase==='insumo' ? `<span class="cat-chip"><i class="bd-punto" style="background:${it.color_final}"></i>${escapar(catInfo(it.categoria).nombre)}</span>` : '';
+const chipTox = t => t && CFG.tox[t] ? `<span class="tox"><i style="background:${CFG.tox[t].color}"></i>${escapar(t)}</span>` : '<span class="mut">—</span>';
+const tagNiv = (n, txt) => `<span class="tag ${n}">${escapar(txt)}</span>`;
+const puede = tipo => !CFG.tipos_rol || CFG.tipos_rol.includes(tipo);
+const item = id => (D.inventario||[]).find(i=>i.id===Number(id));
+
+// ------------------------------------------------------------------ carga
+async function cargar(){
+  document.querySelectorAll('#segPeriodo button').forEach(b=>b.classList.toggle('activo', b.dataset.p===EST.periodo));
+  try{
+    const q = new URLSearchParams({periodo:EST.periodo});
+    [D, CFG] = await Promise.all([api('/api/bodega?'+q), CFG ? Promise.resolve(CFG) : api('/api/bodega/config')]);
+  }catch(e){ toast(e.message); return; }
+  const f = D.filtros||{};
+  document.getElementById('rangoTxt').textContent = f.desde ? `${fmtFecha(f.desde)} → ${fmtFecha(f.hasta)}` : 'Histórico completo';
+  llenarFiltros();
+  pintarTodo();
+}
+function pintarTodo(){
+  pintarKpis(); pintarCompras(); pintarTanquesMini(); pintarGraficaControl(); pintarVencen(); pintarUbic();
+  pintarFlota(); pintarRepuestos(); pintarTanques(); pintarInsumos(); pintarControl();
+  if(EST.tab==='kardex') cargarKardex();
+}
+function llenarFiltros(){
+  const ubics = CFG.ubicaciones = D.ubicaciones;
+  const opU = `<option value="">Todas las ubicaciones</option>` + ubics.filter(u=>u.activo).map(u=>`<option value="${u.id}">${escapar(u.nombre)}</option>`).join('');
+  ['fRepUbic','fInsUbic','fKUbic'].forEach(id=>{ const s = document.getElementById(id), v = s.value; s.innerHTML = opU; s.value = v; });
+  const modelos = [...new Set(D.inventario.filter(i=>i.clase==='repuesto' && i.modelo).map(i=>i.modelo))].sort();
+  const sm = document.getElementById('fRepModelo'), vm = sm.value;
+  sm.innerHTML = `<option value="">Todos los modelos</option>` + modelos.map(m=>`<option>${escapar(m)}</option>`).join(''); sm.value = vm;
+  const sc = document.getElementById('fInsCat'), vc = sc.value;
+  sc.innerHTML = `<option value="">Todas las categorías</option>` + Object.entries(CFG.categorias).map(([k,c])=>`<option value="${k}">${escapar(c.nombre)}</option>`).join(''); sc.value = vc;
+  const st = document.getElementById('segTipo');
+  if(!st.innerHTML) st.innerHTML = `<button data-k="" class="activo">Todos</button>` + Object.entries(CFG.tipos).map(([k,t])=>`<button data-k="${k}">${escapar(t.split(' /')[0])}</button>`).join('');
+}
+
+// ------------------------------------------------------------------ KPIs de gerencia
+const AYUDA_KPI = {
+  valor:{t:'Valor inmovilizado', txt:'Lo que vale hoy lo que hay en todas las bodegas: existencias de cada artículo × su <b>costo promedio ponderado</b>. Cada compra con precio recalcula el promedio; las salidas no lo cambian.',
+    ej:'Tienes 10 L de un herbicida comprados a $ 50.000 y compras 10 L más a $ 60.000 → promedio $ 55.000 · 20 L valen $ 1.100.000.'},
+  comprar:{t:'Qué comprar ya', txt:'Para cada repuesto: lo que la flota va a necesitar en los próximos 90 días según el <b>ritmo real de vuelo</b> (proyección de repuestos) + lo apartado en órdenes de trabajo abiertas + el stock mínimo, menos lo que hay. Los insumos se piden hasta su mínimo, en presentaciones enteras. El costo sale del costo promedio.',
+    ej:'Dos drones necesitan cambiar hélices (2 por cambio) = 4, hay 1 apartada en una OT y el mínimo es 2 → necesitas 7, tienes 3, pide 4 × $ 180.000 = $ 720.000.'},
+  vence:{t:'Vence en 60 días', txt:'Lotes de producto con fecha de vencimiento dentro de los próximos 60 días (o ya vencidos) y el valor que se perdería. Una salida sin lote consume primero el que vence antes, como en la bodega de verdad.',
+    ej:'Lote A vence en 20 días con 40 L a $ 30.000/L → $ 1.200.000 en riesgo: úsalo en las próximas aplicaciones o trasládalo a la base que más aplica.'},
+  perdidas:{t:'Posibles pérdidas', txt:'Por cada insumo: lo que <b>salió de bodega</b> en el período menos lo que <b>se aplicó según las operaciones</b> (hectáreas × dosis). Si salió más de lo aplicado y la diferencia pasa del 5 %, se valora al costo promedio: es producto que no se explica.',
+    ej:'Según las operaciones se aplicaron 180 L de fungicida; de bodega salieron 200 L → 20 L (11 %) sin explicar × $ 40.000 = $ 800.000.'},
+  costo_ha:{t:'Insumos por hectárea', txt:'Valor de los insumos que salieron hacia operaciones en el período, dividido entre las hectáreas aplicadas en ese mismo período. Es el costo de insumo por hectárea que hay que cobrar.',
+    ej:'$ 12.000.000 de insumos salieron a operaciones y se aplicaron 400 ha → $ 30.000 por hectárea.'},
+  minimo:{t:'Bajo el mínimo', txt:'Artículos cuya existencia disponible (existencias − lo apartado en órdenes abiertas) está por debajo del stock mínimo que definiste, o agotados.',
+    ej:'Mínimo 4 filtros, hay 5 pero 2 están apartados en una OT → disponible 3: bajo el mínimo.'},
+  hectareas:{t:'Hectáreas del período', txt:'Hectáreas aplicadas según las operaciones registradas en el período elegido.', ej:'20 jornadas de 25 ha = 500 ha.'},
+  conciliar:{t:'Operaciones por conciliar', txt:'Operaciones del período con producto anotado pero sin productos de bodega asociados. Mientras no se concilien, su consumo no entra en el control ni en el registro RAC 137.',
+    ej:'La operación dice «SEEKER + DITHANE» pero nadie dijo cuánto de cada uno salió de bodega: al conciliar se asocia cada producto con su dosis y se descuenta.'},
+};
+function ayudaKpi(k){
+  const a = AYUDA_KPI[k]; if(!a) return;
+  const v = ventana({titulo:a.t, subtitulo:'Cómo se calcula', ancho:'angosta',
+    cuerpo:`<div class="flujo-txt" style="min-height:0">${a.txt}<div class="ej"><b>Ejemplo.</b> ${a.ej}</div></div>`,
+    pie:`<button class="btn secundario" data-rec>Ver el recorrido completo</button><div class="der"><button class="btn" data-ok>Entendido</button></div>`});
+  v.$('[data-ok]').onclick = v.cerrar;
+  v.$('[data-rec]').onclick = async ()=>{ await v.cerrar(); comoFunciona(); };
+}
+function kpi(k, ic, lbl, val, unidad, nota, clase=''){
+  return `<div class="kpi" role="button" tabindex="0" data-k="${k}"><div class="kpi-ic">${IC[ic]}</div>
+    <div class="lbl">${lbl}<button class="ayuda" type="button" data-ayuda="${k}" title="¿Cómo se calcula?">?</button></div>
+    <div class="val ${clase}">${val}${unidad?`<small>${unidad}</small>`:''}</div><div class="note">${nota||''}</div></div>`;
+}
+function enganchaKpis(raiz){
+  raiz.querySelectorAll('[data-ayuda]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); ayudaKpi(b.dataset.ayuda); });
+  raiz.querySelectorAll('.kpi[data-k]').forEach(c=>{
+    const ir = ()=>abrirKpi(c.dataset.k);
+    c.onclick = ir; c.onkeydown = e=>{ if(e.key==='Enter'){ e.preventDefault(); ir(); } };
+  });
+}
+function pintarKpis(){
+  const k = D.kpis;
+  const c = document.getElementById('kpis');
+  c.innerHTML =
+    kpi('valor','dinero','Valor inmovilizado', dinero(k.valor_total), '', `Repuestos ${dinero(k.valor_repuestos)} · Insumos ${dinero(k.valor_insumos)}`) +
+    kpi('comprar','carrito','Comprar ya', dinero(k.comprar_costo), '', `${k.comprar_n} artículo(s)${k.comprar_urgente?` · <b style="color:var(--o-tx-rojo,#a4271f)">${k.comprar_urgente} urgente(s)</b>`:''}`, k.comprar_urgente?'rojo':'') +
+    kpi('vence','reloj','Vence en 60 días', fmt(k.vencen_n,0), 'lotes', `${dinero(k.vencen_valor)} en riesgo${k.vencidos_n?` · ${k.vencidos_n} vencido(s)`:''}`, k.vencidos_n?'rojo':(k.vencen_n?'ambar':'')) +
+    kpi('perdidas','balanza','Posibles pérdidas', dinero(k.posibles_perdidas), '', `${k.descuadres} producto(s) con descuadre en el período`, k.posibles_perdidas>0?'rojo':'verde') +
+    kpi('costo_ha','hectarea','Insumos por hectárea', k.costo_ha!=null?dinero(k.costo_ha):'—', k.costo_ha!=null?'/ha':'', `${dinero(k.valor_insumos_op)} · ${fmt(k.hectareas,0)} ha en el período`) +
+    kpi('minimo','alerta','Bajo el mínimo', fmt(k.bajo_minimo,0), '', `de ${k.articulos} artículo(s) activos`, k.bajo_minimo?'ambar':'');
+  enganchaKpis(c);
+}
+function abrirKpi(k){
+  if(k==='valor') return verValor();
+  if(k==='comprar') return verCompras();
+  if(k==='vence') return verVencen();
+  if(k==='perdidas' || k==='costo_ha' || k==='hectareas') return irA('control');
+  if(k==='conciliar') return conciliar();
+  if(k==='minimo') return verBajoMinimo();
+}
+
+// ------------------------------------------------------------------ Panorama
+function filaCompra(x){
+  const ev = (x.eventos||[]).slice(0,6).map(e=>`<span class="ev-chip ${e.nivel}">${escapar(e.equipo)} · ${e.dias===0||e.nivel==='vencido'?'ya':fmtDias(e.dias)}</span>`).join('');
+  return `<div class="compra" data-item="${x.item_id||''}" data-clave="${escapar(x.clave||'')}">
+    <div><div class="nom">${escapar(x.nombre)}${x.urgente?' <span class="urg">urgente</span>':''}${x.codigo?` <span class="bp-codigo">${escapar(x.codigo)}</span>`:''}</div>
+      <div class="eq">${x.item_id ? `Necesitas <b>${fmt(x.necesita,2)}</b> · tienes <b>${fmt(x.tiene,2)}</b>${x.minimo?` · mínimo ${fmt(x.minimo,2)}`:''} · ${escapar(x.motivo)}${x.proveedor?` · ${escapar(x.proveedor)}`:''}`
+        : `<span class="tag gray">no está en bodega</span> Necesitas <b>${fmt(x.cantidad,0)}</b> · ${escapar(x.modelo||'')} · ${escapar(x.modulo||'')}`}</div></div>
+    <div class="pedir"><div class="n">Pide ${fmt(x.item_id?x.pedir:x.cantidad,2)} <small class="mut" style="font-size:12px">${escapar(x.unidad||'und')}</small></div>
+      <div class="c">${x.costo!=null?dinero(x.costo):'sin costo conocido'}</div></div>
+    ${ev?`<div class="ev">${ev}</div>`:''}
+  </div>`;
+}
+function enganchaCompras(raiz){
+  raiz.querySelectorAll('.compra').forEach(f=>f.onclick=()=>{
+    if(f.dataset.item) abrirItem(Number(f.dataset.item));
+    else { const s = D.compras.sin_articulo.find(x=>x.clave===f.dataset.clave); if(s) sinArticulo(s); }
+  });
+}
+function pintarCompras(){
+  const c = D.compras, todos = [...c.lista, ...c.sin_articulo];
+  document.getElementById('compraNota').innerHTML = todos.length ? `${todos.length} · ${dinero(D.kpis.comprar_costo)} · <a href="#" id="verCompras">ver todo</a>` : '';
+  const l = document.getElementById('compraLista');
+  l.innerHTML = todos.length ? todos.slice(0,6).map(filaCompra).join('')
+    : `<div class="empty">Nada que comprar: las existencias cubren los cambios previstos en ${c.horizonte} días y los mínimos.</div>`;
+  enganchaCompras(l);
+  const v = document.getElementById('verCompras'); if(v) v.onclick = e=>{ e.preventDefault(); verCompras(); };
+}
+function verCompras(){
+  const c = D.compras, todos = [...c.lista, ...c.sin_articulo];
+  const p = panelLateral({titulo:'Qué comprar', subtitulo:`Cambios previstos en ${c.horizonte} días, órdenes abiertas y mínimos · total ${dinero(D.kpis.comprar_costo)}`,
+    cuerpo: todos.length ? `<div class="det-kpis"><div class="k"><div class="l">Artículos</div><div class="v">${todos.length}</div></div>
+        <div class="k"><div class="l">Urgentes</div><div class="v">${D.kpis.comprar_urgente}</div><div class="n">≤ 30 días o agotados</div></div>
+        <div class="k"><div class="l">Costo estimado</div><div class="v">${dinero(D.kpis.comprar_costo)}</div></div></div>${todos.map(filaCompra).join('')}`
+      : '<div class="empty">Nada que comprar.</div>'});
+  enganchaCompras(p.raiz);
+}
+function tanqueBd(t, mini=false){
+  const vacio = !t.item_id;
+  return Tanques.html({pct: t.pct, color: t.color_final, forma: t.forma, clase: (vacio?'sin-asignar ':'') + (t.item_id ? Tanques.alerta(t.pct) : ''),
+    attrs:`data-tq="${t.id}"`, cuerpo:`
+    <div class="pct">${t.pct==null||vacio?'—':fmt(t.pct,0)+' %'}</div>
+    <div class="nom">${escapar(t.nombre)}</div>
+    <span class="chip-cont"><i style="background:${t.color_final}"></i>${escapar(t.item || 'sin asignar')}</span>
+    ${mini?'':`<div class="sub">${fmt(t.nivel,0)} / ${fmt(t.capacidad,0)} ${escapar(t.unidad)}</div><div class="sub">${escapar(t.ubicacion||'sin ubicación')}</div>`}`});
+}
+function pintarTanquesMini(){
+  const c = document.getElementById('tanquesMini');
+  c.innerHTML = D.tanques.filter(t=>t.activo).map(t=>tanqueBd(t, true)).join('') ||
+    `<div class="empty" style="grid-column:1/-1">Sin tanques. En «Insumos de operación» crea uno y elige qué contiene.</div>`;
+  c.querySelectorAll('[data-tq]').forEach(b=>b.onclick=()=>abrirTanque(Number(b.dataset.tq)));
+  llenarTanques(c);
+}
+function pintarGraficaControl(){
+  const f = D.control.filas.slice(0,10);
+  graficoBarras(document.getElementById('gControl'), f.map(x=>x.nombre),
+    [{nombre:'Aplicado según operaciones', color:'#737a86', datos:f.map(x=>x.teorico)},
+     {nombre:'Salió de bodega', color:'#0d9488', datos:f.map(x=>x.salidas)}],
+    {alto:230, vacio:'Sin consumo de insumos en el período. Registra productos en las operaciones o concilia las existentes.',
+     alClic: e=>detalleConsumo(f[e.indice].item_id)});
+  leyendaGrafica('leyControl', [{nombre:'Aplicado según operaciones', color:'#737a86'}, {nombre:'Salió de bodega', color:'#0d9488'}]);
+}
+function filaVence(v){
+  return `<div class="ubic-fila" style="cursor:pointer" data-item="${v.item_id}">
+    <span class="ic" style="color:${v.nivel==='critico'?'var(--red)':v.nivel==='proximo'?'var(--amber)':'var(--ink2)'}">${IC.reloj}</span>
+    <div><div style="font-weight:650">${escapar(v.nombre)}${v.lote?` · lote ${escapar(v.lote)}`:''}</div>
+      <small class="mut">${fmt(v.cantidad,2)} ${escapar(v.unidad)} · ${escapar(v.ubicacion)} · ${dinero(v.valor)}</small></div>
+    <b style="color:${v.dias<0?'var(--o-tx-rojo,#a4271f)':'inherit'}">${v.dias<0?`vencido hace ${-v.dias} d`:v.dias===0?'vence hoy':`${v.dias} días`}</b></div>`;
+}
+function pintarVencen(){
+  const l = document.getElementById('venceLista');
+  document.getElementById('venceNota').textContent = D.vencen.length ? `${D.vencen.length} lote(s) · ${dinero(D.kpis.vencen_valor)}` : '';
+  l.innerHTML = D.vencen.slice(0,5).map(filaVence).join('') || `<div class="empty">Ningún lote vence en los próximos ${CFG.dias_por_vencer} días.</div>`;
+  l.querySelectorAll('[data-item]').forEach(f=>f.onclick=()=>abrirItem(Number(f.dataset.item)));
+}
+function verVencen(){
+  const p = panelLateral({titulo:'Vencimientos', subtitulo:`Lotes que vencen en ${CFG.dias_por_vencer} días o ya vencidos`,
+    cuerpo: D.vencen.map(filaVence).join('') || '<div class="empty">Nada por vencer.</div>'});
+  p.$$('[data-item]').forEach(f=>f.onclick=async ()=>{ await p.cerrar(); abrirItem(Number(f.dataset.item)); });
+}
+function pintarUbic(){
+  const u = D.ubicaciones.filter(x=>x.activo).sort((a,b)=>b.valor-a.valor);
+  graficoRanking('gUbic', u.map(x=>({etiqueta:x.nombre, valor:x.valor, detalle:`${x.articulos} artículo(s)`, color:'#1a1d24'})),
+    {vacio:'Crea las ubicaciones (hangar, pista, base…) desde «Ubicaciones».', alClic: f=>abrirUbicacion(u[f.indice].id)});
+}
+function verValor(){
+  const v = ventana({titulo:'Valor inmovilizado', subtitulo:`${dinero(D.kpis.valor_total)} en existencias, al costo promedio`, ancho:'ancha',
+    cuerpo:`<div class="grid2" style="gap:14px"><div><div class="sub-tit" style="margin-top:0">Por bodega</div><div id="vDona"></div></div>
+      <div><div class="sub-tit" style="margin-top:0">Por ubicación</div><div id="vUbic"></div></div></div>
+      <div class="sub-tit">Los 10 artículos que más valen</div><div id="vTop"></div>`});
+  graficoDona(v.$('#vDona'), [{etiqueta:'Repuestos', valor:D.kpis.valor_repuestos, color:'#1a1d24'}, {etiqueta:'Insumos', valor:D.kpis.valor_insumos, color:'#0d9488'}],
+    {centro:'COP', alClic: p=>{ v.cerrar(); irA(p.etiqueta==='Repuestos'?'repuestos':'insumos'); }});
+  const u = D.ubicaciones.filter(x=>x.valor>0).sort((a,b)=>b.valor-a.valor);
+  graficoRanking(v.$('#vUbic'), u.map(x=>({etiqueta:x.nombre, valor:x.valor, color:'#1a1d24'})), {vacio:'Sin existencias.', alClic: f=>{ v.cerrar(); abrirUbicacion(u[f.indice].id); }});
+  const top = D.inventario.filter(i=>i.valor>0).sort((a,b)=>b.valor-a.valor).slice(0,10);
+  graficoRanking(v.$('#vTop'), top.map(i=>({etiqueta:i.nombre, valor:i.valor, detalle:cant(i.saldo, i.unidad), color:i.clase==='insumo'?'#0d9488':'#1a1d24'})),
+    {vacio:'Sin existencias valoradas.', alClic: f=>{ v.cerrar(); abrirItem(top[f.indice].id); }});
+}
+function verBajoMinimo(){
+  const l = D.inventario.filter(i=>i.activo && ['bajo el mínimo','agotado','saldo negativo'].includes(i.nivel_txt));
+  const p = panelLateral({titulo:'Bajo el mínimo', subtitulo:'Disponible = existencias − apartado en órdenes abiertas',
+    cuerpo: l.map(i=>`<div class="ubic-fila" style="cursor:pointer" data-item="${i.id}"><span class="ic">${IC[i.clase]}</span>
+      <div><div style="font-weight:650">${escapar(i.nombre)}</div><small class="mut">disponible ${fmt(i.disponible,2)} de mínimo ${fmt(i.stock_minimo,2)} ${escapar(i.unidad)}</small></div>
+      <b>${tagNiv(i.nivel, i.nivel_txt)}</b></div>`).join('') || '<div class="empty">Todo por encima del mínimo.</div>'});
+  p.$$('[data-item]').forEach(f=>f.onclick=async ()=>{ await p.cerrar(); abrirItem(Number(f.dataset.item)); });
+}
+
+// ------------------------------------------------------------------ Repuestos
+function pintarFlota(){
+  const c = D.compras;
+  const rep = [...c.lista.filter(x=>x.clase==='repuesto'), ...c.sin_articulo];
+  document.getElementById('flotaNota').textContent = `próximos ${c.horizonte} días`;
+  const l = document.getElementById('flotaLista');
+  l.innerHTML = rep.map(filaCompra).join('') || `<div class="empty">La flota no pide repuestos que falten en los próximos ${c.horizonte} días.</div>`;
+  enganchaCompras(l);
+}
+function exChips(i, ubic){
+  return i.existencias.filter(e=>!ubic || String(e.ubicacion_id)===ubic)
+    .map(e=>`<span class="ex-chip ${e.cantidad<0?'neg':''}">${escapar(e.ubicacion)} <b>${fmt(e.cantidad,2)}</b></span>`).join('') || '<span class="mut">sin existencias</span>';
+}
+function pintarRepuestos(){
+  const q = document.getElementById('fRep').value.trim().toLowerCase();
+  const ubic = document.getElementById('fRepUbic').value, mod = document.getElementById('fRepModelo').value;
+  const soloAlerta = document.getElementById('fRepBajo').checked;
+  const l = D.inventario.filter(i=>i.clase==='repuesto' && i.activo
+    && (!q || [i.nombre,i.codigo,i.modelo,i.catalogo_ref].join(' ').toLowerCase().includes(q))
+    && (!ubic || i.existencias.some(e=>String(e.ubicacion_id)===ubic)) && (!mod || i.modelo===mod) && (!soloAlerta || i.nivel!=='ok'));
+  const tot = l.reduce((a,i)=>a+(i.valor||0),0);
+  document.getElementById('repNota').textContent = `${l.length} artículo(s) · ${dinero(tot)}`;
+  document.getElementById('tRep').innerHTML = `<thead><tr><th>Repuesto</th><th>Existencias por ubicación</th><th class="num">Disponible</th>
+      <th class="num">Mínimo</th><th class="num">Costo prom.</th><th class="num">Valor</th><th>Estado</th></tr></thead><tbody>` +
+    (l.map(i=>`<tr class="fila" data-item="${i.id}"><td class="art"><b>${escapar(i.nombre)}</b>
+        <small>${[i.codigo, i.modelo, i.catalogo==='pieza'?'con vida útil':(i.catalogo==='despiece'?'despiece DJI':'')].filter(Boolean).map(escapar).join(' · ')||'sin código'}</small></td>
+      <td>${exChips(i, ubic)}</td>
+      <td class="num"><b>${fmt(i.disponible,2)}</b>${i.reservado?`<br><small class="mut">${fmt(i.reservado,2)} en OT</small>`:''}</td>
+      <td class="num">${fmt(i.stock_minimo,2)}</td><td class="num">${dinero(i.costo)}</td><td class="num">${dinero(i.valor)}</td>
+      <td>${tagNiv(i.nivel, i.nivel_txt)}</td></tr>`).join('') ||
+      `<tr><td colspan="7"><div class="empty">${D.inventario.some(i=>i.clase==='repuesto') ? 'Ningún repuesto coincide con el filtro.' :
+        'Aún no hay repuestos en bodega.' + (ES_ADMIN ? ' Créalos con «Nuevo artículo»: se enlazan al catálogo de piezas de cada modelo.' : '')}</div></td></tr>`) + '</tbody>';
+  document.querySelectorAll('#tRep [data-item]').forEach(f=>f.onclick=()=>abrirItem(Number(f.dataset.item)));
+}
+
+// ------------------------------------------------------------------ Insumos
+function pintarTanques(){
+  const c = document.getElementById('tanques');
+  c.innerHTML = D.tanques.filter(t=>t.activo).map(t=>tanqueBd(t)).join('') +
+    (ES_ADMIN ? `<button class="tanque nuevo" type="button" id="btnNuevoTq">${IC.mas}<b>Nuevo tanque</b><span class="sub">tanque, tambor, garrafa o IBC · tú eliges qué contiene</span></button>` : '');
+  if(!D.tanques.length && !ES_ADMIN) c.innerHTML = `<div class="empty">Sin tanques configurados.</div>`;
+  c.querySelectorAll('[data-tq]').forEach(b=>b.onclick=()=>abrirTanque(Number(b.dataset.tq)));
+  const n = document.getElementById('btnNuevoTq'); if(n) n.onclick = ()=>formTanque();
+  llenarTanques(c);
+}
+function pintarInsumos(){
+  const q = document.getElementById('fIns').value.trim().toLowerCase();
+  const cat = document.getElementById('fInsCat').value, ubic = document.getElementById('fInsUbic').value;
+  const l = D.inventario.filter(i=>i.clase==='insumo' && i.activo
+    && (!q || [i.nombre,i.ingrediente_activo,i.registro_ica,i.codigo].join(' ').toLowerCase().includes(q))
+    && (!cat || i.categoria===cat) && (!ubic || i.existencias.some(e=>String(e.ubicacion_id)===ubic)));
+  const tot = l.reduce((a,i)=>a+(i.valor||0),0);
+  document.getElementById('insNota').textContent = `${l.length} producto(s) · ${dinero(tot)}`;
+  document.getElementById('tIns').innerHTML = `<thead><tr><th>Producto</th><th>Categoría</th><th>Tox.</th><th>Existencias</th>
+      <th class="num">Total</th><th>Próximo vencimiento</th><th class="num">Cobertura</th><th class="num">Costo prom.</th><th class="num">Valor</th><th>Estado</th></tr></thead><tbody>` +
+    (l.map(i=>`<tr class="fila" data-item="${i.id}"><td class="art"><b><i class="bd-punto" style="background:${i.color_final};margin-right:6px"></i>${escapar(i.nombre)}</b>
+        <small>${[i.ingrediente_activo, i.concentracion, i.registro_ica?'ICA '+i.registro_ica:null, i.presentacion].filter(Boolean).map(escapar).join(' · ')||'—'}</small></td>
+      <td>${chipCat(i)}</td><td>${chipTox(i.categoria_tox)}</td><td>${exChips(i, ubic)}</td>
+      <td class="num"><b>${fmt(i.saldo,2)}</b> ${escapar(i.unidad)}</td>
+      <td>${i.proximo_vence?`${fmtFecha(i.proximo_vence)}`:'<span class="mut">—</span>'}</td>
+      <td class="num">${i.cobertura_dias!=null?fmtDias(i.cobertura_dias):'<span class="mut">sin consumo</span>'}</td>
+      <td class="num">${dinero(i.costo)}</td><td class="num">${dinero(i.valor)}</td><td>${tagNiv(i.nivel, i.nivel_txt)}</td></tr>`).join('') ||
+      `<tr><td colspan="10"><div class="empty">${D.inventario.some(i=>i.clase==='insumo') ? 'Ningún producto coincide con el filtro.' :
+        'Aún no hay insumos.' + (ES_ADMIN ? ' Crea tus fitosanitarios, aceite agrícola y demás con «Nuevo artículo».' : '')}</div></td></tr>`) + '</tbody>';
+  document.querySelectorAll('#tIns [data-item]').forEach(f=>f.onclick=()=>abrirItem(Number(f.dataset.item)));
+}
+
+// ------------------------------------------------------------------ Control de consumo
+function dosisHTML(real, ref, u){
+  if(real==null && ref==null) return '<span class="mut">—</span>';
+  const max = Math.max(real||0, ref||0) * 1.25 || 1;
+  return `<div class="dosis"><div class="trk">${real!=null?`<i style="width:${Math.min(100,real/max*100)}%"></i>`:''}${ref!=null?`<em style="left:${Math.min(100,ref/max*100)}%"></em>`:''}</div>
+    <small>real <b>${real!=null?fmt(real,2):'—'}</b> · ${ref!=null?`ref. ${fmt(ref,2)}`:'sin ref.'} ${escapar(u)}</small></div>`;
+}
+function pintarControl(){
+  const c = D.control, k = D.kpis;
+  const kc = document.getElementById('kpisCtrl');
+  kc.innerHTML = kpi('hectareas','hectarea','Hectáreas aplicadas', fmt(c.hectareas,0), 'ha', 'según las operaciones del período') +
+    kpi('costo_ha','dinero','Insumos por hectárea', c.costo_ha!=null?dinero(c.costo_ha):'—', c.costo_ha!=null?'/ha':'', `${dinero(c.valor_insumos_op)} salieron a operaciones`) +
+    kpi('perdidas','balanza','Posibles pérdidas', dinero(c.posibles_perdidas), '', `${c.n_descuadres} producto(s) con descuadre`, c.posibles_perdidas>0?'rojo':'verde') +
+    kpi('conciliar','escudo','Operaciones por conciliar', fmt(c.por_conciliar,0), '', c.por_conciliar?'con producto anotado y sin descontar · clic para conciliar':'todas conciliadas', c.por_conciliar?'ambar':'verde');
+  enganchaKpis(kc);
+  document.getElementById('ctrlNota').textContent = `${c.filas.length} producto(s) · diferencia = salidas − aplicado`;
+  document.getElementById('tCtrl').innerHTML = `<thead><tr><th>Producto</th><th class="num">Aplicado (ha × dosis)</th><th class="num">Salió de bodega</th>
+      <th class="num">Diferencia</th><th>Dosis de producto por ha</th><th>Caldo (L/ha) vs. objetivo</th><th class="num">Costo/ha</th><th>Estado</th></tr></thead><tbody>` +
+    (c.filas.map(f=>`<tr class="fila" data-item="${f.item_id}"><td class="art"><b><i class="bd-punto" style="background:${f.color};margin-right:6px"></i>${escapar(f.nombre)}</b>
+        <small>${f.aplicaciones} aplicación(es) · ${fmt(f.hectareas,1)} ha${f.sin_descontar?` · ${f.sin_descontar} sin descontar`:''}${f.bajas?` · ${fmt(f.bajas,2)} de baja`:''}</small></td>
+      <td class="num">${fmt(f.teorico,2)} ${escapar(f.unidad)}</td><td class="num">${fmt(f.salidas,2)} ${escapar(f.unidad)}</td>
+      <td class="num"><span class="dif ${f.nivel}">${f.diferencia>0?'+':''}${fmt(f.diferencia,2)}${f.pct!=null?` (${f.pct>0?'+':''}${fmt(f.pct,1)} %)`:''}</span>
+        ${f.valor_diferencia?`<br><small class="mut">${dinero(Math.abs(f.valor_diferencia))}</small>`:''}</td>
+      <td>${dosisHTML(f.dosis_real, f.dosis_teorica ?? f.dosis_ref, f.unidad+'/ha')}</td>
+      <td>${dosisHTML(f.caldo_real, f.caldo_objetivo, 'L/ha')}</td>
+      <td class="num">${f.costo_ha!=null?dinero(f.costo_ha):'—'}</td><td>${tagNiv(f.nivel, f.nivel_txt)}</td></tr>`).join('') ||
+      `<tr><td colspan="8"><div class="empty">Sin consumo de insumos en el período. ${c.por_conciliar?`Hay <b>${c.por_conciliar}</b> operación(es) con producto anotado por conciliar.`:''}</div></td></tr>`) + '</tbody>';
+  document.querySelectorAll('#tCtrl [data-item]').forEach(f=>f.onclick=()=>detalleConsumo(Number(f.dataset.item)));
+}
+async function detalleConsumo(itemId){
+  const f = D.control.filas.find(x=>x.item_id===itemId) || {};
+  const q = new URLSearchParams({periodo:EST.periodo});
+  const d = await api(`/api/bodega/control/${itemId}?${q}`);
+  const p = panelLateral({titulo: escapar(f.nombre || item(itemId)?.nombre || 'Producto'), subtitulo:'Aplicado según operaciones frente a lo que salió de bodega',
+    cuerpo:`<div class="det-kpis"><div class="k"><div class="l">Aplicado</div><div class="v">${fmt(f.teorico,2)}</div><div class="n">${escapar(f.unidad||'')}</div></div>
+      <div class="k"><div class="l">Salió</div><div class="v">${fmt(f.salidas,2)}</div><div class="n">${fmt(f.a_operaciones,2)} a operaciones · ${fmt(f.sueltas,2)} sueltas</div></div>
+      <div class="k"><div class="l">Diferencia</div><div class="v dif ${f.nivel||''}">${f.diferencia>0?'+':''}${fmt(f.diferencia,2)}</div><div class="n">${escapar(f.nivel_txt||'')}</div></div></div>
+      <div class="sub-tit" style="margin-top:0">Por mes</div><div id="gDet"></div>
+      <div class="sub-tit">Aplicaciones (${d.aplicaciones.length})</div>
+      <div class="tabla-envoltura"><table><thead><tr><th>Fecha</th><th>Aeronave · finca</th><th class="num">ha</th><th class="num">Dosis</th><th class="num">Teórico</th><th class="num">Descontado</th></tr></thead><tbody>
+      ${d.aplicaciones.slice(0,150).map(a=>`<tr><td>${fmtFecha(a.fecha)}</td><td>${escapar(a.equipo)}${a.finca?' · '+escapar(a.finca):''}</td><td class="num">${fmt(a.hectareas,1)}</td>
+        <td class="num">${fmt(a.dosis_ha,2)}</td><td class="num">${fmt(a.cantidad_teorica,2)}</td><td class="num">${a.descontado!=null?fmt(a.descontado,2):'<span class="mut">sin descontar</span>'}</td></tr>`).join('') || '<tr><td colspan="6" class="mut">Sin aplicaciones.</td></tr>'}
+      </tbody></table></div>
+      <div class="sub-tit">Salidas y bajas (${d.movimientos.length})</div>
+      <div class="tabla-envoltura"><table class="kardex"><tbody>${d.movimientos.slice(0,150).map(filaKardex).join('') || '<tr><td class="mut">Sin salidas.</td></tr>'}</tbody></table></div>`});
+  graficoBarras(p.$('#gDet'), d.por_mes.map(m=>m.mes), [{nombre:'Aplicado', color:'#737a86', datos:d.por_mes.map(m=>m.teorico)},
+    {nombre:'Salió', color:'#0d9488', datos:d.por_mes.map(m=>m.salidas)}], {alto:180, vacio:'Sin datos en el período.'});
+  p.$$('.kardex tr[data-mov]').forEach(r=>r.onclick=()=>abrirMov(Number(r.dataset.mov)));
+}
+
+// ------------------------------------------------------------------ Kardex
+function filaKardex(m){
+  const signo = m.tipo==='entrada' || (m.tipo==='ajuste' && m.cantidad>=0) ? '+' : (m.tipo==='traslado' ? '' : '−');
+  const donde = m.tipo==='traslado' ? `${escapar(m.ubicacion||'—')}${m.tanque?' ('+escapar(m.tanque)+')':''} → ${escapar(m.destino||'—')}${m.tanque_destino?' ('+escapar(m.tanque_destino)+')':''}`
+                : `${escapar(m.ubicacion||'—')}${m.tanque?' · '+escapar(m.tanque):''}`;
+  const ref = [m.orden_codigo, m.operacion_id?'operación #'+m.operacion_id:null, m.equipo, m.lote?'lote '+m.lote:null, m.proveedor, m.documento].filter(Boolean).map(escapar).join(' · ');
+  return `<tr data-mov="${m.id}"><td>${fmtFecha(m.fecha)}</td>
+    <td><span class="ico-mov ${m.tipo}">${IC[m.tipo]}</span>${escapar(m.tipo_txt)}${m.motivo_txt && m.tipo!=='entrada' && m.tipo!=='traslado'?` <small class="mut">· ${escapar(m.motivo_txt)}</small>`:''}</td>
+    <td><b>${escapar(m.item)}</b></td><td>${donde}</td>
+    <td class="num ${signo==='+'?'cant-pos':'cant-neg'}">${signo}${fmt(Math.abs(m.cantidad),2)} ${escapar(m.unidad||'')}</td>
+    <td class="num">${fmt(m.saldo,2)}</td><td class="num">${dinero(m.valor)}</td>
+    <td style="white-space:normal;max-width:260px;font-size:12px" class="mut">${ref||'—'}</td><td class="mut" style="font-size:12px">${escapar(m.usuario||'')}</td></tr>`;
+}
+async function cargarKardex(){
+  const q = new URLSearchParams({periodo:EST.periodo});
+  if(EST.tipoK) q.set('tipo', EST.tipoK);
+  const cl = document.getElementById('fKClase').value, ub = document.getElementById('fKUbic').value;
+  if(cl) q.set('clase', cl); if(ub) q.set('ubicacion_id', ub);
+  KARDEX = await api('/api/bodega/movimientos?'+q);
+  document.getElementById('kardexNota').textContent = `${KARDEX.length} movimiento(s) · el saldo es el del artículo tras cada movimiento`;
+  document.getElementById('tKardex').innerHTML = `<thead><tr><th>Fecha</th><th>Movimiento</th><th>Artículo</th><th>Ubicación</th><th class="num">Cantidad</th>
+    <th class="num">Saldo</th><th class="num">Valor</th><th>Referencia</th><th>Usuario</th></tr></thead><tbody>` +
+    (KARDEX.map(filaKardex).join('') || `<tr><td colspan="9"><div class="empty">Sin movimientos en el período.</div></td></tr>`) + '</tbody>';
+  document.querySelectorAll('#tKardex tr[data-mov]').forEach(r=>r.onclick=()=>abrirMov(Number(r.dataset.mov)));
+}
+async function abrirMov(id){
+  const m = await api(`/api/bodega/movimientos/${id}`);
+  const fila = (k, v)=> v===null||v===undefined||v==='' ? '' : `<div class="l"><span>${k}</span><b>${v}</b></div>`;
+  const v = ventana({titulo: escapar(m.tipo_txt), subtitulo: `${escapar(m.item)} · ${fmtFecha(m.fecha)}`, ancho:'angosta',
+    cuerpo:`<div class="recibo"><h4>KARDEX #${m.id}</h4><div class="c">${escapar(m.usuario||'')} · ${fmtFechaHora(m.creado)}</div>
+      ${fila('Artículo', escapar(m.item))}${fila('Cantidad', `${fmt(m.cantidad,3)} ${escapar(m.unidad)}`)}${fila('Conteo', m.conteo!=null?fmt(m.conteo,3):null)}
+      ${fila('Ubicación', escapar(m.ubicacion))}${fila('Tanque', escapar(m.tanque||''))}${fila('Destino', escapar(m.destino||''))}
+      ${fila('Motivo', m.tipo!=='entrada'?escapar(m.motivo_txt||''):null)}${fila('Costo unitario', m.costo_unitario!=null?dinero(m.costo_unitario):null)}
+      ${fila('Lote', escapar(m.lote||''))}${fila('Vence', m.vence?fmtFecha(m.vence):null)}${fila('Serie', escapar(m.serie||''))}
+      ${fila('Proveedor', escapar(m.proveedor||''))}${fila('Documento', escapar(m.documento||''))}${fila('Orden', escapar(m.orden_codigo||''))}
+      ${fila('Aeronave', escapar(m.equipo||''))}${fila('Operación', m.operacion_id?'#'+m.operacion_id:null)}${fila('Responsable', escapar(m.responsable||''))}
+      ${fila('Nota', escapar(m.nota||''))}${fila('Saldo después', fmt(m.saldo,3))}
+      <div class="tot"><span>Valor</span><span>${dinero(m.valor)}</span></div></div>`,
+    pie:`${ES_ADMIN?'<button class="btn secundario rojo" data-borrar>Borrar movimiento</button>':''}<div class="der">
+      <button class="btn secundario" data-art>Ver artículo</button><button class="btn" data-ok>Cerrar</button></div>`});
+  v.$('[data-ok]').onclick = v.cerrar;
+  v.$('[data-art]').onclick = async ()=>{ await v.cerrar(); abrirItem(m.item_id); };
+  const b = v.$('[data-borrar]');
+  if(b) b.onclick = async ()=>{
+    if(!await confirmar({titulo:'Borrar movimiento', peligro:true, aceptar:'Borrar',
+      mensaje:`Se borrará este movimiento y se recalcularán las existencias y el costo promedio de <b>${escapar(m.item)}</b>. Queda constancia en la auditoría.
+        ${m.orden_codigo?'<br>Es la salida de una orden de trabajo: el repuesto volverá a quedar apartado.':''}`})) return;
+    await api(`/api/bodega/movimientos/${id}`, {method:'DELETE', body:{}});
+    toast('Movimiento borrado'); await v.cerrar(); cargar();
+  };
+}
+
+// ------------------------------------------------------------------ Detalle de artículo
+async function abrirItem(id){
+  let d;
+  try{ d = await api(`/api/bodega/items/${id}`); }catch(e){ return toast(e.message); }
+  const u = d.unidad;
+  const tipos = ['entrada','salida','traslado','ajuste','baja'].filter(puede);
+  const p = panelLateral({titulo: escapar(d.nombre),
+    subtitulo: `${d.clase==='insumo'?escapar(catInfo(d.categoria).nombre):'Repuesto'}${d.codigo?' · '+escapar(d.codigo):''}${d.modelo?' · '+escapar(d.modelo):''}`,
+    cuerpo:`
+      <div class="fila-flex" style="margin-bottom:12px">${tagNiv(d.nivel, d.nivel_txt)}${d.clase==='insumo'?chipCat(d):''}${d.categoria_tox?chipTox(d.categoria_tox):''}
+        ${d.registro_ica?`<span class="tag gray">ICA ${escapar(d.registro_ica)}</span>`:''}${!d.activo?'<span class="tag gray">inactivo</span>':''}</div>
+      <div class="det-kpis">
+        <div class="k"><div class="l">Existencias</div><div class="v">${fmt(d.saldo,2)}</div><div class="n">${escapar(u)} · disp. ${fmt(d.disponible,2)}</div></div>
+        <div class="k"><div class="l">Costo promedio</div><div class="v">${dinero(d.costo)}</div><div class="n">por ${escapar(u)}${d.ultimo_costo?` · última ${dinero(d.ultimo_costo)}`:''}</div></div>
+        <div class="k"><div class="l">Valor</div><div class="v">${dinero(d.valor)}</div><div class="n">mínimo ${fmt(d.stock_minimo,2)}</div></div></div>
+      <div class="acciones-det">${tipos.map(t=>`<button class="btn ${t==='entrada'?'':'secundario'} peq" data-mov="${t}"><span style="display:inline-flex;width:15px">${IC[t]}</span>${escapar(CFG.tipos[t].split(' /')[0])}</button>`).join('')}
+        ${ES_ADMIN?'<button class="btn secundario peq" data-editar>Editar</button>':''}</div>
+      ${d.compra?`<div class="aviso ambar"><div><b>Pide ${fmt(d.compra.pedir,2)} ${escapar(u)}</b> (${d.compra.costo!=null?dinero(d.compra.costo):'sin costo'}).
+        Necesitas ${fmt(d.compra.necesita,2)}${d.compra.prevista?` (${fmt(d.compra.prevista,2)} por cambios previstos)`:''}, tienes ${fmt(d.compra.tiene,2)}, mínimo ${fmt(d.compra.minimo,2)}.</div></div>`:''}
+      <div class="card" style="margin-bottom:12px;padding:16px"><div class="sub-tit" style="margin-top:0">Dónde está</div>
+        ${d.existencias.map(e=>{ const ub = D.ubicaciones.find(x=>x.id===e.ubicacion_id);
+          return `<div class="ubic-fila"><span class="ic">${icUbic(ub?.tipo)}</span>${escapar(e.ubicacion)}<b>${fmt(e.cantidad,3)} ${escapar(u)}</b></div>`; }).join('') || '<div class="mut" style="font-size:13px">Sin existencias.</div>'}
+        ${d.tanques.length?`<div class="bd-tanques mini" style="margin-top:10px">${d.tanques.map(t=>tanqueBd(t,true)).join('')}</div>`:''}</div>
+      ${d.lotes.length?`<div class="card" style="margin-bottom:12px;padding:16px"><div class="sub-tit" style="margin-top:0">Lotes</div>
+        ${d.lotes.map(l=>`<div class="ubic-fila"><span class="ic">${IC.reloj}</span><div>${l.lote?'Lote '+escapar(l.lote):'Sin lote'} · ${escapar(l.ubicacion)}
+          <br><small class="mut">${l.vence?'vence '+fmtFecha(l.vence):'sin vencimiento'}</small></div><b>${fmt(l.cant,3)} ${escapar(u)}</b></div>`).join('')}</div>`:''}
+      ${d.reservas.length?`<div class="card" style="margin-bottom:12px;padding:16px"><div class="sub-tit" style="margin-top:0">En órdenes de trabajo</div>
+        ${d.reservas.map(r=>`<a class="ubic-fila" style="text-decoration:none;color:inherit" href="/ordenes-trabajo?ot=${r.orden_id}"><span class="ic">${IC.ot}</span>
+          <div>${escapar(r.codigo)} · ${escapar(r.equipo)}<br><small class="mut">${escapar(r.estado)}</small></div><b>${fmt(r.cantidad,2)} ${escapar(u)}</b></a>`).join('')}</div>`:''}
+      <div class="sub-tit">Saldo en el tiempo</div><div id="gSaldo"></div>
+      <div class="sub-tit">Kardex (${d.movimientos.length})</div>
+      <div class="tabla-envoltura"><table class="kardex"><tbody>${d.movimientos.map(filaKardex).join('') || '<tr><td class="mut">Sin movimientos.</td></tr>'}</tbody></table></div>
+      ${d.nota?`<div class="aviso gris" style="margin-top:12px"><div>${escapar(d.nota)}</div></div>`:''}`});
+  const serie = [...d.movimientos].reverse();
+  graficoLinea(p.$('#gSaldo'), [{nombre:'Existencias', color:'#0d9488', unidad:u, datos:serie.map(m=>({x:fmtFecha(m.fecha), y:m.saldo}))}],
+    {alto:160, vacio:'Sin movimientos.', alClic: e=>abrirMov(serie[e.indice].id)});
+  p.$$('[data-mov]').forEach(b=>b.onclick=async ()=>{ await p.cerrar(); registrarMov({tipo:b.dataset.mov, item_id:id}); });
+  p.$$('.kardex tr[data-mov]').forEach(r=>r.onclick=()=>abrirMov(Number(r.dataset.mov)));
+  p.$$('[data-tq]').forEach(b=>b.onclick=async ()=>{ await p.cerrar(); abrirTanque(Number(b.dataset.tq)); });
+  llenarTanques(p.raiz);
+  const ed = p.$('[data-editar]'); if(ed) ed.onclick = async ()=>{ await p.cerrar(); formArticulo(d); };
+}
+
+// ------------------------------------------------------------------ Asistente: registrar movimiento
+// Tres pasos, como «Tanquear»: qué vas a hacer › con qué artículo › dónde, cuánto y los datos
+// que ese movimiento necesita. Los avisos (no alcanza, no cabe, lote vencido) salen en vivo.
+function registrarMov(pre={}){
+  const M = {paso:0, tipo:pre.tipo||null, item_id:pre.item_id||null, ubicacion_id:pre.ubicacion_id||null, tanque_id:pre.tanque_id||null,
+             destino_id:null, tanque_destino_id:null, clase:pre.clase || (pre.item_id ? item(pre.item_id)?.clase : null) || 'insumo'};
+  const v = ventana({titulo:'Registrar movimiento', ancho:'ancha', cuerpo:'<div class="bd-pasos"><span></span><span></span><span></span></div><div id="pasoCuerpo"></div>',
+    pie:`<button class="btn secundario" data-atras>Atrás</button><div class="der"><button class="btn" data-sig>Siguiente</button></div>`});
+  const cuerpo = v.$('#pasoCuerpo'), bAtras = v.$('[data-atras]'), bSig = v.$('[data-sig]');
+  const it = ()=>item(M.item_id);
+  function pasos(){ v.$$('.bd-pasos span').forEach((s,i)=>s.classList.toggle('hecho', i<=M.paso)); bAtras.style.visibility = M.paso ? 'visible' : 'hidden'; }
+  const DESC = {entrada:'Compra o ingreso: suma existencias y actualiza el costo promedio.', salida:'Consumo: en una reparación, una operación o suelto.',
+    traslado:'De una ubicación (o tanque) a otra. No cambia el total.', ajuste:'Conteo físico: lo que contaste manda y el descuadre queda registrado.',
+    baja:'Vencido, dañado o derramado: sale sin consumirse.'};
+
+  function paso0(){
+    M.paso=0; pasos(); bSig.textContent='Siguiente';
+    cuerpo.innerHTML = `<p class="paso-tit">¿Qué vas a registrar?</p><p class="paso-sub">Todo queda en el kardex del artículo, con tu usuario y la fecha.</p>
+      <div class="eleccion">${Object.keys(CFG.tipos).map(t=>`<button type="button" class="opc ${M.tipo===t?'sel':''}" data-t="${t}" ${puede(t)?'':'disabled'}>
+        ${puede(t)?'':'<span class="candado">administrador</span>'}<span class="ic">${IC[t]}</span><b>${escapar(CFG.tipos[t])}</b><small>${DESC[t]}</small></button>`).join('')}</div>`;
+    cuerpo.querySelectorAll('[data-t]:not([disabled])').forEach(b=>b.onclick=()=>{ M.tipo=b.dataset.t; M.item_id ? paso2() : paso1(); });
+    bSig.onclick = ()=>{ if(!M.tipo) return toast('Elige qué vas a registrar'); M.item_id ? paso2() : paso1(); };
+  }
+  function paso1(){
+    M.paso=1; pasos(); bSig.textContent='Siguiente';
+    const soloConExist = M.tipo!=='entrada' && M.tipo!=='ajuste';
+    cuerpo.innerHTML = `<p class="paso-tit">¿Qué artículo?</p><p class="paso-sub">${soloConExist?'Sólo se muestran los que tienen existencias.':'Busca por nombre, código o ingrediente activo.'}</p>
+      <div class="fila-flex" style="margin-bottom:10px"><div class="segmento" id="mClase"><button data-c="insumo" class="${M.clase==='insumo'?'activo':''}">Insumos de operación</button>
+        <button data-c="repuesto" class="${M.clase==='repuesto'?'activo':''}">Repuestos</button></div>
+        <input type="search" id="mBusca" placeholder="Buscar…" style="flex:1;min-width:180px"></div>
+      <div class="lista-art" id="mLista"></div>`;
+    const pintar = ()=>{
+      const q = cuerpo.querySelector('#mBusca').value.trim().toLowerCase();
+      const l = D.inventario.filter(i=>i.activo && i.clase===M.clase && (!soloConExist || i.saldo>0)
+        && (!q || [i.nombre,i.codigo,i.ingrediente_activo,i.modelo].join(' ').toLowerCase().includes(q)));
+      cuerpo.querySelector('#mLista').innerHTML = l.map(i=>`<button type="button" class="art-opc" data-i="${i.id}">
+          <span class="ic" style="color:${i.clase==='insumo'?i.color_final:'var(--ink2)'}">${IC[i.clase]}</span>
+          <span><b>${escapar(i.nombre)}</b><small>${[i.codigo, i.modelo, i.ingrediente_activo, i.existencias.map(e=>e.ubicacion+' '+fmt(e.cantidad,2)).join(', ')].filter(Boolean).map(escapar).join(' · ')||'sin existencias'}</small></span>
+          <span class="s">${fmt(i.saldo,2)} <small>${escapar(i.unidad)}</small></span></button>`).join('')
+        || `<div class="empty">Nada que mostrar.${ES_ADMIN?' Crea el artículo con «Nuevo artículo».':''}</div>`;
+      cuerpo.querySelectorAll('[data-i]').forEach(b=>b.onclick=()=>{ M.item_id=Number(b.dataset.i); M.ubicacion_id=null; M.tanque_id=null; paso2(); });
+    };
+    cuerpo.querySelector('#mClase').onclick = e=>{ const b=e.target.closest('button'); if(!b) return; M.clase=b.dataset.c;
+      cuerpo.querySelectorAll('#mClase button').forEach(x=>x.classList.toggle('activo', x===b)); pintar(); };
+    cuerpo.querySelector('#mBusca').oninput = pintar;
+    pintar();
+    bSig.onclick = ()=>{ if(!M.item_id) return toast('Elige el artículo'); paso2(); };
+  }
+  function paso2(){
+    M.paso=2; pasos();
+    const i = it(); if(!i){ return paso1(); }
+    const u = i.unidad, t = M.tipo;
+    bSig.textContent = {entrada:'Registrar entrada', salida:'Registrar salida', traslado:'Registrar traslado', ajuste:'Registrar conteo', baja:'Dar de baja'}[t];
+    const ubics = D.ubicaciones.filter(x=>x.activo);
+    const exist = id => (i.existencias.find(e=>e.ubicacion_id===id)||{}).cantidad || 0;
+    const origenes = (t==='entrada' || t==='ajuste') ? ubics : ubics.filter(x=>exist(x.id)>0);
+    if(!M.ubicacion_id && origenes.length===1) M.ubicacion_id = origenes[0].id;
+    if(!M.ubicacion_id && t!=='entrada'){ const mejor = origenes.slice().sort((a,b)=>exist(b.id)-exist(a.id))[0]; if(mejor) M.ubicacion_id = mejor.id; }
+    const tanquesDe = uid => D.tanques.filter(x=>x.item_id===i.id && x.ubicacion_id===uid && x.activo);
+    const lotesAqui = uid => i.lotes.filter(l=>l.ubicacion_id===uid);
+    const presentacion = i.contenido ? `<button type="button" data-mas="${i.contenido}">+ 1 ${escapar(i.presentacion||'presentación')} (${fmt(i.contenido,2)} ${escapar(u)})</button>` : '';
+    cuerpo.innerHTML = `<p class="paso-tit">${escapar(CFG.tipos[t])}: ${escapar(i.nombre)}</p>
+      <p class="paso-sub">Existencias: <b>${fmt(i.saldo,3)} ${escapar(u)}</b>${i.costo!=null?` · costo promedio ${dinero(i.costo)} por ${escapar(u)}`:''}</p>
+      <div class="sub-tit" style="margin-top:0">${t==='entrada'?'¿A dónde entra?':t==='traslado'?'¿De dónde sale?':t==='ajuste'?'¿Dónde contaste?':'¿De dónde sale?'}</div>
+      <div class="eleccion" id="mUbic">${origenes.map(x=>`<button type="button" class="opc ${M.ubicacion_id===x.id?'sel':''}" data-u="${x.id}">
+        <span class="ic">${icUbic(x.tipo)}</span><b>${escapar(x.nombre)}</b><small>${escapar(x.tipo_txt||'')}</small>
+        ${t!=='entrada'?`<span class="cant">${fmt(exist(x.id),3)} <small>${escapar(u)}</small></span>`:''}</button>`).join('')
+        || `<div class="empty">${ubics.length?'No hay existencias en ninguna ubicación.':'Primero crea una ubicación (hangar, pista, base…).'}</div>`}</div>
+      <div id="mTanq"></div>
+      ${t==='traslado'?`<div class="sub-tit">¿A dónde va?</div><div class="eleccion" id="mDest">${ubics.map(x=>`<button type="button" class="opc ${M.destino_id===x.id?'sel':''}" data-d="${x.id}">
+        <span class="ic">${icUbic(x.tipo)}</span><b>${escapar(x.nombre)}</b><small>hay ${fmt(exist(x.id),3)} ${escapar(u)}</small></button>`).join('')}</div><div id="mTanqD"></div>`:''}
+      <div class="sub-tit">${t==='ajuste'?'¿Cuánto contaste?':'¿Cuánto?'}</div>
+      <div class="cant-grande"><input type="number" step="any" min="0" id="mCant" placeholder="0" inputmode="decimal"><span class="u">${escapar(UNIDADES_TXT(u))}</span></div>
+      <div class="rapidos" id="mRap">${presentacion}${t!=='entrada'&&t!=='ajuste'?`<button type="button" data-todo>Todo lo que hay</button>`:''}</div>
+      <form class="form-grid" id="mForm" onsubmit="return false">
+        <div class="campo"><label>Fecha</label><input type="date" name="fecha" value="${hoyLocal()}" max="${hoyLocal()}"></div>
+        ${t==='entrada'?`
+          <div class="campo"><label>Costo por ${escapar(u)} (COP)</label><input type="number" step="any" min="0" name="costo_unitario" value="${i.ultimo_costo ?? i.costo ?? ''}"></div>
+          <div class="campo"><label>Proveedor</label><input name="proveedor" list="mProv" value="${escapar(i.ultimo_proveedor||i.proveedor||'')}"><datalist id="mProv">${CFG.proveedores.map(p=>`<option value="${escapar(p)}">`).join('')}</datalist></div>
+          <div class="campo"><label>Factura / remisión</label><input name="documento"></div>
+          ${i.clase==='insumo'?`<div class="campo"><label>Lote</label><input name="lote"></div><div class="campo"><label>Vence</label><input type="date" name="vence"></div>`:''}
+          ${i.serializado?`<div class="campo"><label>N.º de serie</label><input name="serie"></div>`:''}`:''}
+        ${t==='salida'?`
+          <div class="campo"><label>Motivo</label><select name="motivo">${Object.entries(CFG.motivos_salida).filter(([k])=>k!=='ot'&&k!=='operacion').map(([k,x])=>`<option value="${k}">${escapar(x)}</option>`).join('')}</select></div>
+          <div class="campo"><label>Aeronave (opcional)</label><select name="equipo_id"><option value="">—</option>${CFG.equipos.map(e=>`<option value="${e.id}">${escapar(e.nombre)} · ${escapar(e.modelo)}</option>`).join('')}</select></div>
+          <div class="campo"><label>Quién lo recibe</label><input name="responsable"></div>`:''}
+        ${t==='baja'?`<div class="campo"><label>Motivo</label><select name="motivo">${Object.entries(CFG.motivos_baja).map(([k,x])=>`<option value="${k}">${escapar(x)}</option>`).join('')}</select></div>`:''}
+        ${(t==='salida'||t==='baja'||t==='traslado')&&i.clase==='insumo'?`<div class="campo"><label>Lote (vacío = el que vence antes)</label><select name="lote" id="mLote"></select></div>`:''}
+        <div class="campo ancho"><label>Nota</label><input name="nota" placeholder="${t==='salida'&&i.clase==='insumo'?'Para descontar una aplicación usa la operación o «Conciliar»':'Observaciones'}"></div>
+      </form>
+      <div class="aviso-vivo" id="mAviso"></div>`;
+    const form = cuerpo.querySelector('#mForm'), inCant = cuerpo.querySelector('#mCant');
+    const disponible = ()=> M.tanque_id ? ((D.tanques.find(x=>x.id===M.tanque_id)||{}).nivel || 0) : exist(M.ubicacion_id);
+    const pintarTanq = ()=>{
+      const tq = M.ubicacion_id ? tanquesDe(M.ubicacion_id) : [];
+      if(M.tanque_id && !tq.some(x=>x.id===M.tanque_id)) M.tanque_id = null;
+      // A granel lo normal es el tanque: se propone el primero salvo que se elija «fuera de tanque».
+      if(!M.tanque_id && !M.fueraTanque && tq.length) M.tanque_id = tq[0].id;
+      cuerpo.querySelector('#mTanq').innerHTML = tq.length ? `<div class="sub-tit">¿${t==='entrada'?'A qué tanque':'De qué tanque'}?</div>
+        <div class="bd-tanques mini">${tq.map(x=>tanqueBd(x,true).replace('class="tanque', `class="tanque ${M.tanque_id===x.id?'sel-tq':''}`)).join('')}
+        <button type="button" class="tanque nuevo ${M.tanque_id?'':'sel-tq'}" data-sin style="min-height:0"><b>Fuera de tanque</b><span class="sub">garrafas, cajas, estantería</span></button></div>` : '';
+      cuerpo.querySelectorAll('#mTanq [data-tq]').forEach(b=>b.onclick=()=>{ M.tanque_id=Number(b.dataset.tq); M.fueraTanque=false; pintarTanq(); revisar(); });
+      const s = cuerpo.querySelector('#mTanq [data-sin]'); if(s) s.onclick=()=>{ M.tanque_id=null; M.fueraTanque=true; pintarTanq(); revisar(); };
+      cuerpo.querySelectorAll('#mTanq .tanque').forEach(b=>b.style.outline = b.classList.contains('sel-tq') ? '3px solid var(--acc)' : '');
+      llenarTanques(cuerpo.querySelector('#mTanq'));
+      const sl = cuerpo.querySelector('#mLote');
+      if(sl) sl.innerHTML = `<option value="">El que vence antes</option>` + lotesAqui(M.ubicacion_id).filter(l=>l.lote).map(l=>`<option value="${escapar(l.lote)}">${escapar(l.lote)} · ${fmt(l.cant,2)} ${escapar(u)}${l.vence?' · vence '+fmtFecha(l.vence):''}</option>`).join('');
+    };
+    const pintarTanqD = ()=>{
+      const c = cuerpo.querySelector('#mTanqD'); if(!c) return;
+      const tq = M.destino_id ? tanquesDe(M.destino_id) : [];
+      c.innerHTML = tq.length ? `<div class="sub-tit">¿A qué tanque?</div><div class="bd-tanques mini">${tq.map(x=>tanqueBd(x,true)).join('')}
+        <button type="button" class="tanque nuevo" data-sin style="min-height:0"><b>Fuera de tanque</b></button></div>` : '';
+      c.querySelectorAll('.tanque').forEach(b=>b.style.outline = (b.dataset.tq ? Number(b.dataset.tq)===M.tanque_destino_id : !M.tanque_destino_id) ? '3px solid var(--acc)' : '');
+      c.querySelectorAll('[data-tq]').forEach(b=>b.onclick=()=>{ M.tanque_destino_id=Number(b.dataset.tq); pintarTanqD(); revisar(); });
+      const s = c.querySelector('[data-sin]'); if(s) s.onclick=()=>{ M.tanque_destino_id=null; pintarTanqD(); revisar(); };
+      llenarTanques(c);
+    };
+    function revisar(){
+      const a = cuerpo.querySelector('#mAviso'); const n = parseFloat(inCant.value);
+      let msg = '', cls = 'gris';
+      if(!M.ubicacion_id){ a.className='aviso-vivo'; return; }
+      const hay = disponible();
+      if(t==='ajuste' && !isNaN(n)){
+        const dif = n - hay, val = Math.abs(dif) * (i.costo||0);
+        msg = `El sistema espera <b>${fmt(hay,3)} ${escapar(u)}</b>. Diferencia: <b>${dif>=0?'+':''}${fmt(dif,3)} ${escapar(u)}</b>${val?` (${dinero(val)})`:''}. ${Math.abs(dif)<1e-9?'Cuadra.':dif<0?'Falta producto: revisa salidas sin registrar.':'Sobra producto: revisa entradas sin registrar.'}`;
+        cls = Math.abs(dif)<1e-9 ? 'gris' : 'ambar';
+      } else if(['salida','traslado','baja'].includes(t) && n > hay + 1e-9){
+        msg = `No alcanza: ${M.tanque_id?'en el tanque':'en esta ubicación'} hay <b>${fmt(hay,3)} ${escapar(u)}</b>.`; cls = 'rojo';
+      } else if(t==='entrada' && M.tanque_id){
+        const tq = D.tanques.find(x=>x.id===M.tanque_id);
+        if(tq && n + tq.nivel > tq.capacidad + 1e-9){ msg = `No cabe: el tanque tiene ${fmt(tq.nivel,2)} de ${fmt(tq.capacidad,2)} ${escapar(u)} (caben ${fmt(tq.capacidad-tq.nivel,2)}).`; cls='rojo'; }
+        else if(tq && n) msg = `El tanque quedará en ${fmt((tq.nivel+n)/tq.capacidad*100,0)} %.`;
+      } else if(t==='entrada' && n){
+        const cu = parseFloat(form.costo_unitario?.value);
+        if(!isNaN(cu)) msg = `Total de la compra: <b>${dinero(n*cu)}</b>. ${i.saldo>0&&i.costo?`Nuevo costo promedio ≈ <b>${dinero((i.saldo*i.costo + n*cu)/(i.saldo+n))}</b>.`:''}`;
+        const ve = form.vence?.value; if(ve && ve < hoyLocal()){ msg += ' El lote ya está vencido.'; cls='ambar'; }
+      } else if(n && i.costo) msg = `Valor: <b>${dinero(n*i.costo)}</b> al costo promedio.`;
+      a.innerHTML = msg; a.className = 'aviso-vivo' + (msg ? ' ver ' + cls : '');
+    }
+    cuerpo.querySelectorAll('#mUbic [data-u]').forEach(b=>b.onclick=()=>{ M.ubicacion_id=Number(b.dataset.u);
+      cuerpo.querySelectorAll('#mUbic [data-u]').forEach(x=>x.classList.toggle('sel', x===b)); pintarTanq(); revisar(); });
+    cuerpo.querySelectorAll('#mDest [data-d]').forEach(b=>b.onclick=()=>{ M.destino_id=Number(b.dataset.d); M.tanque_destino_id=null;
+      cuerpo.querySelectorAll('#mDest [data-d]').forEach(x=>x.classList.toggle('sel', x===b)); pintarTanqD(); revisar(); });
+    cuerpo.querySelectorAll('#mRap [data-mas]').forEach(b=>b.onclick=()=>{ inCant.value = +( (parseFloat(inCant.value)||0) + Number(b.dataset.mas) ).toFixed(4); revisar(); });
+    const todo = cuerpo.querySelector('#mRap [data-todo]'); if(todo) todo.onclick=()=>{ inCant.value = Math.max(0, disponible()); revisar(); };
+    inCant.oninput = revisar; form.oninput = revisar;
+    pintarTanq(); pintarTanqD(); revisar();
+    setTimeout(()=>inCant.focus(), 60);
+
+    bSig.onclick = async ()=>{
+      const n = parseFloat(inCant.value);
+      if(!M.ubicacion_id) return toast('Elige la ubicación');
+      if(t==='traslado' && !M.destino_id) return toast('Elige a dónde va');
+      if(isNaN(n) || (t!=='ajuste' && n<=0)) return toast(t==='ajuste'?'Anota lo que contaste':'Anota la cantidad');
+      const datos = Object.fromEntries([...new FormData(form).entries()].filter(([k,x])=>x!==''));
+      Object.assign(datos, {tipo:t, item_id:i.id, ubicacion_id:M.ubicacion_id, tanque_id:M.tanque_id, destino_id:M.destino_id, tanque_destino_id:M.tanque_destino_id});
+      if(t==='ajuste') datos.conteo = n; else datos.cantidad = n;
+      bSig.disabled = true;
+      try{
+        const r = await api('/api/bodega/movimientos', {method:'POST', body:datos});
+        await cargar();
+        const i2 = item(i.id);
+        cuerpo.innerHTML = `<div style="text-align:center;padding:6px 0 4px"><div class="sello-ok">${IC.ok}</div>
+          <p class="paso-tit">${escapar(CFG.tipos[t])} registrada</p>
+          <p class="paso-sub">${escapar(i.nombre)}: ahora hay <b>${fmt(i2?.saldo,3)} ${escapar(u)}</b> en total${i2?.costo!=null?` · costo promedio ${dinero(i2.costo)}`:''}.
+            ${t==='ajuste'?`Descuadre registrado: ${r.cantidad>=0?'+':''}${fmt(r.cantidad,3)} ${escapar(u)}.`:''}</p>
+          ${(r.avisos||[]).map(a=>`<div class="aviso ambar"><div>${escapar(a)}</div></div>`).join('')}</div>`;
+        v.$('.bd-pasos').innerHTML = '<span class="hecho"></span><span class="hecho"></span><span class="hecho"></span>';
+        bAtras.style.visibility = 'visible'; bAtras.textContent = 'Registrar otro';
+        bAtras.onclick = ()=>{ bAtras.textContent='Atrás'; bAtras.onclick = atras; M.item_id = null; paso0(); };
+        bSig.textContent = 'Listo'; bSig.disabled = false; bSig.onclick = v.cerrar;
+      }catch(err){ bSig.disabled = false;
+        const a = cuerpo.querySelector('#mAviso'); a.innerHTML = escapar(err.message.replace(/^./, c=>c.toUpperCase())) + '.'; a.className = 'aviso-vivo ver rojo'; }
+    };
+  }
+  const atras = ()=>{ if(M.paso===2){ pre.item_id && M.tipo ? paso0() : paso1(); } else paso0(); };
+  bAtras.onclick = atras;
+  if(M.tipo && M.item_id) paso2(); else if(M.tipo) paso1(); else paso0();
+}
+const UNIDADES_TXT = u => (CFG.unidades[u] || u);
+function hoyLocal(){ const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0,10); }
+
+// ------------------------------------------------------------------ Asistente: nuevo artículo (y edición)
+function formArticulo(previo=null, pre={}){
+  const E = previo ? {...previo} : {clase: pre.clase || null, unidad:null, ...pre};
+  const editar = !!previo;
+  const v = ventana({titulo: editar ? 'Editar artículo' : 'Nuevo artículo', ancho:'ancha',
+    cuerpo:`${editar?'':'<div class="bd-pasos"><span></span><span></span><span></span></div>'}<div id="aCuerpo"></div>`,
+    pie:`<button class="btn secundario" data-atras>Atrás</button><div class="der">${editar?'<button class="btn secundario rojo" data-borrar>Desactivar</button>':''}<button class="btn" data-sig>Siguiente</button></div>`});
+  const cuerpo = v.$('#aCuerpo'), bAtras = v.$('[data-atras]'), bSig = v.$('[data-sig]');
+  let paso = 0;
+  const pasos = ()=>{ v.$$('.bd-pasos span').forEach((s,i)=>s.classList.toggle('hecho', i<=paso)); bAtras.style.visibility = paso > (editar ? 1 : 0) ? 'visible' : 'hidden'; };
+  const leer = ()=>{ const f = cuerpo.querySelector('form'); if(f) new FormData(f).forEach((x,k)=>E[k]=x); };
+
+  function p0(){
+    paso=0; pasos(); bSig.textContent='Siguiente';
+    cuerpo.innerHTML = `<p class="paso-tit">¿Qué vas a guardar?</p><p class="paso-sub">Son dos bodegas separadas: se cuentan, se valoran y se controlan distinto.</p>
+      <div class="eleccion cols2">
+        <button type="button" class="opc ${E.clase==='repuesto'?'sel':''}" data-c="repuesto"><span class="ic">${IC.repuesto}</span><b>Repuesto</b>
+          <small>Piezas de drones y del avión. Se enlaza al catálogo del modelo: así la bodega sabe qué piezas va a pedir la flota y las órdenes de trabajo lo descuentan.</small></button>
+        <button type="button" class="opc ${E.clase==='insumo'?'sel':''}" data-c="insumo"><span class="ic">${IC.insumo}</span><b>Insumo de operación</b>
+          <small>Herbicidas, fungicidas, insecticidas, aceite agrícola, coadyuvantes, fertilizantes, aceite de motor. Con lote, vencimiento y control de consumo por hectárea.</small></button></div>`;
+    cuerpo.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{ E.clase=b.dataset.c; p1(); });
+    bSig.onclick = ()=>{ if(!E.clase) return toast('Elige repuesto o insumo'); p1(); };
+  }
+  function p1(){
+    paso=1; pasos(); bSig.textContent='Siguiente';
+    if(E.clase==='repuesto'){
+      const eqs = CFG.equipos;
+      cuerpo.innerHTML = `<p class="paso-tit">¿Qué pieza es?</p><p class="paso-sub">Elige un activo del modelo y busca la pieza en su catálogo (piezas con vida útil y despiece del fabricante). Si no está, escríbela a mano.</p>
+        <form class="form-grid" onsubmit="return false">
+          <div class="campo"><label>Activo del modelo</label><select id="aEq">${eqs.map(e=>`<option value="${e.id}" data-m="${escapar(e.modelo)}">${escapar(e.nombre)} · ${escapar(e.modelo)}</option>`).join('')}</select></div>
+          <div class="campo" style="grid-column:span 2"><label>Buscar en el catálogo</label><input id="aBusca" placeholder="Escribe 3 letras: hélice, motor, bomba, filtro…"></div>
+          <div class="campo ancho" id="aElegida"></div>
+          <div class="campo" style="grid-column:span 2"><label>Nombre *</label><input name="nombre" value="${escapar(E.nombre||'')}" required></div>
+          <div class="campo"><label>Código de pieza</label><input name="codigo" value="${escapar(E.codigo||'')}"></div>
+          <div class="campo"><label>Modelo</label><input name="modelo" value="${escapar(E.modelo||'')}" placeholder="T50, T70P, C188A…"></div>
+          <div class="campo"><label>Unidades por cambio</label><input type="number" step="any" min="1" name="cantidad_cambio" value="${E.cantidad_cambio||1}"></div>
+          <div class="campo"><label>Con número de serie</label><select name="serializado"><option value="0">No</option><option value="1" ${E.serializado?'selected':''}>Sí</option></select></div>
+        </form>`;
+      const pintarSel = ()=>{ cuerpo.querySelector('#aElegida').innerHTML = E.catalogo ? `<div class="pieza-elegida"><b>${escapar(E.nombre)}</b>
+          <span class="mut">${E.catalogo==='pieza'?'pieza con vida útil · aparece en la proyección de repuestos':'despiece del fabricante'}</span>${E.codigo?`<span class="bp-codigo">${escapar(E.codigo)}</span>`:''}
+          <button type="button" class="btn-icono" data-quitar title="Quitar el enlace al catálogo">✕</button></div>` : '';
+        const q = cuerpo.querySelector('[data-quitar]'); if(q) q.onclick = ()=>{ E.catalogo=null; E.catalogo_ref=null; pintarSel(); }; };
+      if(eqs.length) buscadorPiezas(cuerpo.querySelector('#aBusca'), {equipoId: ()=>Number(cuerpo.querySelector('#aEq').value), alElegir: p=>{
+        const sel = cuerpo.querySelector('#aEq'); const f = cuerpo.querySelector('form');
+        E.catalogo = p.tipo==='despiece' ? 'despiece' : 'pieza'; E.catalogo_ref = p.tipo==='despiece' ? p.codigo : p.clave;
+        E.nombre = p.nombre; E.codigo = p.codigo || ''; E.modelo = sel.selectedOptions[0].dataset.m;
+        f.nombre.value = E.nombre; f.codigo.value = E.codigo; f.modelo.value = E.modelo; cuerpo.querySelector('#aBusca').value = ''; pintarSel(); }});
+      pintarSel();
+    } else {
+      const cats = Object.entries(CFG.categorias);
+      cuerpo.innerHTML = `<p class="paso-tit">¿Qué producto es?</p><p class="paso-sub">La categoría da el color con que se pinta en los tanques (puedes cambiarlo) y la banda toxicológica sale de la etiqueta.</p>
+        <div class="eleccion" id="aCat">${cats.map(([k,c])=>`<button type="button" class="opc ${E.categoria===k?'sel':''}" data-k="${k}"><span class="ic" style="color:${c.color}">${IC.insumo}</span><b>${escapar(c.nombre)}</b></button>`).join('')}</div>
+        <div id="aSug"></div>
+        <form class="form-grid" onsubmit="return false" style="margin-top:14px">
+          <div class="campo" style="grid-column:span 2"><label>Nombre comercial *</label><input name="nombre" value="${escapar(E.nombre||'')}" required></div>
+          <div class="campo"><label>Ingrediente activo</label><input name="ingrediente_activo" value="${escapar(E.ingrediente_activo||'')}"></div>
+          <div class="campo"><label>Concentración</label><input name="concentracion" value="${escapar(E.concentracion||'')}" placeholder="480 g/L, 80 % WP…"></div>
+          <div class="campo"><label>Registro ICA</label><input name="registro_ica" value="${escapar(E.registro_ica||'')}"></div>
+          <div class="campo"><label>Categoría toxicológica</label><select name="categoria_tox"><option value="">—</option>${Object.entries(CFG.tox).map(([k,x])=>`<option value="${k}" ${E.categoria_tox===k?'selected':''}>${escapar(x.nombre)}</option>`).join('')}</select></div>
+          <div class="campo"><label>Dosis de referencia (por ha)</label><input type="number" step="any" min="0" name="dosis_ha" value="${E.dosis_ha??''}"></div>
+          <div class="campo"><label>Color en los tanques</label><input type="color" name="color" value="${E.color || catInfo(E.categoria).color || '#737a86'}"></div>
+        </form>`;
+      const sug = ()=>{ const l = (CFG.sugeridos||{})[E.categoria] || [];
+        cuerpo.querySelector('#aSug').innerHTML = l.length ? `<div class="rapidos" style="margin-top:10px">${l.map((s,j)=>`<button type="button" data-s="${j}">Usar «${escapar(s.nombre)}»</button>`).join('')}</div>` : '';
+        cuerpo.querySelectorAll('#aSug [data-s]').forEach(b=>b.onclick=()=>{ const s = l[Number(b.dataset.s)]; const f = cuerpo.querySelector('form');
+          f.nombre.value = s.nombre; if(s.color) f.color.value = s.color; E.unidad = s.unidad || E.unidad; E.nota = s.nota || E.nota; toast(`${s.nombre}: datos sugeridos cargados`); }); };
+      cuerpo.querySelectorAll('#aCat [data-k]').forEach(b=>b.onclick=()=>{ E.categoria=b.dataset.k;
+        cuerpo.querySelectorAll('#aCat [data-k]').forEach(x=>x.classList.toggle('sel', x===b));
+        const f = cuerpo.querySelector('form'); if(!E.color) f.color.value = catInfo(E.categoria).color; sug(); });
+      sug();
+    }
+    bSig.onclick = ()=>{ leer(); if(!(E.nombre||'').trim()) return toast('Falta el nombre'); if(E.clase==='insumo' && !E.categoria) return toast('Elige la categoría'); p2(); };
+    if(editar){ bSig.textContent = 'Siguiente'; }
+  }
+  function p2(){
+    paso=2; pasos(); bSig.textContent = editar ? 'Guardar cambios' : 'Crear artículo';
+    const ins = E.clase==='insumo';
+    const unidad = E.unidad || (ins ? 'L' : 'und');
+    const ubics = D.ubicaciones.filter(x=>x.activo);
+    cuerpo.innerHTML = `<p class="paso-tit">Existencias y costo</p><p class="paso-sub">El stock mínimo dispara la alerta de compra. ${editar?'':'Si ya tienes existencias, anótalas: entran como una compra y arrancan el costo promedio.'}</p>
+      <form class="form-grid" onsubmit="return false">
+        <div class="campo"><label>Unidad</label><select name="unidad">${Object.entries(CFG.unidades).map(([k,x])=>`<option value="${k}" ${unidad===k?'selected':''}>${escapar(x)} (${k})</option>`).join('')}</select></div>
+        ${ins?`<div class="campo"><label>Presentación</label><input name="presentacion" value="${escapar(E.presentacion||'')}" placeholder="Garrafa 20 L, tambor 200 L…"></div>
+          <div class="campo"><label>Contenido por presentación</label><input type="number" step="any" min="0" name="contenido" value="${E.contenido??''}" placeholder="20"></div>`:''}
+        <div class="campo"><label>Stock mínimo</label><input type="number" step="any" min="0" name="stock_minimo" value="${E.stock_minimo??''}"></div>
+        <div class="campo"><label>Costo de referencia (COP por unidad)</label><input type="number" step="any" min="0" name="costo_referencia" value="${E.costo_referencia??''}"></div>
+        <div class="campo"><label>Proveedor habitual</label><input name="proveedor" list="aProv" value="${escapar(E.proveedor||'')}"><datalist id="aProv">${CFG.proveedores.map(p=>`<option value="${escapar(p)}">`).join('')}</datalist></div>
+        <div class="campo ancho"><label>Nota</label><input name="nota" value="${escapar(E.nota||'')}"></div>
+        ${editar?'':`<div class="campo"><label>Existencia inicial</label><input type="number" step="any" min="0" name="inicial" placeholder="0"></div>
+          <div class="campo"><label>En</label><select name="ubicacion_id">${ubics.map(u=>`<option value="${u.id}">${escapar(u.nombre)}</option>`).join('')||'<option value="">— crea una ubicación —</option>'}</select></div>
+          ${ins?`<div class="campo"><label>Lote</label><input name="lote"></div><div class="campo"><label>Vence</label><input type="date" name="vence"></div>`:''}`}
+      </form><div id="aError"></div>`;
+    bSig.onclick = async ()=>{
+      leer();
+      const cuerpoReq = {...E};
+      ['inicial','ubicacion_id','lote','vence'].forEach(k=>{ if(cuerpoReq[k]==='') delete cuerpoReq[k]; });
+      bSig.disabled = true;
+      try{
+        if(editar) await api(`/api/bodega/items/${E.id}`, {method:'PUT', body:cuerpoReq});
+        else { const r = await api('/api/bodega/items', {method:'POST', body:cuerpoReq}); E.id = r.id; }
+        toast(editar ? 'Artículo actualizado' : `${E.nombre} creado`);
+        await v.cerrar(); await cargar(); abrirItem(E.id);
+      }catch(err){ bSig.disabled = false; cuerpo.querySelector('#aError').innerHTML = `<div class="aviso rojo"><div>${escapar(err.message)}</div></div>`; }
+    };
+  }
+  bAtras.onclick = ()=>{ leer(); paso===2 ? p1() : p0(); };
+  const bb = v.$('[data-borrar]');
+  if(bb) bb.onclick = async ()=>{
+    if(!await confirmar({titulo:'Desactivar artículo', peligro:true, aceptar:'Desactivar',
+      mensaje:`<b>${escapar(E.nombre)}</b> deja de aparecer en las listas. Si tiene movimientos, su kardex y el registro de aplicaciones se conservan.`})) return;
+    await api(`/api/bodega/items/${E.id}`, {method:'DELETE', body:{}});
+    toast('Artículo desactivado'); await v.cerrar(); cargar();
+  };
+  if(editar){ paso = 1; p1(); } else if(E.clase) p1(); else p0();
+}
+function sinArticulo(s){
+  const v = ventana({titulo: escapar(s.nombre), subtitulo:`${escapar(s.modelo)} · ${escapar(s.modulo)} · no está en bodega`, ancho:'angosta',
+    cuerpo:`<p style="font-size:13px;line-height:1.55;color:var(--ink2)">La proyección de repuestos dice que la flota va a cambiar esta pieza
+      <b>${s.cantidad}</b> vez/veces en los próximos ${D.compras.horizonte} días, pero la bodega no la tiene catalogada.
+      ${ES_ADMIN?'Créala para llevar sus existencias y que las órdenes de trabajo la descuenten.':'Pide al administrador que la cree.'}</p>
+      ${s.eventos.map(e=>`<div class="ubic-fila"><span class="ic">${IC.reloj}</span>${escapar(e.equipo)}<b>${e.nivel==='vencido'?'ya':fmtDias(e.dias)}</b></div>`).join('')}`,
+    pie:`<div class="der"><button class="btn secundario" data-no>Cerrar</button>${ES_ADMIN?'<button class="btn" data-si>Crear artículo</button>':''}</div>`});
+  v.$('[data-no]').onclick = v.cerrar;
+  const b = v.$('[data-si]'); if(b) b.onclick = async ()=>{ await v.cerrar();
+    formArticulo(null, {clase:'repuesto', nombre:s.nombre, modelo:s.modelo, catalogo:'pieza', catalogo_ref:s.clave, costo_referencia:s.precio_ref||''}); };
+}
+
+// ------------------------------------------------------------------ Tanques: ver y configurar
+async function abrirTanque(id){
+  const t = await api(`/api/bodega/tanques/${id}`);
+  const p = panelLateral({titulo: escapar(t.nombre), subtitulo: `${escapar(CFG.formas[t.forma]||'')} · ${escapar(t.ubicacion||'sin ubicación')}`,
+    cuerpo:`<div style="display:flex;gap:18px;align-items:center;margin-bottom:14px"><div style="width:160px;flex:none">${tanqueBd(t)}</div>
+        <div><div class="det-kpis" style="grid-template-columns:1fr;margin:0">
+          <div class="k"><div class="l">Contiene</div><div class="v" style="font-size:16px">${escapar(t.item||'sin asignar')}</div></div>
+          <div class="k"><div class="l">Nivel</div><div class="v">${fmt(t.nivel,2)} <small>${escapar(t.unidad)}</small></div><div class="n">de ${fmt(t.capacidad,0)} · caben ${fmt(Math.max(0,t.capacidad-t.nivel),2)}</div></div>
+          <div class="k"><div class="l">Valor</div><div class="v">${dinero(t.valor)}</div></div></div></div></div>
+      <div class="acciones-det">${t.item_id?['entrada','salida','traslado','ajuste'].filter(puede).map(x=>`<button class="btn ${x==='entrada'?'':'secundario'} peq" data-mov="${x}">${escapar(CFG.tipos[x].split(' /')[0])}</button>`).join(''):''}
+        ${ES_ADMIN?'<button class="btn secundario peq" data-cfg>Configurar tanque</button>':''}${t.item_id?'<button class="btn secundario peq" data-art>Ver producto</button>':''}</div>
+      ${t.item_id?'':`<div class="aviso gris"><div>Este tanque no tiene producto asignado. ${ES_ADMIN?'Configúralo y elige qué contiene.':''}</div></div>`}
+      <div class="sub-tit">Movimientos del tanque</div>
+      <div class="tabla-envoltura"><table class="kardex"><tbody>${(t.movimientos||[]).map(filaKardex).join('') || '<tr><td class="mut">Sin movimientos.</td></tr>'}</tbody></table></div>`});
+  p.$('.tanque').style.cursor = 'default';
+  llenarTanques(p.raiz);
+  p.$$('[data-mov]').forEach(b=>b.onclick=async ()=>{ await p.cerrar(); registrarMov({tipo:b.dataset.mov, item_id:t.item_id, ubicacion_id:t.ubicacion_id, tanque_id:t.id}); });
+  const c = p.$('[data-cfg]'); if(c) c.onclick = async ()=>{ await p.cerrar(); formTanque(t); };
+  const a = p.$('[data-art]'); if(a) a.onclick = async ()=>{ await p.cerrar(); abrirItem(t.item_id); };
+  p.$$('.kardex tr[data-mov]').forEach(r=>r.onclick=()=>abrirMov(Number(r.dataset.mov)));
+}
+function formTanque(t=null){
+  const T = t ? {...t} : {nombre:'', forma:'tanque', capacidad:'', item_id:null, ubicacion_id:D.ubicaciones.find(u=>u.activo)?.id || null, color:null};
+  const insumos = D.inventario.filter(i=>i.clase==='insumo' && i.activo);
+  const PALETA = ['#e3c77c','#c7a24a','#6f8f2f','#3b6fb6','#b5542b','#0d9488','#2f8f4e','#6b4f2a','#9757c9','#737a86'];
+  const v = ventana({titulo: t ? 'Configurar tanque' : 'Nuevo tanque', subtitulo:'Elige qué contiene, cuánto cabe y dónde está', ancho:'ancha',
+    cuerpo:`<div class="tq-form"><div id="tqVista"></div><form class="form-grid" id="tqForm" onsubmit="return false" style="margin:0">
+      <div class="campo" style="grid-column:span 2"><label>Nombre *</label><input name="nombre" value="${escapar(T.nombre)}" placeholder="Tanque 1 · Banole, Tambor herbicida…"></div>
+      <div class="campo"><label>Capacidad *</label><input type="number" step="any" min="0" name="capacidad" value="${T.capacidad??''}"></div>
+      <div class="campo ancho"><label>¿Qué contiene?</label><select name="item_id"><option value="">— Sin asignar —</option>${insumos.map(i=>`<option value="${i.id}" ${T.item_id===i.id?'selected':''}>${escapar(i.nombre)} · ${escapar(catInfo(i.categoria).nombre)} (${escapar(i.unidad)})</option>`).join('')}</select></div>
+      <div class="campo"><label>Ubicación</label><select name="ubicacion_id"><option value="">—</option>${D.ubicaciones.filter(u=>u.activo).map(u=>`<option value="${u.id}" ${T.ubicacion_id===u.id?'selected':''}>${escapar(u.nombre)}</option>`).join('')}</select></div>
+      <div class="campo" style="grid-column:span 2"><label>Forma</label><select name="forma">${Object.entries(CFG.formas).map(([k,x])=>`<option value="${k}" ${T.forma===k?'selected':''}>${escapar(x)}</option>`).join('')}</select></div>
+      <div class="campo ancho"><label>Color del líquido</label><div class="colores" id="tqColores">
+        <button type="button" data-col="" title="El del producto" style="background:conic-gradient(#6f8f2f 0 25%,#3b6fb6 0 50%,#b5542b 0 75%,#e3c77c 0)"></button>
+        ${PALETA.map(c=>`<button type="button" data-col="${c}" style="background:${c}"></button>`).join('')}<input type="color" id="tqLibre" value="${T.color||'#e3c77c'}" title="Otro color"></div></div>
+      ${insumos.length?'':'<div class="campo ancho"><div class="aviso ambar" style="margin:0"><div>Aún no hay insumos creados: crea el producto (por ejemplo «Banole», aceite agrícola) y luego asígnalo al tanque.</div></div></div>'}
+      ${t && !t.vacio ? `<div class="campo ancho"><div class="aviso gris" style="margin:0"><div>Tiene ${fmt(t.nivel,2)} ${escapar(t.unidad)}: para cambiar el producto o la ubicación primero vacíalo (traslado o baja).</div></div></div>` : ''}
+      </form></div><div id="tqError"></div>`,
+    pie:`${t?'<button class="btn secundario rojo" data-borrar>Quitar tanque</button>':''}<div class="der"><button class="btn secundario" data-no>Cancelar</button><button class="btn" data-si>${t?'Guardar':'Crear tanque'}</button></div>`});
+  const f = v.$('#tqForm');
+  const vista = ()=>{
+    const it = insumos.find(i=>String(i.id)===f.item_id.value);
+    const col = T.color || (it ? it.color_final : '#9aa0aa');
+    const cap = parseFloat(f.capacidad.value)||0, nivel = t && String(t.item_id)===f.item_id.value ? t.nivel : 0;
+    const pct = cap ? nivel/cap*100 : 0;
+    v.$('#tqVista').innerHTML = Tanques.html({pct: t ? pct : 62, color: col, forma: f.forma.value, clase: it?'':'sin-asignar', cuerpo:`
+      <div class="pct">${t?fmt(pct,0)+' %':'vista previa'}</div><div class="nom">${escapar(f.nombre.value||'Tanque')}</div>
+      <span class="chip-cont"><i style="background:${col}"></i>${escapar(it?it.nombre:'sin asignar')}</span><div class="sub">${cap?fmt(cap,0)+' '+escapar(it?it.unidad:'L'):''}</div>`});
+    v.$$('#tqColores [data-col]').forEach(b=>b.classList.toggle('sel', (b.dataset.col||null)===(T.color||null)));
+    llenarTanques(v.$('#tqVista'));
+  };
+  f.oninput = vista; f.onchange = vista;
+  v.$$('#tqColores [data-col]').forEach(b=>b.onclick=()=>{ T.color = b.dataset.col || null; vista(); });
+  v.$('#tqLibre').oninput = e=>{ T.color = e.target.value; vista(); };
+  vista();
+  v.$('[data-no]').onclick = v.cerrar;
+  v.$('[data-si]').onclick = async ()=>{
+    const datos = Object.fromEntries(new FormData(f).entries());
+    datos.color = T.color || '';
+    try{
+      if(t) await api(`/api/bodega/tanques/${t.id}`, {method:'PUT', body:datos});
+      else await api('/api/bodega/tanques', {method:'POST', body:datos});
+      toast(t ? 'Tanque actualizado' : 'Tanque creado'); await v.cerrar(); cargar();
+    }catch(err){ v.$('#tqError').innerHTML = `<div class="aviso rojo" style="margin-top:12px"><div>${escapar(err.message)}</div></div>`; }
+  };
+  const bb = v.$('[data-borrar]');
+  if(bb) bb.onclick = async ()=>{
+    if(!await confirmar({titulo:'Quitar tanque', peligro:true, aceptar:'Quitar', mensaje:`Se quitará <b>${escapar(t.nombre)}</b>. Sólo se puede si está vacío; sus movimientos se conservan.`})) return;
+    try{ await api(`/api/bodega/tanques/${t.id}`, {method:'DELETE', body:{}}); toast('Tanque quitado'); await v.cerrar(); cargar(); }
+    catch(err){ v.$('#tqError').innerHTML = `<div class="aviso rojo" style="margin-top:12px"><div>${escapar(err.message)}</div></div>`; }
+  };
+}
+
+// ------------------------------------------------------------------ Ubicaciones
+async function abrirUbicacion(id){
+  const u = await api(`/api/bodega/ubicaciones/${id}`);
+  const p = panelLateral({titulo: escapar(u.nombre), subtitulo: escapar(CFG.tipos_ubicacion[u.tipo]||u.tipo) + (u.detalle?' · '+escapar(u.detalle):''),
+    cuerpo:`${u.tanques.length?`<div class="bd-tanques mini" style="margin-bottom:14px">${u.tanques.map(t=>tanqueBd(t,true)).join('')}</div>`:''}
+      <div class="sub-tit" style="margin-top:0">Lo que hay aquí (${u.articulos.length})</div>
+      ${u.articulos.map(a=>`<div class="ubic-fila" style="cursor:pointer" data-item="${a.id}"><span class="ic">${IC[a.clase]}</span>
+        <div><div style="font-weight:650">${escapar(a.nombre)}</div><small class="mut">${fmt(a.cantidad,3)} ${escapar(a.unidad)}</small></div><b>${dinero(a.valor)}</b></div>`).join('') || '<div class="empty">Vacía.</div>'}
+      <div class="sub-tit">Últimos movimientos</div>
+      <div class="tabla-envoltura"><table class="kardex"><tbody>${u.movimientos.slice(0,40).map(filaKardex).join('') || '<tr><td class="mut">Sin movimientos.</td></tr>'}</tbody></table></div>`,
+    pie:`<button class="btn secundario" data-tras>Trasladar desde aquí</button><div class="der"><button class="btn" data-ok>Cerrar</button></div>`});
+  llenarTanques(p.raiz);
+  p.$$('[data-item]').forEach(f=>f.onclick=async ()=>{ await p.cerrar(); abrirItem(Number(f.dataset.item)); });
+  p.$$('[data-tq]').forEach(b=>b.onclick=async ()=>{ await p.cerrar(); abrirTanque(Number(b.dataset.tq)); });
+  p.$$('.kardex tr[data-mov]').forEach(r=>r.onclick=()=>abrirMov(Number(r.dataset.mov)));
+  p.$('[data-ok]').onclick = p.cerrar;
+  p.$('[data-tras]').onclick = async ()=>{ await p.cerrar(); registrarMov({tipo:'traslado', ubicacion_id:id}); };
+}
+function gestionUbicaciones(){
+  const v = ventana({titulo:'Ubicaciones', subtitulo:'Hangares, pistas, bases y vehículos donde se guardan repuestos e insumos', ancho:'ancha',
+    cuerpo:`<div class="eleccion" id="uLista"></div>
+      ${ES_ADMIN?`<div class="sub-tit">Nueva ubicación</div><form class="form-grid" id="uForm" onsubmit="return false">
+        <div class="campo"><label>Nombre *</label><input name="nombre" placeholder="Hangar principal, Pista La Esperanza…"></div>
+        <div class="campo"><label>Tipo</label><select name="tipo">${Object.entries(CFG.tipos_ubicacion).map(([k,x])=>`<option value="${k}">${escapar(x)}</option>`).join('')}</select></div>
+        <div class="campo"><label>Detalle</label><input name="detalle" placeholder="Municipio, estante, placa…"></div></form><div id="uError"></div>`:''}`,
+    pie:`<div class="der"><button class="btn secundario" data-no>Cerrar</button>${ES_ADMIN?'<button class="btn" data-si>Crear ubicación</button>':''}</div>`});
+  const pintar = ()=>{
+    v.$('#uLista').innerHTML = D.ubicaciones.filter(u=>u.activo).map(u=>`<button type="button" class="opc" data-u="${u.id}"><span class="ic">${icUbic(u.tipo)}</span>
+      <b>${escapar(u.nombre)}</b><small>${escapar(u.tipo_txt)}${u.detalle?' · '+escapar(u.detalle):''}</small><span class="cant">${dinero(u.valor)}</span>
+      <small>${u.articulos} artículo(s)</small>${ES_ADMIN?`<small><a href="#" data-quitar="${u.id}">quitar</a></small>`:''}</button>`).join('') || '<div class="empty">Aún no hay ubicaciones.</div>';
+    v.$$('[data-u]').forEach(b=>b.onclick=async e=>{ if(e.target.closest('[data-quitar]')) return; await v.cerrar(); abrirUbicacion(Number(b.dataset.u)); });
+    v.$$('[data-quitar]').forEach(a=>a.onclick=async e=>{ e.preventDefault(); e.stopPropagation();
+      try{ await api(`/api/bodega/ubicaciones/${a.dataset.quitar}`, {method:'DELETE', body:{}}); toast('Ubicación quitada'); await cargar(); pintar(); }
+      catch(err){ toast(err.message); } });
+  };
+  pintar();
+  v.$('[data-no]').onclick = v.cerrar;
+  const b = v.$('[data-si]');
+  if(b) b.onclick = async ()=>{
+    const datos = Object.fromEntries(new FormData(v.$('#uForm')).entries());
+    try{ await api('/api/bodega/ubicaciones', {method:'POST', body:datos}); v.$('#uForm').reset(); v.$('#uError').innerHTML=''; toast('Ubicación creada'); await cargar(); pintar(); }
+    catch(err){ v.$('#uError').innerHTML = `<div class="aviso rojo"><div>${escapar(err.message)}</div></div>`; }
+  };
+}
+
+// ------------------------------------------------------------------ Conciliar operaciones
+// Las operaciones anotan el producto como texto libre («SEEKER + DITHANE»). Aquí se asocia
+// cada producto de bodega con su dosis por hectárea y, si se quiere, se descuenta.
+async function conciliar(){
+  const ops = await api('/api/bodega/conciliar?' + new URLSearchParams({periodo:EST.periodo}));
+  const insumos = D.inventario.filter(i=>i.clase==='insumo' && i.activo);
+  const ubics = D.ubicaciones.filter(u=>u.activo);
+  const v = ventana({titulo:'Conciliar operaciones', subtitulo:`${ops.length} operación(es) del período con producto anotado y sin productos de bodega`, ancho:'ancha',
+    cuerpo: !insumos.length ? `<div class="empty">Primero crea los insumos (productos) en la bodega.</div>` :
+      `<p class="paso-sub">Para cada operación: qué producto de bodega se usó y a qué dosis por hectárea. La cantidad teórica es hectáreas × dosis.
+        Marca «descontar» si ese producto salió de bodega y aún no se registró la salida.</p>
+      <div class="fila-flex" style="margin-bottom:10px"><label class="mut" style="font-size:12.5px;display:flex;gap:6px;align-items:center">Descontar desde
+        <select id="cUbic">${ubics.map(u=>`<option value="${u.id}">${escapar(u.nombre)}</option>`).join('')}</select></label></div>
+      <div id="cLista">${ops.slice(0,60).map(o=>`<div class="concil-fila" data-op="${o.id}">
+        <div class="cab"><b>${fmtFecha(o.fecha)} · ${escapar(o.equipo)}</b><span>${escapar(o.producto)}</span><span class="mut">${fmt(o.hectareas,1)} ha${o.litros?` · ${fmt(o.litros,0)} L de mezcla`:''}${o.cliente?' · '+escapar(o.cliente):''}${o.lote?' · '+escapar(o.lote):''}</span></div>
+        <div data-prods>${(o.sugeridos.length?o.sugeridos:[{}]).map(s=>filaProd(s, o, insumos)).join('')}</div>
+        <div class="fila-flex" style="margin-top:8px"><button type="button" class="btn secundario peq" data-mas>+ producto</button>
+          <button type="button" class="btn peq" data-guardar style="margin-left:auto">Guardar</button></div></div>`).join('') || '<div class="empty">Todas las operaciones del período están conciliadas.</div>'}</div>`,
+    pie:`<div class="der"><button class="btn" data-ok>Listo</button></div>`});
+  v.$('[data-ok]').onclick = async ()=>{ await v.cerrar(); cargar(); };
+  v.$$('.concil-fila').forEach(fila=>{
+    const o = ops.find(x=>x.id===Number(fila.dataset.op));
+    const recalc = ()=>fila.querySelectorAll('.concil-prod').forEach(pr=>{
+      const d = parseFloat(pr.querySelector('[data-dosis]').value), i = insumos.find(x=>String(x.id)===pr.querySelector('[data-item]').value);
+      pr.querySelector('.t').textContent = !isNaN(d) && o.hectareas ? `= ${fmt(d*o.hectareas,2)} ${i?i.unidad:''}` : '';
+    });
+    fila.addEventListener('input', recalc); fila.addEventListener('change', e=>{
+      if(e.target.matches('[data-item]')){ const i = insumos.find(x=>String(x.id)===e.target.value); const dd = e.target.closest('.concil-prod').querySelector('[data-dosis]'); if(i && i.dosis_ha && !dd.value) dd.value = i.dosis_ha; }
+      recalc(); });
+    fila.querySelector('[data-mas]').onclick = ()=>{ fila.querySelector('[data-prods]').insertAdjacentHTML('beforeend', filaProd({}, o, insumos)); };
+    fila.addEventListener('click', e=>{ const q = e.target.closest('[data-quitar]'); if(q) q.closest('.concil-prod').remove(); });
+    recalc();
+    fila.querySelector('[data-guardar]').onclick = async ()=>{
+      const productos = [...fila.querySelectorAll('.concil-prod')].map(pr=>({item_id: pr.querySelector('[data-item]').value,
+        dosis_ha: pr.querySelector('[data-dosis]').value, descontar: pr.querySelector('[data-desc]').checked, ubicacion_id: v.$('#cUbic').value})).filter(p=>p.item_id);
+      if(!productos.length) return toast('Elige al menos un producto');
+      try{
+        const r = await api('/api/bodega/aplicaciones', {method:'POST', body:{operacion_id:o.id, productos}});
+        fila.innerHTML = `<div class="cab" style="color:var(--o-tx-verde,#1d6b38)"><span style="display:inline-flex;width:18px">${IC.ok}</span><b>${fmtFecha(o.fecha)} · ${escapar(o.equipo)}</b>
+          <span>${r.productos} producto(s) · ${r.descontados} descontado(s) de bodega</span></div>`;
+      }catch(err){ toast(err.message); }
+    };
+  });
+}
+function filaProd(s, o, insumos){
+  return `<div class="concil-prod"><select data-item><option value="">— producto —</option>${insumos.map(i=>`<option value="${i.id}" ${s.item_id===i.id?'selected':''}>${escapar(i.nombre)} (${escapar(i.unidad)})</option>`).join('')}</select>
+    <input type="number" step="any" min="0" data-dosis placeholder="dosis/ha" value="${s.dosis_ha??''}"><span class="t"></span>
+    <label class="mut" style="font-size:12px;display:flex;gap:6px;align-items:center"><input type="checkbox" data-desc checked> descontar de bodega</label>
+    <button type="button" class="btn-icono" data-quitar title="Quitar">✕</button></div>`;
+}
+
+// ------------------------------------------------------------------ Cómo funciona
+const PASOS = [
+  {k:'compra', ic:'entrada', t:'Compra', txt:`Entra un repuesto o un producto a una ubicación, con su <b>precio</b>, proveedor y, si es un fitosanitario, <b>lote y vencimiento</b>. Cada compra recalcula el <b>costo promedio ponderado</b>: con él se valora todo lo que sale después.`,
+    ej:'Hay 40 L de Banole a $ 9.000 y compras 200 L a $ 10.000 → promedio (40 × 9.000 + 200 × 10.000) ÷ 240 = $ 9.833 por litro.'},
+  {k:'ubicacion', ic:'tanque', t:'Ubicación y tanque', txt:`Cada existencia vive en un sitio: hangar, pista, base o vehículo. Los productos a granel van a un <b>tanque</b> que tú configuras (qué contiene, capacidad, color). El nivel no se digita: se <b>calcula</b> con cada movimiento, así una corrección hacia atrás arregla todo lo siguiente.`,
+    ej:'Tanque «Banole» de 1.000 L en la pista: entra una compra de 200 L y sale una aplicación de 30 L → 170 L, 17 %.'},
+  {k:'salida', ic:'salida', t:'Salida a operación u OT', txt:`Los insumos salen a una <b>operación</b> (al registrarla o al conciliar: hectáreas × dosis) y los repuestos a una <b>orden de trabajo</b>: el técnico los aparta al planear la OT y al completarla se descuentan solos, con su costo promedio como costo de repuesto de la tarea. Si la OT se reabre o se borra, vuelven a la bodega.`,
+    ej:'OT-012 cambia 2 hélices de $ 180.000 → al completarla salen 2 hélices del hangar y la tarea queda con $ 360.000 de repuesto.'},
+  {k:'conteo', ic:'ajuste', t:'Conteo físico', txt:`Cada cierto tiempo se cuenta lo que hay de verdad. Lo contado manda: el <b>descuadre</b> (contado − calculado) queda registrado con su valor, para saber cuánto se está perdiendo y dónde.`,
+    ej:'El sistema dice 170 L; la varilla marca 162 L → ajuste de −8 L ($ 78.664) en la pista.'},
+  {k:'control', ic:'balanza', t:'Control', txt:`Se cruzan dos cifras que deberían cuadrar: lo que <b>se aplicó según las operaciones</b> (hectáreas × dosis) y lo que <b>salió de bodega</b>. Si salió más de lo aplicado, es producto que no se explica. También sale el <b>costo de insumos por hectárea</b> y el registro de productos aplicados que pide la <b>RAC 137</b>.`,
+    ej:'Se aplicaron 100 ha a 1,5 L/ha = 150 L; de bodega salieron 168 L → 18 L (12 %) sin explicar: alerta roja.'},
+];
+function comoFunciona(inicio){
+  let i = Math.max(0, PASOS.findIndex(p=>p.k===inicio));
+  const v = ventana({titulo:'Cómo funciona la bodega', subtitulo:'El recorrido de cada repuesto y cada litro, de la factura a la operación', ancho:'ancha',
+    cuerpo:`<div class="flujo">${PASOS.map((p,j)=>`<button type="button" data-j="${j}"><span class="ic">${IC[p.ic]}</span><b>${p.t}</b></button>`).join('')}</div><div class="flujo-txt" id="flujoTxt"></div>`,
+    pie:`<button class="btn secundario" data-ant>Anterior</button><div class="der"><button class="btn" data-sig>Siguiente</button></div>`});
+  const pintarPaso = ()=>{
+    v.$$('.flujo button').forEach((b,j)=>b.classList.toggle('sel', j===i));
+    v.$('#flujoTxt').innerHTML = `${PASOS[i].txt}<div class="ej"><b>Ejemplo.</b> ${PASOS[i].ej}</div>`;
+    v.$('[data-ant]').style.visibility = i ? 'visible' : 'hidden';
+    v.$('[data-sig]').textContent = i === PASOS.length-1 ? 'Registrar un movimiento' : 'Siguiente';
+  };
+  v.$$('.flujo button').forEach(b=>b.onclick=()=>{ i = Number(b.dataset.j); pintarPaso(); });
+  v.$('[data-ant]').onclick = ()=>{ i--; pintarPaso(); };
+  v.$('[data-sig]').onclick = async ()=>{ if(i < PASOS.length-1){ i++; pintarPaso(); } else { await v.cerrar(); registrarMov(); } };
+  pintarPaso();
+}
+
+// ------------------------------------------------------------------ Enganches
+function irA(tab){
+  EST.tab = tab;
+  document.querySelectorAll('#segTab button').forEach(b=>b.classList.toggle('activo', b.dataset.t===tab));
+  document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('ver', p.dataset.pane===tab));
+  if(tab==='kardex') cargarKardex();
+  // Las gráficas se dibujan con el ancho real: al mostrar una pestaña oculta se repintan.
+  if(tab==='panorama' && D){ pintarGraficaControl(); pintarUbic(); }
+  history.replaceState(null, '', tab==='panorama' ? location.pathname : `?tab=${tab}`);
+}
+document.getElementById('segTab').onclick = e=>{ const b = e.target.closest('button'); if(b) irA(b.dataset.t); };
+document.getElementById('segPeriodo').onclick = e=>{ const b = e.target.closest('button'); if(!b) return; EST.periodo = b.dataset.p; cargar(); };
+document.getElementById('segTipo').onclick = e=>{ const b = e.target.closest('button'); if(!b) return; EST.tipoK = b.dataset.k;
+  document.querySelectorAll('#segTipo button').forEach(x=>x.classList.toggle('activo', x===b)); cargarKardex(); };
+['fKClase','fKUbic'].forEach(id=>document.getElementById(id).onchange = cargarKardex);
+['fRep','fRepUbic','fRepModelo','fRepBajo'].forEach(id=>document.getElementById(id).addEventListener(id==='fRep'?'input':'change', pintarRepuestos));
+['fIns','fInsCat','fInsUbic'].forEach(id=>document.getElementById(id).addEventListener(id==='fIns'?'input':'change', pintarInsumos));
+document.querySelectorAll('[data-ir]').forEach(a=>a.onclick = e=>{ e.preventDefault(); irA(a.dataset.ir); });
+document.getElementById('btnMov').onclick = ()=>registrarMov();
+document.getElementById('btnAyuda').onclick = ()=>comoFunciona();
+document.getElementById('btnUbic').onclick = gestionUbicaciones;
+const bn = document.getElementById('btnNuevo'); if(bn) bn.onclick = ()=>formArticulo();
+document.getElementById('btnRac').onclick = ()=>descargar('/api/bodega/registro-aplicaciones.csv?' + new URLSearchParams({periodo:EST.periodo}));
+document.getElementById('btnConciliar2').onclick = conciliar;
+redibujarGraficas(()=>{ if(D && EST.tab==='panorama'){ pintarGraficaControl(); pintarUbic(); } });
+cargar().then(()=>{
+  const t = paramURL('tab'); if(t) irA(t);
+  if(paramURL('item')) abrirItem(Number(paramURL('item')));
+  if(paramURL('conciliar')) conciliar();
+});
+</script>
+{% endblock %}

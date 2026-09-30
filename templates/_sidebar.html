@@ -1,0 +1,123 @@
+{% macro nav(clave, ruta, etiqueta, icono, insignia=None) -%}
+<a class="side-item {{ 'active' if activo==clave else '' }}" href="{{ ruta }}">
+  <span class="ic">{{ icono|safe }}</span><span class="txt">{{ etiqueta }}</span>
+  {% if insignia %}<span class="side-badge {{ insignia.clase }}">{{ insignia.n }}</span>{% endif %}
+</a>
+{%- endmacro %}
+
+{% set ic_resumen = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.4 10 3l7 5.4"/><path d="M4.6 9.6V16a1 1 0 0 0 1 1h8.8a1 1 0 0 0 1-1V9.6"/><path d="M8.2 17v-4.3h3.6V17"/></svg>' %}
+{% set ic_inventario = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6.6 10 3l7 3.6v6.8L10 17l-7-3.6z"/><path d="M3 6.6 10 10.2l7-3.6"/><path d="M10 10.2V17"/></svg>' %}
+{% set ic_operaciones = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.6v5.2"/><circle cx="10" cy="9.4" r="1.7"/><path d="M6.4 12.6 4.8 17M10 12.6V17M13.6 12.6 15.2 17"/><path d="M3.4 6.2h4M12.6 6.2h4"/></svg>' %}
+{% set ic_mantenimiento = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12.7 3.4a3.9 3.9 0 0 0-4.5 5.1L3.6 13a1.6 1.6 0 0 0 2.3 2.3l4.5-4.6a3.9 3.9 0 0 0 5.1-4.5l-2.3 2.3-2-.5-.5-2z"/></svg>' %}
+{% set ic_actividades = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.6" y="3.4" width="12.8" height="13.2" rx="2.2"/><path d="M6.6 8.2l1.5 1.5 3-3"/><path d="M6.6 13.4h6.8"/></svg>' %}
+{% set ic_contactos = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="8.2" cy="7.6" r="2.8"/><path d="M3.4 16.2a4.8 4.8 0 0 1 9.6 0"/><path d="M13.6 5.2a2.6 2.6 0 0 1 0 5"/><path d="M15 12.2a4.4 4.4 0 0 1 2.6 4"/></svg>' %}
+{% set ic_bitacora = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5.4 3.4h9.2a1.4 1.4 0 0 1 1.4 1.4v10.4a1.4 1.4 0 0 1-1.4 1.4H5.4a1.4 1.4 0 0 1-1.4-1.4V4.8a1.4 1.4 0 0 1 1.4-1.4z"/><path d="M4 7.2h12"/><path d="M7.2 3.4v13.2"/><path d="M9.8 10.2h3.4M9.8 13h2.2"/></svg>' %}
+{% set ic_reportes = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.2 16.6h13.6"/><path d="M6 16.6V10M10 16.6V4.4M14 16.6v-4.4"/></svg>' %}
+{% set ic_diagramas = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.2" y="3.2" width="5.6" height="5.6" rx="1.6"/><rect x="11.2" y="3.2" width="5.6" height="5.6" rx="1.6"/><rect x="3.2" y="11.2" width="5.6" height="5.6" rx="1.6"/><path d="M11.4 14h5.4M14.1 11.3v5.4"/></svg>' %}
+{% set ic_ot = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3.4h6a1.6 1.6 0 0 1 1.6 1.6v10a1.6 1.6 0 0 1-1.6 1.6H7a1.6 1.6 0 0 1-1.6-1.6V5A1.6 1.6 0 0 1 7 3.4z"/><path d="M8.2 7.4h3.6M8.2 10.2h3.6M8.2 13h2.2"/></svg>' %}
+{% set ic_os = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 17.2s5.4-4 5.4-8.2a5.4 5.4 0 1 0-10.8 0c0 4.2 5.4 8.2 5.4 8.2z"/><circle cx="10" cy="8.8" r="2"/></svg>' %}
+{% set ic_ajustes = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="2.4"/><path d="M15.9 12.2a1.3 1.3 0 0 0 .26 1.44l.05.05a1.6 1.6 0 1 1-2.26 2.26l-.05-.05a1.3 1.3 0 0 0-1.44-.26 1.3 1.3 0 0 0-.79 1.19v.14a1.6 1.6 0 1 1-3.2 0v-.07a1.3 1.3 0 0 0-.85-1.19 1.3 1.3 0 0 0-1.44.26l-.05.05A1.6 1.6 0 1 1 3.87 13.6l.05-.05a1.3 1.3 0 0 0 .26-1.44 1.3 1.3 0 0 0-1.19-.79H2.9a1.6 1.6 0 1 1 0-3.2h.07a1.3 1.3 0 0 0 1.19-.85 1.3 1.3 0 0 0-.26-1.44l-.05-.05A1.6 1.6 0 1 1 6.11 3.5l.05.05a1.3 1.3 0 0 0 1.44.26h.06a1.3 1.3 0 0 0 .79-1.19V2.5a1.6 1.6 0 1 1 3.2 0v.07a1.3 1.3 0 0 0 .79 1.19 1.3 1.3 0 0 0 1.44-.26l.05-.05a1.6 1.6 0 1 1 2.26 2.26l-.05.05a1.3 1.3 0 0 0-.26 1.44v.06a1.3 1.3 0 0 0 1.19.79h.14a1.6 1.6 0 1 1 0 3.2h-.07a1.3 1.3 0 0 0-1.19.79z"/></svg>' %}
+{% set ic_3d = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.8 16.6 6v8L10 17.2 3.4 14V6z"/><path d="M3.4 6 10 9.3 16.6 6M10 9.3v7.9"/></svg>' %}
+
+{% set ic_flota = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.4c.8 0 1.3.9 1.3 2.1v3.3l5.5 3.1v1.7l-5.5-1.6v3.3l1.8 1.4v1.4L10 16.4l-3.1.7v-1.4l1.8-1.4v-3.3l-5.5 1.6v-1.7l5.5-3.1V4.5c0-1.2.5-2.1 1.3-2.1z"/></svg>' %}
+{% set ic_aero = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.8 16 5v4.6c0 3.6-2.6 6.2-6 7.6-3.4-1.4-6-4-6-7.6V5z"/><path d="m7.4 10 1.8 1.8 3.4-3.6"/></svg>' %}
+{% set ic_checklist = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7.4 3.6H5.8a1.4 1.4 0 0 0-1.4 1.4v10.6a1.4 1.4 0 0 0 1.4 1.4h8.4a1.4 1.4 0 0 0 1.4-1.4V5a1.4 1.4 0 0 0-1.4-1.4h-1.6"/><rect x="7.4" y="2.6" width="5.2" height="2.4" rx=".9"/><path d="m7.2 9.2 1.2 1.2 2-2M7.2 13.4l1.2 1.2 2-2M11.8 9.6h1.6M11.8 13.8h1.6"/></svg>' %}
+{% set ic_planificador = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.2" y="4.2" width="13.6" height="12.4" rx="2"/><path d="M3.2 8.2h13.6M7 2.8v2.8M13 2.8v2.8"/><path d="M6.4 11.2h2.4M11.2 11.2h2.4M6.4 13.8h2.4"/></svg>' %}
+{% set ic_rentabilidad = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.2 14.6 7.6 10l3 2.8 6-6.4"/><path d="M12.8 6.4h3.8v3.8"/><path d="M3.2 17h13.6"/></svg>' %}
+{% set ic_catalogo = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4.4A1.6 1.6 0 0 1 5.6 2.8H15v12.4H5.6A1.6 1.6 0 0 0 4 16.8z"/><path d="M4 16.8a1.6 1.6 0 0 0 1.6 1.6H15v-3.2"/><path d="M7.4 6.4h4.4M7.4 9.2h3"/></svg>' %}
+
+{% set ic_combustible = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16.6V5a1.6 1.6 0 0 1 1.6-1.6h5A1.6 1.6 0 0 1 12.2 5v11.6"/><path d="M3 16.6h10.2M12.2 8.4h1.6a1.4 1.4 0 0 1 1.4 1.4v3.4a1.2 1.2 0 0 0 2.4 0V7.4L15 5"/><path d="M6.2 7.4h3.8"/></svg>' %}
+{% set ic_bodega = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2.8 8 10 3.4 17.2 8v8.6H2.8z"/><path d="M5.8 16.6v-6h8.4v6M5.8 12.6h8.4M5.8 14.6h8.4"/></svg>' %}
+{% set ic_normativa = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.8v14.4M6 17.2h8"/><path d="M4 6.2h12M10 4.4l-6 1.8M10 4.4l6 1.8"/><path d="M4 6.2 2.4 11a2.4 2.4 0 0 0 3.2 0zM16 6.2 14.4 11a2.4 2.4 0 0 0 3.2 0z"/></svg>' %}
+
+{% set ic_informes = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11.6 2.8H5.6A1.6 1.6 0 0 0 4 4.4v11.2a1.6 1.6 0 0 0 1.6 1.6h8.8a1.6 1.6 0 0 0 1.6-1.6V7.2z"/><path d="M11.6 2.8v4.4H16"/><path d="M7.2 14v-2.4M10 14V10M12.8 14v-1.4"/></svg>' %}
+
+{% set ot_abiertas = ordenes_resumen.ot if ordenes_resumen else 0 %}
+{% set os_abiertas = ordenes_resumen.os if ordenes_resumen else 0 %}
+{% set alertas_totales = alertas_resumen.total if alertas_resumen else 0 %}
+{% set es_piloto = rol_actual == 'piloto' %}
+{% set alertas_graves = (alertas_resumen.vencido or alertas_resumen.critico) if alertas_resumen else 0 %}
+
+<aside class="side">
+  <a class="side-brand" href="{{ url_for('resumen') }}">
+    {# Logo en línea (no <img>) para que las barras grafito se aclaren en modo oscuro (--o-marca). #}
+    <svg class="logo" viewBox="0 0 120 120" width="36" height="36" aria-hidden="true">
+      <defs><linearGradient id="marcaGrad" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#e5a200"/><stop offset=".55" stop-color="#fdb913"/></linearGradient></defs>
+      <g transform="skewX(-14)" style="fill:var(--o-marca,#1a1d24)">
+        <rect x="34" y="66" width="16" height="32" rx="4"/><rect x="60" y="44" width="16" height="54" rx="4"/>
+        <path d="M86 36 C86 26 94 14 94 14 C94 14 102 26 102 36 V94 A4 4 0 0 1 98 98 H90 A4 4 0 0 1 86 94 Z" style="fill:url(#marcaGrad)"/>
+      </g>
+      <rect x="20" y="104" width="86" height="6" rx="3" style="fill:var(--o-marca,#1a1d24)" opacity=".35"/>
+    </svg>
+    <span class="marca"><b>{{ nombre_app|default('Hangar') }}</b><span class="sub">{{ lema_app|default('Control de flota aérea agrícola') }}</span></span>
+  </a>
+
+  <nav class="side-nav">
+    {% if es_superadmin %}
+    <div class="side-lbl">Administración</div>
+    {{ nav('admin', url_for('admin_panel'), 'Panel de clientes', ic_ajustes) }}
+    {% if empresa_actual %}
+    <div class="side-lbl">Viendo: {{ empresa_actual }}</div>
+    <button class="side-item" type="button" id="btnSalirEmpresa" style="width:100%;border:0;background:transparent;font:inherit;cursor:pointer">
+      <span class="ic">{{ ic_os|safe }}</span><span class="txt">Volver al panel</span>
+    </button>
+    {% endif %}
+    {% endif %}
+    {% if not es_superadmin or empresa_actual %}
+    <div class="side-lbl">General</div>
+    {{ nav('resumen', url_for('resumen'), 'Centro de operaciones', ic_resumen) }}
+
+    <div class="side-lbl">Operación</div>
+    {{ nav('inventario', url_for('pagina_flota'), 'Flota', ic_flota) }}
+    {{ nav('aeronavegabilidad', url_for('pagina_aeronavegabilidad'), 'Aeronavegabilidad', ic_aero) }}
+    {{ nav('checklist', url_for('pagina_checklist'), 'Chequeo pre-vuelo', ic_checklist) }}
+    {{ nav('operaciones', url_for('operaciones'), 'Operaciones', ic_operaciones) }}
+    {{ nav('mantenimiento', url_for('mantenimiento'), 'Mantenimiento', ic_mantenimiento,
+           {'n': alertas_totales, 'clase': 'rojo' if alertas_graves else 'ambar'} if alertas_totales else None) }}
+    {{ nav('combustible', '/combustible', 'Combustible', ic_combustible) }}
+    {{ nav('bodega', '/bodega', 'Bodega', ic_bodega) }}
+    {{ nav('bitacora', url_for('bitacora'), 'Bitácora de reparaciones', ic_bitacora) }}
+    {{ nav('actividades', url_for('actividades'), 'Actividades', ic_actividades) }}
+
+    {{ nav('contactos', url_for('contactos'), 'Contactos', ic_contactos) }}
+
+    <div class="side-lbl">Órdenes</div>
+    {{ nav('ot', url_for('ordenes_trabajo'), 'Órdenes de trabajo', ic_ot,
+           {'n': ot_abiertas, 'clase': 'ambar'} if ot_abiertas else None) }}
+    {{ nav('os', url_for('ordenes_servicio'), 'Órdenes de servicio', ic_os,
+           {'n': os_abiertas, 'clase': 'ambar'} if os_abiertas else None) }}
+    {{ nav('planificador', url_for('pagina_planificador'), 'Planificador', ic_planificador) }}
+
+    <div class="side-lbl">Análisis</div>
+    {{ nav('informes', '/informes', 'Informes', ic_informes) }}
+    {{ nav('reportes', url_for('reportes'), 'Reportes', ic_reportes) }}
+    {% if es_admin and not es_piloto %}
+    {{ nav('rentabilidad', url_for('pagina_rentabilidad'), 'Rentabilidad', ic_rentabilidad) }}
+    {% endif %}
+    {{ nav('despiece', url_for('despiece'), 'Diagramas', ic_diagramas) }}
+    {{ nav('vista3d', url_for('vista3d'), 'Modelo 3D', ic_3d) }}
+
+    <div class="side-lbl">Sistema</div>
+    {% if not es_piloto %}
+    {{ nav('catalogo', url_for('pagina_catalogo'), 'Catálogo de mantenimiento', ic_catalogo) }}
+    {% endif %}
+    {{ nav('normativa', '/normativa', 'Normativa RAC', ic_normativa) }}
+    {{ nav('ajustes', url_for('ajustes'), 'Ajustes', ic_ajustes) }}
+    {% endif %}
+  </nav>
+
+  <div class="side-foot">
+    <div class="side-estado">
+      <span class="punto-vivo"></span>
+      <span class="txt">{{ empresa_actual or 'Plataforma' }}<br><b id="hora">--:--</b> · {{ {"admin":"Administrador","tecnico":"Técnico","piloto":"Piloto","superadmin":"Superadmin"}.get(rol_actual, rol_actual) }}</span>
+    </div>
+    <button class="side-accion" id="btnPantallaCompleta" type="button" title="Pantalla completa (F)">
+      <span class="ic"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7.4 3.4H3.4v4M12.6 3.4h4v4M16.6 12.6v4h-4M7.4 16.6h-4v-4"/></svg></span>
+      <span class="txt">Pantalla completa</span>
+    </button>
+    <a class="side-accion salir" href="{{ url_for('salir') }}" title="Cerrar sesión">
+      <span class="ic"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12.4 6.2V4.6a1.6 1.6 0 0 0-1.6-1.6H5.2a1.6 1.6 0 0 0-1.6 1.6v10.8a1.6 1.6 0 0 0 1.6 1.6h5.6a1.6 1.6 0 0 0 1.6-1.6v-1.6"/><path d="M8.6 10h8.2M14.4 7.4 17 10l-2.6 2.6"/></svg></span>
+      <span class="txt">{{ usuario_actual|default('Salir') }} · Salir</span>
+    </a>
+  </div>
+</aside>

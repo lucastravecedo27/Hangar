@@ -1,0 +1,83 @@
+{% extends "_hoja_impresa.html" %}
+{% block titulo %}Orden de servicio {{ orden.codigo }}{% endblock %}
+{% block encabezado %}Orden de servicio{% endblock %}
+{% block codigo %}{{ orden.codigo }} · {{ orden.estado_txt }}{% endblock %}
+
+{% block contenido %}
+<div class="bloque">
+  <div class="t"><span class="n">1</span> Piloto y cliente</div>
+  <div class="datos">
+    <div class="d"><div class="l">Nombre del piloto</div><div class="v">{{ orden.piloto or '—' }}</div></div>
+    <div class="d"><div class="l">Correo</div><div class="v">{{ orden.piloto_email or '—' }}</div></div>
+    <div class="d"><div class="l">Cliente</div><div class="v">{{ orden.cliente or '—' }}</div></div>
+    <div class="d"><div class="l">Finca</div><div class="v">{{ orden.finca or '—' }}</div></div>
+    <div class="d"><div class="l">Zona</div><div class="v">{{ orden.zona or '—' }}</div></div>
+  </div>
+</div>
+
+<div class="bloque">
+  <div class="t"><span class="n">2</span> Productos a aplicar</div>
+  {% if orden.productos_lista %}
+  <table>
+    <thead><tr><th style="width:26px"></th><th>Producto</th><th class="num">Cantidad</th><th>Dosis</th><th>Nota</th></tr></thead>
+    <tbody>
+      {% for pr in orden.productos_lista %}
+      <tr>
+        <td><span class="casilla"></span></td>
+        <td><b>{{ pr.nombre }}</b></td>
+        <td class="num">{% if pr.cantidad is not none %}{{ '%g'|format(pr.cantidad) }} {{ pr.unidad or 'L' }}{% else %}—{% endif %}</td>
+        <td>{{ pr.dosis or '—' }}</td>
+        <td>{{ pr.nota or '' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="datos"><div class="d"><div class="l">Productos</div><div class="v">{{ orden.productos or '—' }}</div></div></div>
+  {% endif %}
+  <div class="datos" style="margin-top:12px">
+    <div class="d"><div class="l">Hectáreas previstas</div>
+      <div class="v">{% if orden.hectareas %}{{ '%.1f'|format(orden.hectareas) }} ha{% else %}—{% endif %}</div></div>
+  </div>
+</div>
+
+<div class="bloque">
+  <div class="t"><span class="n">3</span> Programación</div>
+  <div class="datos">
+    <div class="d"><div class="l">Fecha de la orden</div><div class="v">{{ orden.fecha or '—' }} {{ orden.hora or '' }}</div></div>
+    <div class="d"><div class="l">Aeronave que va a volar</div>
+      <div class="v">{{ orden.equipo or '—' }}{% if orden.modelo %} · {{ orden.modelo }}{% endif %}</div></div>
+    <div class="d"><div class="l">Notificada</div><div class="v">{{ orden.enviado_en or 'No enviada' }}</div></div>
+    <div class="d"><div class="l">Programada por</div><div class="v">{{ orden.creado_por or '—' }}</div></div>
+  </div>
+  {% if orden.observaciones %}
+  <div style="margin-top:14px;background:var(--bg);border-radius:10px;padding:12px 14px;font-size:13px">
+    <b>Observaciones adicionales:</b> {{ orden.observaciones }}</div>
+  {% endif %}
+</div>
+
+<div class="bloque">
+  <div class="t">Seguimiento</div>
+  <table>
+    <thead><tr><th>Estado</th><th>Cuándo</th><th>Usuario</th><th>Nota</th></tr></thead>
+    <tbody>
+      {% for ev in orden.eventos %}
+      <tr><td><b>{{ etiquetas.get(ev.estado, ev.estado) }}</b></td><td>{{ ev.creado }}</td>
+        <td>{{ ev.usuario or '—' }}</td><td>{{ ev.nota or '' }}</td></tr>
+      {% else %}
+      <tr><td colspan="4" class="empty">Sin eventos.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="bloque">
+  <div class="t">Resultado de la aplicación</div>
+  <div style="border:.5px solid var(--line2);border-radius:10px;height:110px"></div>
+</div>
+
+<div class="firmas">
+  <div class="firma">Piloto — {{ orden.piloto or '' }}</div>
+  <div class="firma">Cliente / responsable de finca</div>
+</div>
+{% endblock %}

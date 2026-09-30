@@ -1,0 +1,350 @@
+{% extends "_layout.html" %}
+{% block titulo %}Flota{% endblock %}
+{% block encabezado %}Flota{% endblock %}
+{% block subtitulo %}Drones y aviones con su estado de aeronavegabilidad{% endblock %}
+
+{% block head %}
+<style>
+  /* ===== Pantalla «Flota»: una tarjeta por activo ===== */
+  .flota-barra{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+  .flota-barra .pillbtn b{font-weight:700;margin-left:4px;opacity:.7}
+  .flota-barra .der{margin-left:auto;font-size:12.5px;color:var(--mut)}
+
+  .semaforo-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:22px}
+  @media(max-width:880px){.semaforo-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  .sk{display:flex;align-items:center;gap:14px;background:var(--bg2);border:1px solid var(--line);border-radius:18px;padding:16px 18px}
+  .sk .luz{width:14px;height:14px;border-radius:50%;flex:none;box-shadow:0 0 0 5px rgba(0,0,0,.04)}
+  .sk .n{font-family:var(--font-marca);font-size:30px;font-weight:800;letter-spacing:-.04em;line-height:1;font-variant-numeric:tabular-nums}
+  .sk .l{font-size:10.5px;font-weight:700;color:var(--mut);letter-spacing:.08em;text-transform:uppercase;margin-top:4px}
+  .sk.apto .luz{background:var(--green);box-shadow:0 0 0 5px rgba(47,143,78,.14)} .sk.apto .n{color:var(--o-tx-verde,#1d6b38)}
+  .sk.observaciones .luz{background:var(--amber);box-shadow:0 0 0 5px rgba(232,164,0,.18)} .sk.observaciones .n{color:var(--o-tx-ambar,#7a5400)}
+  .sk.no_apto .luz{background:var(--red);box-shadow:0 0 0 5px rgba(224,71,62,.15)} .sk.no_apto .n{color:var(--o-tx-rojo,#a4271f)}
+  .sk.total .luz{background:var(--acc)} .sk.total .n{color:var(--acc-ink)}
+
+  .flota-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:16px}
+  @media(max-width:420px){.flota-grid{grid-template-columns:1fr}}
+  .fc{position:relative;display:flex;flex-direction:column;background:var(--bg2);border:1px solid var(--line);border-radius:var(--r);
+    overflow:hidden;cursor:pointer;transition:border-color .2s,box-shadow .2s,transform .2s cubic-bezier(.22,.7,.25,1)}
+  .fc:hover{border-color:var(--acc);box-shadow:var(--shadow-l);transform:translateY(-2px)}
+  .fc:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+  .fc.baja{opacity:.6}
+  .fc-cab{display:flex;gap:13px;align-items:flex-start;padding:18px 18px 12px}
+  .fc-ic{width:50px;height:50px;border-radius:15px;flex:none;display:grid;place-items:center;background:var(--o-grafito,#1a1d24);color:var(--acc)}
+  .fc-ic svg{width:34px;height:34px}
+  .fc-tit{flex:1;min-width:0}
+  .fc-tit .nom{font-family:var(--font-marca);font-size:18px;font-weight:800;letter-spacing:-.03em;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .fc-tit .ident{display:inline-block;margin-top:4px;font-size:11.5px;font-weight:700;letter-spacing:.06em;padding:2px 8px;border-radius:6px;background:var(--acc);color:var(--acc-txt)}
+  .fc-tit .ident.serie{background:rgba(115,122,134,.14);color:var(--ink2);letter-spacing:.02em;font-weight:600}
+  .fc-tit .mod{font-size:12px;color:var(--mut);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .fc-estado{flex:none}
+  .fc-estado select{font-size:11.5px;padding:4px 8px;border-radius:8px}
+
+  .fc-sem{margin:0 18px;border-radius:14px;padding:12px 14px;display:flex;gap:12px;align-items:flex-start}
+  .fc-sem .luz{width:30px;height:30px;border-radius:50%;flex:none;display:grid;place-items:center;color:#fff}
+  .fc-sem .luz svg{width:17px;height:17px}
+  .fc-sem .txt{min-width:0;flex:1}
+  .fc-sem .est{font-size:15px;font-weight:760;letter-spacing:-.01em;line-height:1.2}
+  .fc-sem ul{list-style:none;margin-top:4px}
+  .fc-sem li{font-size:11.8px;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.92}
+  .fc-sem li.mas{font-weight:650;opacity:.75}
+  .fc-sem.apto{background:rgba(47,143,78,.09);color:var(--o-tx-verde,#1d6b38)}.fc-sem.apto .luz{background:var(--green)}
+  .fc-sem.observaciones{background:var(--o-suave-ambar,#fff4d6);color:var(--o-tx-ambar,#6e4c00)}.fc-sem.observaciones .luz{background:var(--amber)}
+  .fc-sem.no_apto{background:rgba(224,71,62,.09);color:var(--o-tx-rojo,#8e2019)}.fc-sem.no_apto .luz{background:var(--red)}
+
+  .fc-cont{display:grid;gap:1px;background:var(--line);margin:14px 18px 0;border-radius:12px;overflow:hidden;border:1px solid var(--line)}
+  .fc-cont.c2{grid-template-columns:repeat(2,1fr)}.fc-cont.c3{grid-template-columns:repeat(3,1fr)}
+  .fc-cont > div{background:var(--bg2);padding:10px 12px}
+  .fc-cont .v{font-family:var(--font-marca);font-size:19px;font-weight:800;letter-spacing:-.035em;font-variant-numeric:tabular-nums;color:var(--ink);line-height:1.1}
+  .fc-cont .v small{font-family:var(--font);font-size:11px;font-weight:600;color:var(--mut);margin-left:3px;letter-spacing:0}
+  .fc-cont .l{font-size:10px;font-weight:700;color:var(--mut);letter-spacing:.07em;text-transform:uppercase;margin-top:2px}
+
+  .fc-pie{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:12px 18px 15px;margin-top:auto}
+  .fc-pie .ult{margin-left:auto;font-size:11.5px;color:var(--mut);white-space:nowrap}
+  .fc-pie .btn-icono{width:24px;height:24px;font-size:11px;margin-left:4px}
+
+  /* Formulario de alta */
+  .campos-avion{border:1px dashed var(--line2);border-radius:14px;padding:14px 14px 0;margin-bottom:14px;background:var(--o-gris-2,#fcfcfd)}
+  .pista-modelo{font-size:12px;color:var(--mut);line-height:1.45;margin:-4px 0 12px}
+</style>
+{% endblock %}
+
+{% block acciones %}
+<button class="btn" id="btnNuevo" type="button">＋ Nuevo activo</button>
+{% endblock %}
+
+{% block contenido %}
+<div class="semaforo-kpis" id="kpis"></div>
+
+<div class="flota-barra">
+  <button class="pillbtn active" data-tipo="">Todos<b id="nTodos"></b></button>
+  <button class="pillbtn" data-tipo="dron">Drones<b id="nDron"></b></button>
+  <button class="pillbtn" data-tipo="avion">Aviones<b id="nAvion"></b></button>
+  <span class="der"><a href="/aeronavegabilidad">Ver panel de aeronavegabilidad →</a></span>
+</div>
+
+<div class="flota-grid" id="grid"></div>
+<div class="card" id="vacio" style="display:none">
+  <div class="vacio-rico">
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 6.6 10 3l7 3.6v6.8L10 17l-7-3.6z"/><path d="M3 6.6 10 10.2l7-3.6"/><path d="M10 10.2V17"/></svg>
+    <b>Sin activos en esta vista</b>
+    <p>Da de alta un dron o un avión para empezar a seguir sus contadores, piezas e inspecciones.</p>
+    <button class="btn" type="button" onclick="abrirNuevo()">＋ Nuevo activo</button>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Iconos genéricos propios (sin marcas): dron de cuatro rotores y avioneta agrícola de ala baja vista en planta.
+const IC_DRON = `<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <circle cx="9" cy="9" r="5.5"/><circle cx="31" cy="9" r="5.5"/><circle cx="9" cy="31" r="5.5"/><circle cx="31" cy="31" r="5.5"/>
+  <path d="M13 13l4 4M27 13l-4 4M13 27l4-4M27 27l-4-4"/><rect x="15.5" y="15.5" width="9" height="9" rx="2.5" fill="currentColor" fill-opacity=".25"/></svg>`;
+const IC_AVION = `<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M20 3.5c1.6 0 2.4 1.6 2.4 3.6v8.4l14.1 2.4c.6.1 1 .6 1 1.2v2.1l-15.1-.9-.8 10.5 4.6 1.7v2.3H13.8v-2.3l4.6-1.7-.8-10.5-15.1.9v-2.1c0-.6.4-1.1 1-1.2l14.1-2.4V7.1c0-2 .8-3.6 2.4-3.6z" fill="currentColor" fill-opacity=".22"/>
+  <path d="M16 3.5h8"/></svg>`;
+const IC_SEM = {
+  apto: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 10.5l3.2 3.2L15 7"/></svg>',
+  observaciones: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M10 5.5v5.5"/><path d="M10 14.6v.1"/></svg>',
+  no_apto: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l8 8M14 6l-8 8"/></svg>',
+};
+const EST_ACTIVO = [{v:'activo',t:'Activo'},{v:'mantenimiento',t:'Mantenimiento'},{v:'taller',t:'Taller'},{v:'baja',t:'Baja'}];
+const CONT_TARJETA = {
+  dron:  [['horas_vuelo','Horas de vuelo','h'], ['despegues','Despegues','']],
+  avion: [['hobbs','Hobbs','h'], ['tach','Tach','h'], ['aterrizajes','Aterrizajes','']],
+};
+
+let TODOS=[], TIPO='';
+try{ TIPO = localStorage.getItem('flota.tipo') || ''; }catch(e){}
+
+async function cargar(){
+  // Se pide la lista completa una vez para los contadores de las pastillas y los KPI;
+  // el filtro por tipo se pide al servidor con ?tipo= como el resto de pantallas.
+  TODOS = await api('/api/equipos');
+  const n = t => TODOS.filter(e=>!t || e.tipo_activo===t).length;
+  document.getElementById('nTodos').textContent = n('');
+  document.getElementById('nDron').textContent = n('dron');
+  document.getElementById('nAvion').textContent = n('avion');
+  await pintar();
+}
+
+async function pintar(){
+  document.querySelectorAll('[data-tipo]').forEach(b=>b.classList.toggle('active', b.dataset.tipo===TIPO));
+  const lista = TIPO ? await api(`/api/equipos?tipo=${TIPO}`) : TODOS;
+  const vivos = lista.filter(e=>e.estado!=='baja');
+  const cuenta = k => vivos.filter(e=>(e.aeronavegable||{}).estado===k).length;
+  document.getElementById('kpis').innerHTML = `
+    <div class="sk total"><i class="luz"></i><div><div class="n">${vivos.length}</div><div class="l">Activos en servicio</div></div></div>
+    <div class="sk apto"><i class="luz"></i><div><div class="n">${cuenta('apto')}</div><div class="l">Aptos</div></div></div>
+    <div class="sk observaciones"><i class="luz"></i><div><div class="n">${cuenta('observaciones')}</div><div class="l">Con observaciones</div></div></div>
+    <div class="sk no_apto"><i class="luz"></i><div><div class="n">${cuenta('no_apto')}</div><div class="l">No recomendados</div></div></div>`;
+  document.getElementById('vacio').style.display = lista.length ? 'none' : 'block';
+  document.getElementById('grid').innerHTML = lista.map(tarjeta).join('');
+}
+
+function tarjeta(e){
+  const av = e.aeronavegable || {estado:'apto', estado_txt:'Apto', motivos:[]};
+  const esAvion = e.tipo_activo === 'avion';
+  const motivos = av.motivos || [];
+  const cont = (CONT_TARJETA[e.tipo_activo] || CONT_TARJETA.dron);
+  const a = e.alertas || {}, tot = (a.vencido||0)+(a.critico||0)+(a.proximo||0);
+  const ident = esAvion
+    ? `<span class="ident">${escapar(e.matricula || 'SIN MATRÍCULA')}</span>`
+    : `<span class="ident serie">S/N ${escapar(e.numero_serie || '—')}</span>`;
+  return `<div class="fc ${e.estado}" tabindex="0" role="link" onclick="abrir(${e.id})" onkeydown="if(event.key==='Enter')abrir(${e.id})">
+    <div class="fc-cab">
+      <div class="fc-ic" title="${esAvion?'Avión':'Dron'}">${esAvion ? IC_AVION : IC_DRON}</div>
+      <div class="fc-tit">
+        <div class="nom" title="${escapar(e.nombre)}">${escapar(e.nombre)}</div>
+        ${ident}
+        <div class="mod">${escapar(nombreModelo(e.modelo))}${esAvion && e.anio ? ` · ${e.anio}` : ''}</div>
+        ${e.base ? `<div class="mod" title="Base">${escapar(e.base)}</div>` : ''}
+      </div>
+      <div class="fc-estado" onclick="event.stopPropagation()" onkeydown="event.stopPropagation()">
+        <select onchange="cambiarEstado(${e.id}, this.value)" title="Estado del activo" aria-label="Estado del activo">${opciones(EST_ACTIVO, e.estado)}</select>
+      </div>
+    </div>
+    <div class="fc-sem ${av.estado}">
+      <span class="luz">${IC_SEM[av.estado] || ''}</span>
+      <div class="txt">
+        <div class="est">${escapar(av.estado_txt)}</div>
+        ${motivos.length ? `<ul>${motivos.slice(0,3).map(m=>`<li title="${escapar(m)}">${escapar(m)}</li>`).join('')}
+          ${motivos.length>3 ? `<li class="mas">+ ${motivos.length-3} motivo${motivos.length-3===1?'':'s'} más</li>` : ''}</ul>`
+          : `<ul><li>Sin vencimientos, directivas ni documentos pendientes</li></ul>`}
+      </div>
+    </div>
+    <div class="fc-cont c${cont.length}">
+      ${cont.map(([k,l,u])=>`<div><div class="v">${fmt((e.contadores||{})[k] ?? (k==='horas_vuelo'?e.horas_totales:null), u==='h'?1:0)}${u?`<small>${u}</small>`:''}</div><div class="l">${l}</div></div>`).join('')}
+    </div>
+    <div class="fc-pie">
+      ${tot ? `${a.vencido?`<span class="tag vencido">${a.vencido} vencido${a.vencido===1?'':'s'}</span>`:''}
+               ${a.critico?`<span class="tag critico">${a.critico} crítico${a.critico===1?'':'s'}</span>`:''}
+               ${a.proximo?`<span class="tag proximo">${a.proximo} próximo${a.proximo===1?'':'s'}</span>`:''}`
+            : '<span class="tag ok">Sin alertas</span>'}
+      <span class="ult">${e.ultima_operacion ? `Últ. operación ${fmtFecha(e.ultima_operacion)}` : 'Sin operaciones'}</span>
+      ${e.estado === 'baja'
+          ? `<button class="btn secundario peq" onclick="event.stopPropagation(); reactivar(${e.id}, '${escapar(e.nombre)}')">Reactivar</button>`
+          : `<button class="btn-icono" title="Dar de baja" onclick="event.stopPropagation(); darDeBaja(${e.id}, '${escapar(e.nombre)}')">✕</button>`}
+    </div>
+  </div>`;
+}
+
+function abrir(id){ location.href = `/flota/${id}`; }
+
+document.querySelectorAll('[data-tipo]').forEach(b=>b.addEventListener('click', ()=>{
+  TIPO = b.dataset.tipo;
+  try{ localStorage.setItem('flota.tipo', TIPO); }catch(e){}
+  pintar();
+}));
+
+async function cambiarEstado(id, estado){
+  try{ await api(`/api/equipos/${id}`,{method:'PUT',body:{estado}}); toast('Estado actualizado'); cargar(); }
+  catch(err){ toast(err.message); }
+}
+// Los activos no se eliminan: se dan de baja y conservan toda su historia.
+function darDeBaja(id, nombre){
+  const v = ventana({titulo:'Dar de baja', ancho:'angosta',
+    subtitulo:`${escapar(nombre)} sale de servicio`,
+    cuerpo:`<p style="font-size:14px;line-height:1.55;margin-bottom:14px">El activo deja de aparecer en la operación diaria,
+      pero <b>se conserva toda su información</b>: operaciones, mantenimientos, piezas con serial y órdenes.
+      Puedes reactivarlo cuando quieras.</p>
+      <div class="form-grid"><div class="campo" style="grid-column:1/-1"><label>Motivo</label>
+        <input id="motivoBaja" placeholder="p. ej. vendido, siniestro, fuera de servicio" maxlength="200" style="width:100%"></div></div>`,
+    pie:`<button class="btn secundario" data-cancelar>Cancelar</button><button class="btn" data-ok>Dar de baja</button>`});
+  v.$('[data-cancelar]').onclick = v.cerrar;
+  v.$('[data-ok]').onclick = async ()=>{
+    try{
+      await api(`/api/equipos/${id}`, {method:'DELETE', body:{motivo: v.$('#motivoBaja').value.trim() || null}});
+      v.cerrar(); toast('Activo dado de baja'); cargar();
+    }catch(err){ toast(err.message); }
+  };
+  setTimeout(()=>v.$('#motivoBaja').focus(), 50);
+}
+async function reactivar(id, nombre){
+  if(!await confirmar({titulo:'Reactivar activo', aceptar:'Reactivar',
+    mensaje:`<b>${escapar(nombre)}</b> vuelve a estar en servicio con toda su historia.`})) return;
+  try{ await api(`/api/equipos/${id}`, {method:'PUT', body:{estado:'activo', motivo:'Reactivado'}}); toast('Activo reactivado'); cargar(); }
+  catch(err){ toast(err.message); }
+}
+
+// ===== Modelos =====
+// /api/modelos trae los DJI y los modelos de avión; /api/modelos-activo dice de qué plantilla sale
+// cada modelo propio. Si la empresa ya tiene su copia de una plantilla, se ofrece sólo la copia
+// (dar de alta sobre la plantilla terminaría en esa misma copia).
+let MODELOS=[], PREDET=null, NOMBRES_CONT={};
+async function cargarModelos(){
+  const [a, b] = await Promise.all([api('/api/modelos'), api('/api/modelos-activo').catch(()=>({modelos:[], contadores:{}}))]);
+  PREDET = a.predeterminado;
+  NOMBRES_CONT = b.contadores || {};
+  const deriv = {}; (b.modelos||[]).forEach(m=>{ if(m.plantilla) deriv[m.plantilla] = m.clave; });
+  const plantillaDe = {}; (b.modelos||[]).forEach(m=>{ plantillaDe[m.clave] = m.plantilla; });
+  MODELOS = a.modelos.filter(m=>!(m.es_plantilla && deriv[m.clave]))
+                     .map(m=>({...m, nombre_ui: String(m.nombre).replace(/\s*\(plantilla\)\s*$/i,''), plantilla: plantillaDe[m.clave]}));
+}
+function nombreModelo(clave){
+  const m = MODELOS.find(x=>x.clave===clave);
+  return m ? m.nombre_ui : clave;
+}
+function opcionesModelos(sel){
+  const grupo = (t, titulo) => {
+    const ms = MODELOS.filter(m=>m.tipo_activo===t);
+    return ms.length ? `<optgroup label="${titulo}">${ms.map(m=>`<option value="${escapar(m.clave)}" ${m.clave===sel?'selected':''}>${escapar(m.nombre_ui)}</option>`).join('')}</optgroup>` : '';
+  };
+  return grupo('dron','Drones') + grupo('avion','Aviones');
+}
+
+// ===== Alta de activo =====
+function abrirNuevo(){
+  const tipoIni = TIPO === 'avion' ? 'avion' : 'dron';
+  const selIni = (MODELOS.find(m=>m.tipo_activo===tipoIni && (tipoIni==='avion' || m.clave===PREDET)) || MODELOS[0] || {}).clave;
+  const v = ventana({
+    titulo: 'Nuevo activo', ancho: 'ancha',
+    subtitulo: 'El formulario se ajusta al modelo: un avión pide matrícula y las lecturas actuales de sus contadores.',
+    cuerpo: `<form id="formActivo" autocomplete="off">
+      <div class="seccion-form"><div class="titulo"><span class="n">1</span>Modelo</div>
+        <div class="form-grid"><div class="campo ancho"><label>Modelo</label><select name="modelo" id="nModelo">${opcionesModelos(selIni)}</select></div></div>
+        <div class="pista-modelo" id="nPista"></div>
+      </div>
+      <div class="seccion-form"><div class="titulo"><span class="n">2</span>Identificación</div>
+        <div class="form-grid" id="nIdent"></div>
+      </div>
+      <div class="seccion-form" id="nSecCont"><div class="titulo"><span class="n">3</span>Lecturas iniciales</div>
+        <div class="pista">Lo que marcan hoy los instrumentos. Las operaciones que registres sumarán desde aquí.</div>
+        <div class="form-grid" id="nCont"></div>
+      </div>
+    </form>`,
+    pie: `<div class="der"><button class="btn secundario" type="button" data-no>Cancelar</button>
+          <button class="btn" type="submit" form="formActivo" id="nGuardar">＋ Agregar activo</button></div>`,
+  });
+  v.$('[data-no]').onclick = v.cerrar;
+  const sel = v.$('#nModelo');
+  const pintarCampos = ()=>{
+    const m = MODELOS.find(x=>x.clave===sel.value) || {};
+    const avion = m.tipo_activo === 'avion';
+    const prev = Object.fromEntries(new FormData(v.$('#formActivo')));
+    const val = k => escapar(prev[k] ?? '');
+    v.$('#nIdent').innerHTML = avion ? `
+      <div class="campo"><label>Matrícula *</label><input name="matricula" required placeholder="HK-…" value="${val('matricula')}" style="text-transform:uppercase"></div>
+      <div class="campo"><label>Nombre interno</label><input name="nombre" placeholder="Por defecto, la matrícula" value="${val('nombre')}"></div>
+      <div class="campo"><label>Número de serie</label><input name="numero_serie" placeholder="Serie del fabricante" value="${val('numero_serie')}"></div>
+      <div class="campo"><label>Año</label><input name="anio" type="number" min="1940" max="${new Date().getFullYear()}" placeholder="p. ej. 1972" value="${val('anio')}"></div>
+      <div class="campo"><label>Base / pista</label><input name="base" placeholder="p. ej. Pista Zona Bananera" value="${val('base')}"></div>
+      <div class="campo"><label>Fecha de alta</label><input name="fecha_alta" type="date" value="${escapar(prev.fecha_alta || hoyISO())}"></div>
+      <div class="campo ancho"><label>Nota</label><input name="nota" placeholder="Opcional" value="${val('nota')}"></div>`
+    : `
+      <div class="campo"><label>Nombre / identificador *</label><input name="nombre" required placeholder="p. ej. SMR 6" value="${val('nombre')}"></div>
+      <div class="campo"><label>Número de serie</label><input name="numero_serie" placeholder="Serie del fabricante" value="${val('numero_serie')}"></div>
+      <div class="campo"><label>Fecha de alta</label><input name="fecha_alta" type="date" value="${escapar(prev.fecha_alta || hoyISO())}"></div>
+      <div class="campo"><label>Nota</label><input name="nota" placeholder="Opcional" value="${val('nota')}"></div>`;
+    const conts = avion ? (m.contadores || []) : [];
+    v.$('#nSecCont').style.display = conts.length ? '' : 'none';
+    v.$('#nCont').innerHTML = conts.map(c=>{
+      const info = NOMBRES_CONT[c] || {nombre:c, unidad:''};
+      const entero = !/^h$/i.test(info.unidad||'');
+      return `<div class="campo"><label>${escapar(info.nombre)}${info.unidad?` (${escapar(info.unidad)})`:''}</label>
+        <input name="c_${c}" type="number" min="0" step="${entero?1:0.1}" placeholder="0" value="${val('c_'+c)}"></div>`;
+    }).join('');
+    const pista = v.$('#nPista');
+    if(avion){
+      pista.innerHTML = `Se crean sus <b>${m.n_catalogo||0}</b> ítems de seguimiento (piezas e inspecciones) sobre el catálogo propio de la empresa${m.plantilla?`, copiado de la plantilla`:''}. Los valores de referencia se confirman con el manual y el programa de mantenimiento aprobado.`;
+    } else {
+      pista.innerHTML = m.n_catalogo
+        ? `Se crean sus <b>${m.n_catalogo}</b> piezas de seguimiento con los contadores a cero. ${escapar(m.fuente_vida||'')}`
+        : `Todavía no hay lista de mantenimiento de este modelo: el dron se da de alta sin piezas de seguimiento. ${escapar(m.fuente_vida||'')}`;
+    }
+  };
+  sel.addEventListener('change', pintarCampos);
+  pintarCampos();
+
+  v.$('#formActivo').addEventListener('submit', async ev=>{
+    ev.preventDefault();
+    const f = Object.fromEntries(new FormData(ev.target));
+    const m = MODELOS.find(x=>x.clave===f.modelo) || {};
+    const avion = m.tipo_activo === 'avion';
+    const cuerpo = {modelo: f.modelo, numero_serie: f.numero_serie || null, nota: f.nota || null, fecha_alta: f.fecha_alta || null};
+    if(avion){
+      const mat = (f.matricula||'').trim().toUpperCase();
+      if(!mat){ toast('Un avión lleva matrícula (p. ej. HK-1234)'); return; }
+      Object.assign(cuerpo, {matricula: mat, nombre: (f.nombre||'').trim() || mat, anio: f.anio ? Number(f.anio) : null,
+        base: f.base || null, fabricante: m.fabricante || null, contadores: {}});
+      (m.contadores||[]).forEach(c=>{ if(f['c_'+c] !== '' && f['c_'+c] != null) cuerpo.contadores[c] = Number(f['c_'+c]); });
+    } else {
+      cuerpo.nombre = (f.nombre||'').trim();
+    }
+    const b = v.$('#nGuardar'); b.disabled = true;
+    try{
+      const r = await api('/api/equipos', {method:'POST', body:cuerpo});
+      toast(avion ? 'Avión agregado con sus ítems de seguimiento' : 'Dron agregado con sus piezas');
+      await v.cerrar();
+      if(r && r.id) location.href = `/flota/${r.id}`; else cargar();
+    }catch(err){ toast(err.message); b.disabled = false; }
+  });
+}
+document.getElementById('btnNuevo').addEventListener('click', abrirNuevo);
+
+(async()=>{
+  await cargarModelos().catch(()=>{});
+  await cargar();
+  if(paramURL('nuevo')) abrirNuevo();
+})();
+</script>
+{% endblock %}
