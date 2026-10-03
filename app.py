@@ -83,6 +83,10 @@ def _es_admin():
     return session.get("rol") in ("admin", core_db.ROL_SUPERADMIN)
 
 
+def _ve_costos():
+    return session.get("rol") in core_db.ROLES_COSTOS
+
+
 def _es_superadmin():
     return session.get("rol") == core_db.ROL_SUPERADMIN
 
@@ -106,9 +110,11 @@ def inyectar_globales():
         "usuario_actual": session.get("usuario"),
         "rol_actual": session.get("rol", "admin"),
         "es_admin": _es_admin(),
+        "ve_costos": _ve_costos(),
         "es_superadmin": _es_superadmin(),
         "empresa_actual": session.get("empresa_nombre"),
         "alertas_resumen": core_alertas.resumen_alertas(get_con()),
+        "avisos_txt": core_alertas.texto_avisos(core_alertas.config_avisos(get_con())),
         "ordenes_resumen": _resumen_ordenes(get_con()),
     })
     return base
@@ -209,12 +215,19 @@ _PERMISOS_TECNICO = [
     # Bodega: entradas, salidas y traslados (el tipo se valida en la ruta), repuestos de las OT
     # y productos aplicados en las operaciones.
     ("POST", "/api/bodega/movimientos"), ("*", "/api/bodega/ot-lineas"), ("POST", "/api/bodega/aplicaciones"),
+    ("POST", "/api/bodega/envases"), ("PUT", "/api/bodega/envases"),
+    # Incidentes: reportarlos y firmar su inspección (en un avión sólo el certificador; se valida en la ruta).
+    ("POST", "/api/incidentes"),
+    # Criterio de rechazo de piezas on-condition (sólo certificador; se valida en la ruta).
+    ("PUT", "/api/criterios-rechazo"),
 ]
 PERMISOS = {
     "tecnico": _PERMISOS_TECNICO,
     # Mecánico certificador: todo lo del técnico, más directivas y la firma de la liberación
     # (cierre de OT de avión y cumplimiento de directivas, validados en sus rutas).
     "certificador": _PERMISOS_TECNICO + [("*", "/api/directivas")],
+    # Gerencia / finanzas: ve todo, incluida la rentabilidad, y no cambia la operación.
+    "gerencia": [("POST", "/api/log-js"), ("*", "/api/cuenta/")],
     "piloto": [
         ("*", "/api/operaciones"), ("POST", "/api/os/"), ("*", "/api/registros"),
         ("POST", "/api/log-js"), ("*", "/api/cuenta/"),
@@ -222,12 +235,17 @@ PERMISOS = {
         ("POST", "/api/combustible"),
         # Bodega: salidas y consumos de insumos en la operación (no entradas ni ajustes).
         ("POST", "/api/bodega/movimientos"), ("POST", "/api/bodega/aplicaciones"),
+        # Triple lavado y devolución de envases vacíos.
+        ("POST", "/api/bodega/envases"), ("PUT", "/api/bodega/envases"),
+        # Reportar un golpe, caída o aterrizaje duro (la inspección no la firma el piloto).
+        ("POST", "/api/incidentes"),
     ],
 }
 # Lo que sólo hace el administrador aunque el prefijo esté permitido arriba.
 SOLO_ADMIN = [("DELETE", "/api/equipos"), ("DELETE", "/api/operaciones"), ("DELETE", "/api/ot"),
               ("DELETE", "/api/personal"), ("*", "/api/usuarios"), ("*", "/api/correo"),
               ("PUT", "/api/diagramas"), ("DELETE", "/api/diagramas"), ("*", "/api/empresas"),
+              ("PUT", "/api/avisos-config"),
               # Flota mixta: catálogo, modelos, tarifas, costos y auditoría son del administrador.
               ("POST", "/api/modelos-activo"), ("PUT", "/api/modelos-activo"),
               ("DELETE", "/api/modelos-activo"), ("POST", "/api/catalogo"), ("PUT", "/api/catalogo"),
@@ -1265,6 +1283,34 @@ def api_cuenta_tema():
         admin_con.close()
 
 
+@app.route("/api/avisos-config", methods=["GET", "PUT"])
+@login_requerido
+def api_avisos_config():
+    """Cuándo avisa la app que algo está por vencer. «Vencido» es siempre el límite del fabricante
+    o del RAC: aquí sólo se adelanta el aviso, nunca se retrasa."""
+    con = get_con()
+    if request.method == "PUT":
+        datos = request.get_json(silent=True) or {}
+        modo = datos.get("modo") or "restante"
+        if modo not in ("restante", "porcentaje"):
+            return jsonify({"error": "modo de aviso no válido"}), 400
+        valores = {}
+        for k in core_alertas.AVISOS_DEFECTO:
+            v = core_flota._num(datos.get(k))
+            if v is None or v < 0:
+                return jsonify({"error": "los umbrales son números mayores o iguales a cero"}), 400
+            valores[k] = v
+        for pareja in ("horas", "ciclos", "dias"):
+            if valores[f"aviso_{pareja}_critico"] > valores[f"aviso_{pareja}_proximo"]:
+                return jsonify({"error": "el aviso crítico tiene que saltar después del aviso de «próximo»"}), 400
+        core_db.meta_set(con, "aviso_modo", modo)
+        for k, v in valores.items():
+            core_db.meta_set(con, k, f"{v:g}")
+        con.commit()
+    cfg = core_alertas.config_avisos(con)
+    return jsonify({**cfg, "texto": core_alertas.texto_avisos(cfg)})
+
+
 @app.route("/api/cuenta/password", methods=["POST"])
 @login_requerido
 def api_cuenta_password():
@@ -1671,20 +1717,51 @@ def api_ot_detalle(id_):
         return jsonify({"ok": True})
     if request.method == "PUT":
         datos = request.get_json(force=True) or {}
-        previa = con.execute("SELECT estado FROM ordenes_trabajo WHERE id=?", (id_,)).fetchone()
+        previa = con.execute("SELECT o.estado, o.aprobado_por, e.tipo_activo FROM ordenes_trabajo o "
+                             "JOIN equipos e ON e.id=o.equipo_id WHERE o.id=?", (id_,)).fetchone()
+        nuevo = datos.get("estado")
+        if nuevo and nuevo not in core_ordenes.ESTADOS_OT:
+            return jsonify({"error": "estado no válido"}), 400
+        # Aviación tripulada: el trabajo no empieza sin la aprobación del jefe técnico.
+        if (previa and nuevo == "en_proceso" and previa["tipo_activo"] == "avion"
+                and not previa["aprobado_por"]):
+            return jsonify({"error": "una orden de avión necesita la aprobación del jefe técnico antes de empezar"}), 409
+        # Diferir un trabajo exige plazo y motivo; pasado el plazo el activo no vuela.
+        if nuevo == "diferida" and not (datos.get("diferida_hasta") and (datos.get("diferida_motivo") or "").strip()):
+            return jsonify({"error": "para diferir el trabajo indica hasta cuándo y por qué"}), 400
         if previa and previa["estado"] == "completada" and datos.get("estado") not in (None, "completada"):
             core_bodega.revertir_ot(con, id_, session.get("usuario"), "orden de trabajo reabierta")
         campos, valores = [], []
         for campo in ("titulo", "tipo", "prioridad", "estado", "asignado_a", "asignado_email",
-                      "fecha_programada", "hora_programada", "lugar", "observaciones", "equipo_id"):
+                      "fecha_programada", "hora_programada", "lugar", "observaciones", "equipo_id",
+                      "diferida_hasta", "diferida_motivo", "taller_externo", "taller_certificado"):
             if campo in datos:
                 campos.append(f"{campo}=?")
                 valores.append(datos[campo] or None)
+        if "horas_hombre" in datos:
+            campos.append("horas_hombre=?")
+            valores.append(core_flota._num(datos["horas_hombre"]))
         if campos:
             campos.append("actualizado=datetime('now')")
             valores.append(id_)
             con.execute(f"UPDATE ordenes_trabajo SET {', '.join(campos)} WHERE id=?", valores)
             con.commit()
+    orden = core_ordenes.ot_completa(con, id_)
+    return (jsonify(orden), 200) if orden else (jsonify({"error": "no existe"}), 404)
+
+
+@app.route("/api/ot/<int:id_>/aprobar", methods=["POST"])
+@login_requerido
+def api_ot_aprobar(id_):
+    """Aprobación del jefe técnico antes de empezar (lo pide la aviación tripulada)."""
+    if session.get("rol") not in ("admin", core_db.ROL_SUPERADMIN, "certificador"):
+        return jsonify({"error": "aprueba el jefe técnico: un administrador o un mecánico certificador"}), 403
+    con = get_con()
+    datos = request.get_json(silent=True) or {}
+    nombre = (datos.get("aprobado_por") or "").strip() or session.get("usuario")
+    con.execute("UPDATE ordenes_trabajo SET aprobado_por=?, aprobado_en=datetime('now'), actualizado=datetime('now') "
+                "WHERE id=?", (nombre, id_))
+    con.commit()
     orden = core_ordenes.ot_completa(con, id_)
     return (jsonify(orden), 200) if orden else (jsonify({"error": "no existe"}), 404)
 
@@ -1757,6 +1834,13 @@ def api_ot_completar(id_):
     tipo = con.execute("SELECT tipo_activo FROM equipos WHERE id=?", (ot["equipo_id"],)).fetchone()["tipo_activo"]
     firmado_por = (datos.get("firmado_por") or "").strip() or None
     licencia = (datos.get("licencia") or "").strip() or None
+    inspector = (datos.get("inspector") or "").strip() or None
+    inspector_lic = (datos.get("inspector_licencia") or "").strip() or None
+    # Inspección independiente (doble firma): la hace otra persona, con su licencia.
+    if inspector and firmado_por and inspector.lower() == firmado_por.lower():
+        return jsonify({"error": "la inspección independiente la firma una persona distinta de quien hizo el trabajo"}), 400
+    if inspector and tipo == "avion" and not inspector_lic:
+        return jsonify({"error": "la inspección independiente lleva la licencia del inspector"}), 400
     # Un avión sólo lo libera un mecánico certificador (o el administrador), con nombre y licencia.
     if tipo == "avion":
         if session.get("rol") not in ("admin", core_db.ROL_SUPERADMIN, "certificador"):
@@ -1765,7 +1849,8 @@ def api_ot_completar(id_):
             return jsonify({"error": "para liberar un avión se requiere nombre y número de licencia de quien firma"}), 400
     r = core_ordenes.cerrar_ot_registrando_mantenimientos(
         con, id_, datos.get("realizado_por"), firmado_por, licencia, datos.get("fecha") or None,
-        core_flota._num(core_db.meta_get(con, "costo_hora_mano_obra")), usuario=session.get("usuario"))
+        core_flota._num(core_db.meta_get(con, "costo_hora_mano_obra")), usuario=session.get("usuario"),
+        inspector=inspector, inspector_licencia=inspector_lic, horas_hombre=core_flota._num(datos.get("horas_hombre")))
     r["orden"] = core_ordenes.ot_completa(con, id_)
     return jsonify(r)
 
@@ -1809,10 +1894,11 @@ def api_os_detalle(id_):
         datos = request.get_json(force=True) or {}
         campos, valores = [], []
         for campo in ("piloto", "piloto_email", "cliente", "finca", "zona", "productos", "fecha",
-                      "hora", "equipo_id", "hectareas", "dosis", "observaciones"):
+                      "hora", "equipo_id", "hectareas", "dosis", "observaciones", "condiciones_tiempo",
+                      "zonas_evitar", "mapa_url"):
             if campo in datos:
                 campos.append(f"{campo}=?")
-                valores.append(datos[campo] or None)
+                valores.append(core_ordenes.url_mapa(datos[campo]) if campo == "mapa_url" else (datos[campo] or None))
         if campos:
             campos.append("actualizado=datetime('now')")
             valores.append(id_)

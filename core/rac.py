@@ -6,6 +6,9 @@ Versiones leídas del texto oficial de la Aerocivil (descargados el 2026-09-28):
   · RAC 100  Enm. 2,  dic-2024                        · RAC 43  Enm. 1, dic-2019 (Res. 03827)
   · RAC 4    Enm. 32, feb-2026                        · RAC 14  Enm. 21, jul-2026
   · RAC 39   ed. original, mar-2016                   · RAC 205 ed. original, dic-2020
+  · RAC 219  Res. 02737 de sep-2016 (SMS) y Directiva 02-24 (reporte de eventos, MOR)
+  · RAC 141  Res. 00745 de mar-2018, nombre actual por Res. 01470 de ago-2020 (centros de instrucción)
+  Los dos últimos los señaló el ingeniero aeronáutico de la encuesta de validación (oct-2026).
 
 Cada requisito de REQUISITOS dice numeral, a qué aplica (avión, dron, empresa, personal), qué
 pide en pocas palabras y dónde lo cubre la app. `estado_cumplimiento()` lo evalúa contra los datos
@@ -31,6 +34,8 @@ VERSIONES = [
     {"rac": "RAC 39", "titulo": "Directrices de aeronavegabilidad", "version": "Original · marzo 2016"},
     {"rac": "RAC 14", "titulo": "Aeródromos", "version": "Enm. 21 · julio 2026"},
     {"rac": "RAC 135", "titulo": "Operaciones comerciales", "version": "Enm. 8 · febrero 2026"},
+    {"rac": "RAC 219", "titulo": "Gestión de la seguridad operacional (SMS)", "version": "Res. 02737 · septiembre 2016"},
+    {"rac": "RAC 141", "titulo": "Centros de instrucción de aeronáutica civil", "version": "Res. 01470 · agosto 2020"},
 ]
 FUENTE = "https://www.aerocivil.gov.co/autoridad_aeronautica/normatividad/13-reglamentos-aeronauticos-de-colombia-rac"
 
@@ -164,8 +169,18 @@ REQUISITOS = [
      "Registro, póliza, certificado de idoneidad del piloto y autorización de vuelo.",
      "dron", "Flota › documentos", "/flota"),
     ("uas_mant", "RAC 100", "100.415", "Mantenimiento según el fabricante",
-     "Mantener según DJI; todos los sistemas de fábrica operativos, incluido el de aspersión.",
-     "dron", "Mantenimiento (vida útil DJI)", "/mantenimiento"),
+     "Mantener según DJI; todos los sistemas de fábrica operativos, incluido el de aspersión. La Aerocivil "
+     "pide un programa de mantenimiento propio del explotador: piezas sin plazo, con criterio de rechazo escrito.",
+     "dron", "Mantenimiento (vida útil DJI) y Flota › piezas on-condition", "/mantenimiento"),
+    # --- Seguridad operacional e instrucción
+    ("sms_eventos", "RAC 219", "219 · Directiva 02-24 (MOR)", "Gestión de la seguridad operacional: sucesos",
+     "Identificar peligros y registrar los sucesos (golpes, caídas, aterrizajes duros) con su corrección; los "
+     "eventos de reporte obligatorio se notifican a la Aerocivil.",
+     "empresa", "Aeronavegabilidad › Incidentes", "/aeronavegabilidad"),
+    ("instruccion", "RAC 141", "141", "Instrucción en centros certificados",
+     "La formación del personal aeronáutico se toma en un centro de instrucción certificado (CIAC); se guarda el "
+     "certificado o la licencia de cada piloto.",
+     "personal", "Contactos › licencia del piloto", "/contactos"),
 ]
 
 
@@ -327,6 +342,21 @@ def estado_cumplimiento(con):
                               if vencidos else ("cumple", ["Piezas dentro de la vida útil de DJI"]))
         evalua["uas_libro"] = ("cumple", ["Cada operación y reparación queda registrada con piloto y responsable"])
         evalua["uas_energia"] = ("manual", ["Se confirma en el chequeo pre-vuelo del dron"])
+
+    # -- seguridad operacional (RAC 219): incidentes con su inspección
+    abiertos = con.execute("SELECT COUNT(*) n FROM incidentes WHERE estado='abierto'").fetchone()["n"]
+    del_anio = con.execute("SELECT COUNT(*) n FROM incidentes WHERE fecha>=?",
+                           ((hoy - timedelta(days=365)).isoformat(),)).fetchone()["n"]
+    evalua["sms_eventos"] = (("atencion", [f"{abiertos} incidente(s) sin inspección cerrada"]) if abiertos else
+                             ("cumple", [f"{del_anio} incidente(s) en 12 meses, todos inspeccionados"]))
+
+    # -- instrucción (RAC 141): licencia o certificado de cada piloto
+    if pilotos:
+        sin = [p["nombre"] for p in pilotos if not (p.get("licencia") or "").strip()]
+        evalua["instruccion"] = (("atencion", [f"{n}: sin licencia o certificado registrado" for n in sin[:6]])
+                                 if sin else ("cumple", [f"{len(pilotos)} pilotos con licencia registrada"]))
+    else:
+        evalua["instruccion"] = ("falta", ["No hay pilotos en Contactos con rol «piloto»"])
 
     salida = []
     for id_, rac, numeral, titulo, exige, aplica, donde, enlace in REQUISITOS:

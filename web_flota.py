@@ -7,13 +7,14 @@ seguir engordando app.py y para que las dependencias (conexión con la empresa d
 permisos) sean exactamente las mismas que en el resto de la API.
 """
 import json
+from functools import wraps
 import re
 import secrets
 from dataclasses import replace
 from datetime import date, timedelta
 from pathlib import Path
 
-from flask import abort, jsonify, render_template, request, send_from_directory, session
+from flask import Response, abort, jsonify, render_template, request, send_from_directory, session
 
 from core import alertas as core_alertas
 from core import conexion as core_conexion
@@ -21,6 +22,8 @@ from core import config
 from core import db as core_db
 from core import flota as core_flota
 from core import indicadores as core_ind
+from core import incidentes as core_incidentes
+from core import informes as core_informes
 from core import ordenes as core_ordenes
 
 DIR_ARCHIVOS = Path(config.RAIZ) / "datos" / "archivos"
@@ -37,6 +40,7 @@ CHECKLIST = {
         ("tanque", "Tanque, filtros y tapa en buen estado"),
         ("boquillas", "Boquillas / aspersores limpios"),
         ("mangueras", "Mangueras sin fugas"),
+        ("caudalimetro", "Caudalímetro calibrado (descarga real = programada)"),
         ("radar", "Radar y cámaras limpios"),
         ("control", "Control remoto cargado y enlazado"),
         ("gps", "Señal GNSS/RTK correcta"),
@@ -112,8 +116,23 @@ def registrar(app, get_con, login_requerido, admin_requerido):
     def pagina_planificador():
         return render_template("planificador.html", activo="planificador")
 
+    def _ve_costos():
+        return _rol() in core_db.ROLES_COSTOS
+
+    def costos_requerido(vista):
+        """Rentabilidad, tarifas y nómina: administrador y gerencia / finanzas."""
+        @wraps(vista)
+        @login_requerido
+        def envoltorio(*a, **kw):
+            if not _ve_costos():
+                if request.path.startswith("/api/"):
+                    return jsonify({"error": "los costos y la rentabilidad sólo los ve la gerencia"}), 403
+                abort(403)
+            return vista(*a, **kw)
+        return envoltorio
+
     @app.route("/rentabilidad")
-    @admin_requerido
+    @costos_requerido
     def pagina_rentabilidad():
         return render_template("rentabilidad.html", activo="rentabilidad")
 
@@ -245,6 +264,37 @@ def registrar(app, get_con, login_requerido, admin_requerido):
             for e in con.execute("SELECT DISTINCT equipo_id FROM componentes WHERE pieza_id=?", (id_,)).fetchall():
                 core_flota.recalcular_equipo(con, e["equipo_id"])
             con.commit()
+        return jsonify({"ok": True})
+
+    # ------------------------------------------------------------------ piezas on-condition
+
+    @app.route("/api/criterios-rechazo", methods=["GET"])
+    @login_requerido
+    def api_criterios_rechazo():
+        """Piezas sin plazo del fabricante («on-condition») de un activo, con su criterio de rechazo."""
+        con = get_con()
+        equipo_id = request.args.get("equipo_id", type=int)
+        piezas = [{k: c[k] for k in ("pieza_id", "nombre", "modulo", "criterio_rechazo", "equipo_id")}
+                  for c in core_alertas.componentes_con_estado(con, equipo_id) if c["sin_plazo"]]
+        return jsonify(piezas)
+
+    @app.route("/api/criterios-rechazo/<int:pieza_id>", methods=["PUT"])
+    @login_requerido
+    def api_criterio_rechazo(pieza_id):
+        """El criterio lo escribe ingeniería: administrador o mecánico certificador."""
+        if _rol() not in ("admin", core_db.ROL_SUPERADMIN, "certificador"):
+            return jsonify({"error": "el criterio de rechazo lo escribe el administrador o un mecánico certificador"}), 403
+        con = get_con()
+        if not con.execute("SELECT 1 FROM catalogo_piezas WHERE id=?", (pieza_id,)).fetchone():
+            return jsonify({"error": "la pieza no existe"}), 404
+        texto = (_datos().get("texto") or "").strip()
+        if texto:
+            con.execute("INSERT INTO criterios_rechazo(pieza_id, texto, usuario) VALUES(?,?,?) "
+                        "ON CONFLICT(empresa_id, pieza_id) DO UPDATE SET texto=excluded.texto, "
+                        "usuario=excluded.usuario, actualizado=excluded.actualizado", (pieza_id, texto, _usuario()))
+        else:
+            con.execute("DELETE FROM criterios_rechazo WHERE pieza_id=?", (pieza_id,))
+        con.commit()
         return jsonify({"ok": True})
 
     # ------------------------------------------------------------------ contadores
@@ -517,6 +567,31 @@ def registrar(app, get_con, login_requerido, admin_requerido):
 
     # ------------------------------------------------------------------ disponibilidad histórica
 
+    @app.route("/api/alertas/texto")
+    @login_requerido
+    def api_alertas_texto():
+        """Resumen de la flota en texto plano para compartir por WhatsApp o correo."""
+        con = get_con()
+        equipos = {e["id"]: e for e in con.execute(
+            "SELECT id, nombre, matricula, tipo_activo FROM equipos WHERE estado != 'baja' ORDER BY nombre").fetchall()}
+        estados = core_alertas.estado_flota(con)
+        nombre = lambda eid: (equipos[eid]["matricula"] or equipos[eid]["nombre"]) if eid in equipos else "—"
+        no_aptos = [(eid, e) for eid, e in estados.items() if e["estado"] == "no_apto" and eid in equipos]
+        obs = [(eid, e) for eid, e in estados.items() if e["estado"] == "observaciones" and eid in equipos]
+        lineas = [f"*Hangar · estado de la flota* ({date.today().strftime('%d/%m/%Y')})",
+                  f"{len(equipos) - len(no_aptos)} de {len(equipos)} activos disponibles."]
+        if no_aptos:
+            lineas.append("")
+            lineas.append("*No recomendado volar:*")
+            lineas += [f"• {nombre(eid)}: {'; '.join(e['motivos'][:2])}" for eid, e in no_aptos]
+        if obs:
+            lineas.append("")
+            lineas.append("*Con observaciones:*")
+            lineas += [f"• {nombre(eid)}: {e['motivos'][0]}" for eid, e in obs[:8] if e["motivos"]]
+        if not no_aptos and not obs:
+            lineas.append("Todo al día: nada vencido ni por vencer.")
+        return jsonify({"texto": "\n".join(lineas)})
+
     @app.route("/api/disponibilidad")
     @login_requerido
     def api_disponibilidad():
@@ -546,9 +621,22 @@ def registrar(app, get_con, login_requerido, admin_requerido):
         else:
             salida["indicadores"] = core_ind.calcular(con, claves, f)
         series = [c for c in (request.args.get("series") or "").split(",") if c in core_ind.REGISTRO]
+        if not _ve_costos():
+            series = [c for c in series if c not in core_ind.CLAVES_GERENCIA]
         if series:
             salida["series"] = {c: core_ind.serie_mensual(con, c, replace(f, desde=None, hasta=None)) for c in series}
+        if not _ve_costos():
+            _ocultar_plata(salida)
         return jsonify(salida)
+
+    def _ocultar_plata(salida):
+        """Ingreso, margen y nómina sólo los ve la gerencia: al resto le llegan vacíos."""
+        bloques = [salida.get("indicadores")] + list((salida.get("por_tipo") or {}).values()) \
+            + [a.get("indicadores") for a in salida.get("por_activo") or []]
+        for b in bloques:
+            for c in core_ind.CLAVES_GERENCIA:
+                if b and c in b:
+                    b[c].update({"valor": None, "anterior": None, "variacion": None, "oculto": True})
 
     @app.route("/api/indicadores/catalogo")
     @login_requerido
@@ -617,51 +705,70 @@ def registrar(app, get_con, login_requerido, admin_requerido):
     # ------------------------------------------------------------------ rentabilidad y costos
 
     @app.route("/api/rentabilidad")
-    @admin_requerido
+    @costos_requerido
     def api_rentabilidad():
         con = get_con()
         f = _filtros()
-        claves = ["hectareas", "horas", "costo_mant", "costo_mant_hora", "costo_combustible_hora", "costo_ha",
-                  "ingreso_ha", "margen", "consumo"]
+        claves = ["hectareas", "horas", "costo_mant", "costo_mant_hora", "costo_combustible_hora", "costo_personal",
+                  "costo_ha", "ingreso_ha", "margen", "consumo"]
         total = core_ind.calcular(con, claves, f)
         activos = core_ind.por_activo(con, ["hectareas", "horas", "costo_mant", "costo_ha", "ingreso_ha", "margen"], f)
-        w, p = f.where()
-        precio = core_ind._meta_num(con, "precio_combustible_gal") or 0
-        clientes = [dict(r) for r in con.execute(f"""
-            SELECT COALESCE(o.cliente,'Sin cliente') cliente, COALESCE(o.lote,'') finca, e.tipo_activo,
-                   ROUND(COALESCE(SUM(o.hectareas),0),1) ha, ROUND(SUM(o.horas_vuelo),1) horas,
-                   ROUND(COALESCE(SUM(o.combustible_gal),0) * ?, 0) combustible,
-                   ROUND(COALESCE(SUM(o.hectareas * (
-                        SELECT t.valor_ha FROM tarifas t WHERE lower(t.cliente)=lower(o.cliente)
-                          AND (t.tipo_activo='todos' OR t.tipo_activo=e.tipo_activo)
-                          AND (t.desde IS NULL OR t.desde <= o.fecha)
-                        ORDER BY (t.tipo_activo=e.tipo_activo) DESC, t.desde DESC NULLS LAST LIMIT 1)),0), 0) ingreso
-            FROM operaciones o JOIN equipos e ON e.id=o.equipo_id WHERE {w}
-            GROUP BY 1, 2, 3 ORDER BY ingreso DESC, ha DESC LIMIT 60""", [precio] + p).fetchall()]
-        # Costo de mantenimiento repartido por hora de vuelo del activo en el período.
-        mant_hora = {a["id"]: a["indicadores"].get("costo_mant", {}).get("valor") for a in activos}
-        horas_act = {a["id"]: a["indicadores"].get("horas", {}).get("valor") for a in activos}
-        por_cliente_activo = [dict(r) for r in con.execute(f"""
-            SELECT COALESCE(o.cliente,'Sin cliente') cliente, COALESCE(o.lote,'') finca, o.equipo_id, SUM(o.horas_vuelo) h
-            FROM operaciones o WHERE {w} GROUP BY 1, 2, 3""", p).fetchall()]
-        mant_cf = {}
-        for r in por_cliente_activo:
-            if mant_hora.get(r["equipo_id"]) and horas_act.get(r["equipo_id"]):
-                k = (r["cliente"], r["finca"])
-                mant_cf[k] = mant_cf.get(k, 0) + mant_hora[r["equipo_id"]] * (r["h"] or 0) / horas_act[r["equipo_id"]]
-        for c in clientes:
-            c["mantenimiento"] = round(mant_cf.get((c["cliente"], c["finca"]), 0))
-            c["margen"] = round((c["ingreso"] or 0) - (c["combustible"] or 0) - c["mantenimiento"]) if c["ingreso"] else None
-            c["margen_ha"] = round(c["margen"] / c["ha"]) if c["margen"] is not None and c["ha"] else None
+        # Mantenimiento de cada activo repartido por sus horas de vuelo (mismo cálculo del informe).
+        mant = {a["id"]: a["indicadores"].get("costo_mant", {}).get("valor") for a in activos}
+        horas = {a["id"]: a["indicadores"].get("horas", {}).get("valor") for a in activos}
+        clientes = core_informes.rentabilidad_clientes(con, f, mant, horas)[:60]
         return jsonify({"total": total, "activos": activos, "clientes": clientes,
                         "config": _config_costos(con), "tarifas": _tarifas(con),
                         "filtros": {"tipo": f.tipo, "desde": f.desde, "hasta": f.hasta}})
 
-    CLAVES_CONFIG = ("precio_combustible_gal", "costo_hora_mano_obra", "moneda", "ventana_viento_max",
+    @app.route("/api/rentabilidad/facturacion.csv")
+    @costos_requerido
+    def api_facturacion_csv():
+        """Lo facturable del período por cliente, finca y tarifa: una línea por concepto, lista para
+        llevar al software contable (Siigo, World Office, Alegra) con su importador de Excel/CSV."""
+        import csv
+        import io
+        con = get_con()
+        f = _filtros()
+        w, p = f.where()
+        sub = lambda campo: f"""(SELECT t.{campo} FROM tarifas t WHERE lower(t.cliente)=lower(o.cliente)
+              AND (t.tipo_activo='todos' OR t.tipo_activo=e.tipo_activo) AND (t.desde IS NULL OR t.desde <= o.fecha)
+              ORDER BY (t.tipo_activo=e.tipo_activo) DESC, t.desde DESC NULLS LAST LIMIT 1)"""
+        filas = con.execute(f"""SELECT COALESCE(o.cliente,'Sin cliente') cliente, COALESCE(o.lote,'') finca, o.fecha,
+                   o.hectareas, o.horas_vuelo, {sub('unidad')} unidad, {sub('valor_ha')} valor
+            FROM operaciones o JOIN equipos e ON e.id=o.equipo_id WHERE {w}""", p).fetchall()
+        lineas = {}
+        for x in filas:
+            if x["valor"] is None:
+                continue
+            unidad = x["unidad"] or "ha"
+            cant = (x["horas_vuelo"] if unidad == "hora" else x["hectareas"]) or 0
+            k = (x["cliente"], x["finca"], unidad, x["valor"])
+            l = lineas.setdefault(k, {"cantidad": 0, "desde": x["fecha"], "hasta": x["fecha"], "n": 0})
+            l["cantidad"] += cant; l["n"] += 1
+            l["desde"], l["hasta"] = min(l["desde"], x["fecha"]), max(l["hasta"], x["fecha"])
+        coma = lambda v: f"{v:.2f}".replace(".", ",")
+        salida = io.StringIO()
+        salida.write("\ufeff")   # BOM: Excel reconoce las tildes
+        wr = csv.writer(salida, delimiter=";")
+        wr.writerow(["Cliente", "Finca / lote", "Concepto", "Unidad", "Cantidad", "Valor unitario", "Total",
+                     "Desde", "Hasta", "Operaciones"])
+        for (cli, finca, unidad, valor), l in sorted(lineas.items()):
+            concepto = "Aplicación aérea por hora de vuelo" if unidad == "hora" else "Aplicación aérea por hectárea"
+            wr.writerow([cli, finca, concepto, "h" if unidad == "hora" else "ha", coma(l["cantidad"]), coma(valor),
+                         coma(l["cantidad"] * valor), l["desde"], l["hasta"], l["n"]])
+        nombre = f"facturacion-{f.desde or 'inicio'}-a-{f.hasta or 'hoy'}.csv"
+        return Response(salida.getvalue(), mimetype="text/csv; charset=utf-8",
+                        headers={"Content-Disposition": f'attachment; filename="{nombre}"'})
+
+    CLAVES_CONFIG = ("precio_combustible_gal", "costo_hora_mano_obra", "nomina_mes", "moneda", "ventana_viento_max",
                      "ventana_temp_max", "ventana_humedad_min", "horas_max_piloto_dia", "meta_ha_mes")
 
     def _config_costos(con):
-        return {c: core_db.meta_get(con, c) for c in CLAVES_CONFIG}
+        cfg = {c: core_db.meta_get(con, c) for c in CLAVES_CONFIG}
+        if not _ve_costos():
+            cfg.pop("nomina_mes", None)   # la nómina sólo la ve la gerencia
+        return cfg
 
     def _tarifas(con):
         return [dict(t) for t in con.execute("SELECT * FROM tarifas ORDER BY cliente, tipo_activo, desde DESC").fetchall()]
@@ -684,20 +791,25 @@ def registrar(app, get_con, login_requerido, admin_requerido):
             con.commit()
         return jsonify(_config_costos(con))
 
+    UNIDADES_TARIFA = ("ha", "hora")
+
     @app.route("/api/tarifas", methods=["GET", "POST"])
-    @login_requerido
+    @costos_requerido
     def api_tarifas():
         con = get_con()
         if request.method == "POST":
             d = _datos()
             valor = _num(d.get("valor_ha"))
             if not (d.get("cliente") or "").strip() or valor is None:
-                return jsonify({"error": "cliente y valor por hectárea son obligatorios"}), 400
+                return jsonify({"error": "cliente y valor de la tarifa son obligatorios"}), 400
             tipo = d.get("tipo_activo") or "todos"
             if tipo not in ("todos", *core_flota.TIPOS_ACTIVO):
                 return jsonify({"error": "tipo no válido"}), 400
-            cur = con.execute("INSERT INTO tarifas(cliente, tipo_activo, valor_ha, desde, nota) VALUES(?,?,?,?,?)",
-                              (d["cliente"].strip(), tipo, valor, d.get("desde") or None, d.get("nota") or None))
+            unidad = d.get("unidad") or "ha"
+            if unidad not in UNIDADES_TARIFA:
+                return jsonify({"error": "la tarifa se cobra por hectárea o por hora"}), 400
+            cur = con.execute("INSERT INTO tarifas(cliente, tipo_activo, valor_ha, unidad, desde, nota) VALUES(?,?,?,?,?,?)",
+                              (d["cliente"].strip(), tipo, valor, unidad, d.get("desde") or None, d.get("nota") or None))
             con.commit()
             return jsonify({"ok": True, "id": cur.lastrowid}), 201
         clientes = [r["cliente"] for r in con.execute(
@@ -705,14 +817,16 @@ def registrar(app, get_con, login_requerido, admin_requerido):
         return jsonify({"tarifas": _tarifas(con), "clientes": clientes})
 
     @app.route("/api/tarifas/<int:id_>", methods=["PUT", "DELETE"])
-    @login_requerido
+    @costos_requerido
     def api_tarifa(id_):
         con = get_con()
         if request.method == "DELETE":
             con.execute("DELETE FROM tarifas WHERE id=?", (id_,))
         else:
             d = _datos()
-            for c in ("cliente", "tipo_activo", "desde", "nota"):
+            if "unidad" in d and d["unidad"] not in UNIDADES_TARIFA:
+                return jsonify({"error": "la tarifa se cobra por hectárea o por hora"}), 400
+            for c in ("cliente", "tipo_activo", "unidad", "desde", "nota"):
                 if c in d:
                     con.execute(f"UPDATE tarifas SET {c}=? WHERE id=?", (d[c] or None, id_))
             if "valor_ha" in d:
@@ -790,6 +904,49 @@ def registrar(app, get_con, login_requerido, admin_requerido):
             d["items"] = json.loads(d["items"] or "[]")
             salida.append(d)
         return jsonify(salida)
+
+    # ------------------------------------------------------------------ incidentes
+
+    @app.route("/api/incidentes", methods=["GET", "POST"])
+    @login_requerido
+    def api_incidentes():
+        con = get_con()
+        if request.method == "POST":
+            d = _datos()
+            try:
+                iid, orden_id = core_incidentes.reportar(con, d, _usuario())
+            except (TypeError, KeyError):
+                return jsonify({"error": "falta el activo"}), 400
+            except ValueError as e:
+                return jsonify({"error": str(e)}), 400
+            return jsonify({"ok": True, "id": iid, "orden_id": orden_id}), 201
+        return jsonify({"incidentes": core_incidentes.listar(con, request.args.get("equipo_id", type=int),
+                                                             request.args.get("estado") or None),
+                        "tipos": core_incidentes.TIPOS, "resultados": core_incidentes.RESULTADOS})
+
+    @app.route("/api/incidentes/<int:id_>/inspeccion", methods=["POST"])
+    @login_requerido
+    def api_incidente_inspeccion(id_):
+        if _rol() == "piloto":
+            return jsonify({"error": "la inspección la firma un técnico, un inspector o el representante del fabricante"}), 403
+        con = get_con()
+        try:
+            core_incidentes.cerrar_inspeccion(con, id_, _datos(), _rol(), _usuario())
+        except LookupError as e:
+            return jsonify({"error": str(e)}), 404
+        except PermissionError as e:
+            return jsonify({"error": str(e)}), 403
+        except ValueError as e:
+            return jsonify({"error": str(e)}), 400
+        return jsonify({"ok": True})
+
+    @app.route("/api/incidentes/<int:id_>", methods=["DELETE"])
+    @admin_requerido
+    def api_incidente_borrar(id_):
+        con = get_con()
+        con.execute("DELETE FROM incidentes WHERE id=?", (id_,))
+        con.commit()
+        return jsonify({"ok": True})
 
     @app.route("/api/checklists/plantilla")
     @login_requerido

@@ -254,10 +254,23 @@ async function elegir(id){
       <b>${est.estado === 'no_apto' ? `Recomendamos no volar ${escapar(EQUIPO.nombre)}` : `${escapar(EQUIPO.nombre)} tiene observaciones de mantenimiento`}:</b>
       ${(est.motivos||[]).slice(0,3).map(escapar).join(' · ')}${(est.motivos||[]).length > 3 ? '…' : ''}
       ${est.estado === 'no_apto' ? '<br>Aunque la revisión visual salga bien, consulta con el técnico antes de volar.' : ''}</div></div>` : '';
+  document.getElementById('avisoActivo').insertAdjacentHTML('beforeend',
+    `<div style="margin:8px 0 4px"><button class="btn secundario peq" type="button" id="btnIncidente">¿Golpe, caída o aterrizaje duro? Reportar incidente</button></div>`);
+  document.getElementById('btnIncidente').onclick = ()=>reportarIncidente(EQUIPO, async ()=>{
+    EQUIPOS = (await api('/api/equipos')).filter(e=>e.estado !== 'baja'); elegir(EQUIPO.id);
+  });
   document.getElementById('tipoTxt').textContent = EQUIPO.tipo_activo === 'avion' ? 'Avión' : 'Dron';
   document.getElementById('puntos').innerHTML = '<div class="empty"><span class="cargador oscuro"></span> Cargando lista…</div>';
   PUNTOS = await api(`/api/checklists/plantilla?tipo=${EQUIPO.tipo_activo}`);
   pintarPuntos();
+  // Piezas sin plazo del fabricante: se revisan contra su criterio de rechazo escrito.
+  api(`/api/criterios-rechazo?equipo_id=${EQUIPO.id}`).then(oc=>{
+    const con = oc.filter(c=>c.criterio_rechazo);
+    if(!con.length) return;
+    document.getElementById('avisoActivo').insertAdjacentHTML('beforeend', `<details class="aviso gris" style="margin-top:8px"><summary>
+      <b>Piezas on-condition (${con.length})</b>: rechazar si cumplen su criterio</summary>
+      <ul style="margin:8px 0 0 18px">${con.map(c=>`<li><b>${escapar(c.nombre)}</b>: ${escapar(c.criterio_rechazo)}</li>`).join('')}</ul></details>`);
+  }).catch(()=>{});
   cargarHistorial();
 }
 

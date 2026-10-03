@@ -136,7 +136,8 @@
 </div>
 
 <div class="card">
-  <div class="card-cab"><h3>Rentabilidad por cliente y finca</h3><div class="der" id="clientesNota"></div></div>
+  <div class="card-cab"><h3>Rentabilidad por cliente y finca</h3><div class="der"><span id="clientesNota"></span>
+    <button class="btn secundario peq" type="button" id="btnFacturacion" title="Una línea por cliente, finca y tarifa: se importa en Siigo, World Office o Alegra">Exportar para facturar (CSV)</button></div></div>
   <div class="tabla-envoltura rt"><table class="orden" id="tClientes"></table></div>
 </div>
 
@@ -148,6 +149,7 @@
       <div class="form-grid">
         <div class="campo" data-c="precio_combustible_gal"><label>Precio galón AvGas <span class="un">($/gal)</span></label><input type="number" min="0" step="any" name="precio_combustible_gal"></div>
         <div class="campo" data-c="costo_hora_mano_obra"><label>Costo hora mano de obra <span class="un">($/h)</span></label><input type="number" min="0" step="any" name="costo_hora_mano_obra"></div>
+        <div class="campo" data-c="nomina_mes"><label>Nómina mensual de pilotos y técnicos <span class="un">($/mes, con prestaciones)</span></label><input type="number" min="0" step="any" name="nomina_mes"></div>
         <div class="campo" data-c="moneda"><label>Moneda</label>
           <select name="moneda"><option value="COP">COP · peso colombiano</option><option value="USD">USD · dólar</option><option value="MXN">MXN · peso mexicano</option><option value="PEN">PEN · sol</option><option value="BRL">BRL · real</option></select></div>
       </div>
@@ -172,7 +174,7 @@
   <div class="card">
     <div class="card-cab"><h3>Tarifas por cliente</h3>
       <div class="der"><button class="btn peq" id="btnTarifa" type="button">＋ Nueva tarifa</button></div></div>
-    <p class="mut" style="font-size:12.5px;margin:-4px 0 12px">Valor por hectárea que se cobra al cliente. Una tarifa por tipo de activo gana a la de «todos»; la más reciente vigente se aplica a cada operación.</p>
+    <p class="mut" style="font-size:12.5px;margin:-4px 0 12px">Lo que se cobra al cliente, por hectárea o por hora de vuelo. Una tarifa por tipo de activo gana a la de «todos»; la más reciente vigente se aplica a cada operación.</p>
     <div class="tabla-envoltura"><table id="tTarifas" style="min-width:520px"></table></div>
     <div id="sinTarifa"></div>
   </div>
@@ -230,6 +232,7 @@ function pintarFaltantes(){
   const faltan = [], opc = [];
   if(!c.precio_combustible_gal) faltan.push('<b>Precio del galón de AvGas</b>: sin él, el costo de combustible del avión queda en cero y el margen sale inflado.');
   if(!c.costo_hora_mano_obra) faltan.push('<b>Costo hora de mano de obra</b>: las OT sin costo de mano de obra no suman al costo de mantenimiento.');
+  if(!c.nomina_mes) faltan.push('<b>Nómina mensual de pilotos y técnicos</b>: sin ella el margen no descuenta el personal y sale inflado.');
   if(!(R.tarifas||[]).length) faltan.push('<b>Tarifas por cliente</b>: sin tarifas no hay ingreso ni margen.');
   const conTarifa = new Set((R.tarifas||[]).map(t=>t.cliente.toLowerCase()));
   const sin = (TAR.clientes||[]).filter(n=>!conTarifa.has(n.toLowerCase()));
@@ -257,7 +260,7 @@ function pintarKpis(){
   const k = (lbl, ind, cuerpo, nota, extra='') => `<div class="kpi ${extra}"><div class="lbl">${lbl}</div>${cuerpo}<div class="note">${nota}</div>${ind!==undefined?`<div>${variacion(ind)}</div>`:''}</div>`;
   document.getElementById('kpis').innerHTML = [
     k('Ingreso por hectárea', t.ingreso_ha, `<div class="val acc">${dinero(val(t,'ingreso_ha'))}</div>`, `${fmt(val(t,'hectareas'),0)} ha · ${dinero(ingreso,true)} facturables`),
-    k('Costo por hectárea', t.costo_ha, `<div class="val">${dinero(val(t,'costo_ha'))}</div>`, 'mantenimiento + combustible'),
+    k('Costo por hectárea', t.costo_ha, `<div class="val">${dinero(val(t,'costo_ha'))}</div>`, 'mantenimiento + combustible + nómina'),
     k('Margen de la operación', t.margen, `<div class="val">${dinero(margen,true)}</div>`, pctMargen!==null?`${fmt(pctMargen,1)} % del ingreso · ${val(t,'hectareas')?dinero(margen/val(t,'hectareas'))+'/ha':''}`:'sin ingreso registrado', 'destacado'),
     k('Mantenimiento por hora', t.costo_mant_hora, `<div class="val">${dinero(val(t,'costo_mant_hora'))}<small>/h</small></div>`, `${dinero(val(t,'costo_mant'),true)} en ${fmt(val(t,'horas'))} h de vuelo`),
     combAvion
@@ -270,18 +273,19 @@ function totales(){
   const t = R.total;
   const ha = val(t,'hectareas') || 0, horas = val(t,'horas') || 0;
   const mant = val(t,'costo_mant') || 0;
+  const nom = val(t,'costo_personal') || 0;
   const margen = val(t,'margen');
   const ingreso = (val(t,'ingreso_ha') || 0) * ha;
   let comb = (val(t,'costo_combustible_hora') || 0) * horas;
-  // margen = ingreso − mantenimiento − combustible; se deduce el combustible para que la cascada cuadre.
-  if(margen !== null && ingreso) comb = Math.max(0, ingreso - mant - margen);
-  return {ingreso, comb, mant, margen: margen!==null ? margen : ingreso - comb - mant};
+  // margen = ingreso − mantenimiento − combustible − nómina; se deduce el combustible para que la cascada cuadre.
+  if(margen !== null && ingreso) comb = Math.max(0, ingreso - mant - nom - margen);
+  return {ingreso, comb, mant, nom, margen: margen!==null ? margen : ingreso - comb - mant - nom};
 }
 
 // ---------- Cascada ----------
 function pintarCascada(){
   const nodo = document.getElementById('cascada');
-  const {ingreso, comb, mant, margen} = totales();
+  const {ingreso, comb, mant, nom, margen} = totales();
   if(!ingreso){
     nodo.innerHTML = `<div class="empty" style="padding:40px 12px">Sin ingreso en el período.<br><span style="font-size:12px">Registra tarifas por cliente para ver la cascada.</span></div>`;
     document.getElementById('cascadaNota').textContent = '';
@@ -293,6 +297,7 @@ function pintarCascada(){
     {e:'Ingreso', v:ingreso, base:0, top:ingreso, color:'#1a1d24', signo:''},
     {e:W<460?'Comb.':'Combustible', v:-comb, base:ingreso-comb, top:ingreso, color:'#e0473e', signo:'−'},
     {e:W<460?'Mant.':'Mantenimiento', v:-mant, base:ingreso-comb-mant, top:ingreso-comb, color:'#f08a4b', signo:'−'},
+    {e:'Nómina', v:-nom, base:ingreso-comb-mant-nom, top:ingreso-comb-mant, color:'#c9663a', signo:'−'},
     {e:'Margen', v:margen, base:Math.min(0,margen), top:Math.max(0,margen), color: margen>=0 ? '#fdb913' : '#b3261e', signo:''},
   ];
   const minV = Math.min(0, margen), maxV = ingreso;
@@ -306,7 +311,7 @@ function pintarCascada(){
     const y1 = y(p.top), y2 = y(p.base), h = Math.max(2, y2 - y1);
     s += `<rect x="${x}" y="${y1}" width="${bw}" height="${h}" rx="6" fill="${p.color}" style="fill:${window.colorTema ? colorTema(p.color) : p.color}"><title>${p.e}: ${dinero(p.v)}</title></rect>`;
     if(i < pasos.length-1){
-      const nivel = i===0 ? ingreso : (i===1 ? ingreso-comb : ingreso-comb-mant);
+      const nivel = [ingreso, ingreso-comb, ingreso-comb-mant, ingreso-comb-mant-nom][i];
       s += `<line x1="${x+bw}" x2="${cx+paso-bw/2}" y1="${y(nivel)}" y2="${y(nivel)}" stroke="#9aa0aa" stroke-dasharray="3 3"/>`;
     }
     const pct = ingreso ? Math.abs(p.v)/ingreso*100 : 0;
@@ -398,18 +403,19 @@ function pintarActivos(){
 }
 
 function pintarClientes(){
-  const filas = (R.clientes||[]).map(c=>({...c, costo: (c.combustible||0)+(c.mantenimiento||0)}));
+  const filas = (R.clientes||[]).map(c=>({...c, costo: (c.combustible||0)+(c.mantenimiento||0)+(c.nomina||0)}));
   const max = Math.max(0, ...filas.map(f=>Math.abs(f.margen||0)));
   const sinIngreso = filas.filter(f=>!f.ingreso).length;
   document.getElementById('clientesNota').innerHTML = sinIngreso ? `<span class="tag proximo">${sinIngreso} sin tarifa aplicable</span>` : `${filas.length} combinaciones`;
   tablaOrdenable('tClientes', 'clientes', [
     {k:'cliente', t:'Cliente'}, {k:'finca', t:'Finca'}, {k:'tipo_activo', t:'Tipo'}, {k:'ha', t:'Hectáreas', num:1},
     {k:'horas', t:'Horas', num:1}, {k:'ingreso', t:'Ingreso', num:1}, {k:'combustible', t:'Combustible', num:1},
-    {k:'mantenimiento', t:'Mantenimiento', num:1}, {k:'margen', t:'Margen', num:1}, {k:'margen_ha', t:'Margen/ha', num:1}], filas, f=>`<tr>
+    {k:'mantenimiento', t:'Mantenimiento', num:1}, {k:'nomina', t:'Nómina', num:1}, {k:'margen', t:'Margen', num:1}, {k:'margen_ha', t:'Margen/ha', num:1}], filas, f=>`<tr>
       <td style="font-weight:650">${escapar(f.cliente)}</td><td>${escapar(f.finca||'—')}</td><td>${tipoIc(f.tipo_activo)}</td>
       <td class="num">${fmt(f.ha,0)}</td><td class="num">${fmt(f.horas,1)}</td>
       <td class="num">${f.ingreso?dinero(f.ingreso,true):'<span class="tag proximo">sin tarifa</span>'}</td>
       <td class="num">${f.combustible?dinero(f.combustible,true):'<span class="mut">—</span>'}</td><td class="num">${f.mantenimiento?dinero(f.mantenimiento,true):'<span class="mut">—</span>'}</td>
+      <td class="num">${f.nomina?dinero(f.nomina,true):'<span class="mut">—</span>'}</td>
       <td class="num">${celdaMargen(f.margen, max)}</td><td class="num"><b>${dinero(f.margen_ha)}</b></td></tr>`);
 }
 
@@ -441,11 +447,11 @@ document.getElementById('fConfig').onsubmit = async e=>{
 function pintarTarifas(){
   const t = document.getElementById('tTarifas');
   const lista = TAR.tarifas || [];
-  t.innerHTML = `<thead><tr><th>Cliente</th><th>Aplica a</th><th class="num">Valor/ha</th><th>Desde</th><th>Nota</th><th></th></tr></thead><tbody>` +
+  t.innerHTML = `<thead><tr><th>Cliente</th><th>Aplica a</th><th class="num">Valor</th><th>Desde</th><th>Nota</th><th></th></tr></thead><tbody>` +
     (lista.length ? lista.map(x=>`<tr>
       <td style="font-weight:650">${escapar(x.cliente)}</td>
       <td>${x.tipo_activo==='todos'?'<span class="tag gray">Todos</span>':tipoIc(x.tipo_activo)}</td>
-      <td class="num"><b style="color:var(--acc-ink)">${dinero(x.valor_ha)}</b></td>
+      <td class="num"><b style="color:var(--acc-ink)">${dinero(x.valor_ha)}</b><span class="mut">${UNIDAD_TXT[x.unidad||'ha']}</span></td>
       <td>${x.desde?fmtFecha(x.desde):'<span class="mut">siempre</span>'}</td>
       <td class="mut" style="font-size:12px">${escapar(x.nota||'')}</td>
       <td style="white-space:nowrap;text-align:right">
@@ -455,7 +461,7 @@ function pintarTarifas(){
   t.querySelectorAll('[data-ed]').forEach(b=>b.onclick = ()=>formTarifa(lista.find(x=>x.id==b.dataset.ed)));
   t.querySelectorAll('[data-del]').forEach(b=>b.onclick = async ()=>{
     const x = lista.find(y=>y.id==b.dataset.del);
-    if(!await confirmar({titulo:'Borrar tarifa', mensaje:`Se borrará la tarifa de <b>${escapar(x.cliente)}</b> (${TIPO_TXT[x.tipo_activo]}, ${dinero(x.valor_ha)}/ha). El ingreso de sus operaciones se recalculará.`, aceptar:'Borrar', peligro:true})) return;
+    if(!await confirmar({titulo:'Borrar tarifa', mensaje:`Se borrará la tarifa de <b>${escapar(x.cliente)}</b> (${TIPO_TXT[x.tipo_activo]}, ${dinero(x.valor_ha)}${UNIDAD_TXT[x.unidad||'ha']}). El ingreso de sus operaciones se recalculará.`, aceptar:'Borrar', peligro:true})) return;
     try{ await api('/api/tarifas/'+x.id, {method:'DELETE'}); toast('Tarifa borrada'); cargar(); }catch(e){ toast(e.message); }
   });
   const con = new Set(lista.map(x=>x.cliente.toLowerCase()));
@@ -465,17 +471,22 @@ function pintarTarifas(){
   document.querySelectorAll('#sinTarifa [data-cli]').forEach(b=>b.onclick = ()=>formTarifa(null, b.dataset.cli));
 }
 
+const UNIDAD_TXT = {ha:'/ha', hora:'/h'};
+
 function formTarifa(x, cliente){
   const nuevo = !x;
   const clientes = TAR.clientes || [];
   const v = ventana({
-    titulo: nuevo ? 'Nueva tarifa' : 'Editar tarifa', subtitulo: 'Valor por hectárea que se cobra al cliente', ancho:'angosta',
+    titulo: nuevo ? 'Nueva tarifa' : 'Editar tarifa', subtitulo: 'Lo que se cobra al cliente, por hectárea o por hora de vuelo', ancho:'angosta',
     cuerpo: `<form id="fTar" class="form-grid" style="grid-template-columns:1fr 1fr">
       <div class="campo ancho"><label>Cliente</label><input name="cliente" list="dlClientes" required value="${escapar(x?x.cliente:(cliente||''))}">
         <datalist id="dlClientes">${clientes.map(n=>`<option value="${escapar(n)}">`).join('')}</datalist></div>
       <div class="campo"><label>Tipo de activo</label><select name="tipo_activo">
         ${['todos','dron','avion'].map(t=>`<option value="${t}" ${(x?x.tipo_activo:'todos')===t?'selected':''}>${TIPO_TXT[t]}</option>`).join('')}</select></div>
-      <div class="campo"><label>Valor por hectárea</label><input name="valor_ha" type="number" min="0" step="any" required value="${x?x.valor_ha:''}"></div>
+      <div class="campo"><label>Se cobra</label><select name="unidad">
+        <option value="ha" ${(x?x.unidad:'ha')!=='hora'?'selected':''}>Por hectárea</option>
+        <option value="hora" ${x&&x.unidad==='hora'?'selected':''}>Por hora de vuelo</option></select></div>
+      <div class="campo"><label>Valor</label><input name="valor_ha" type="number" min="0" step="any" required value="${x?x.valor_ha:''}"></div>
       <div class="campo"><label>Vigente desde</label><input name="desde" type="date" value="${x&&x.desde?x.desde:''}"></div>
       <div class="campo"><label>Nota</label><input name="nota" value="${escapar(x&&x.nota||'')}"></div>
     </form>`,
@@ -498,6 +509,10 @@ function formTarifa(x, cliente){
 }
 
 document.getElementById('btnTarifa').onclick = ()=>formTarifa(null);
+document.getElementById('btnFacturacion').onclick = ()=>{
+  const q = new URLSearchParams({periodo:EST.periodo}); if(EST.tipo) q.set('tipo', EST.tipo);
+  descargar('/api/rentabilidad/facturacion.csv?' + q);
+};
 document.querySelectorAll('#segPeriodo button').forEach(b=>b.onclick = ()=>{ EST.periodo = b.dataset.p; cargar(); });
 document.querySelectorAll('#segTipo button').forEach(b=>b.onclick = ()=>{ EST.tipo = b.dataset.t; cargar(); });
 redibujarGraficas(()=>{ if(R) pintarCascada(); });

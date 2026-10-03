@@ -1,7 +1,7 @@
 {% extends "_layout.html" %}
 {% block titulo %}Ajustes{% endblock %}
 {% block encabezado %}Ajustes{% endblock %}
-{% block subtitulo %}Apariencia de la app y tu cuenta de acceso{% endblock %}
+{% block subtitulo %}Apariencia, tu cuenta de acceso y cuándo avisa la app{% endblock %}
 
 {% block contenido %}
 <style>
@@ -63,6 +63,29 @@
     </div>
   </div>
 </div>
+
+<div class="card">
+  <div class="card-cab"><h3>Avisos de mantenimiento</h3>
+    <div class="der"><span class="pista" style="margin:0">{% if es_admin %}Aplica a toda la empresa{% else %}Sólo el administrador los cambia{% endif %}</span></div></div>
+  <p class="pista" style="margin-top:0">«Vencido» es siempre el límite del fabricante o del RAC y no se puede mover. Aquí sólo
+    decides con cuánta anticipación avisa la app: puedes avisar antes, nunca después.</p>
+  <form id="fAvisos" class="form-grid" autocomplete="off">
+    <div class="campo ancho"><label>Avisar por</label>
+      <select name="modo" {% if not es_admin %}disabled{% endif %}>
+        <option value="restante">Lo que falta: horas, ciclos o días restantes</option>
+        <option value="porcentaje">Porcentaje de la vida usada (75 % y 90 %)</option></select></div>
+    <div class="campo"><label>Próximo · horas restantes</label><input type="number" min="0" step="any" name="aviso_horas_proximo"></div>
+    <div class="campo"><label>Crítico · horas restantes</label><input type="number" min="0" step="any" name="aviso_horas_critico"></div>
+    <div class="campo"><label>Próximo · ciclos restantes</label><input type="number" min="0" step="1" name="aviso_ciclos_proximo"></div>
+    <div class="campo"><label>Crítico · ciclos restantes</label><input type="number" min="0" step="1" name="aviso_ciclos_critico"></div>
+    <div class="campo"><label>Próximo · días restantes</label><input type="number" min="0" step="1" name="aviso_dias_proximo"></div>
+    <div class="campo"><label>Crítico · días restantes</label><input type="number" min="0" step="1" name="aviso_dias_critico"></div>
+    {% if es_admin %}<div class="campo ancho"><button class="btn" type="submit">Guardar avisos</button></div>{% endif %}
+  </form>
+  <div class="pista" id="avisosTexto" style="margin-top:4px"></div>
+  <div class="pista">En una pieza de vida corta el aviso se acota: nunca salta antes del 75 % (próximo) ni del 90 % (crítico)
+    de su vida, para que una inspección de pocas horas no quede en amarillo desde el día que se hace.</div>
+</div>
 {% endblock %}
 
 {% block scripts %}
@@ -76,6 +99,28 @@ botones.forEach(b=>b.onclick = async ()=>{
   try{ await api('/api/cuenta/tema', {method:'PUT', body:{tema}}); toast('Apariencia guardada'); }
   catch(err){ document.documentElement.dataset.tema = antes; marcar(antes); toast(err.message); }
 });
+
+const fAvisos = document.getElementById('fAvisos');
+function pintarAvisos(c){
+  for(const campo of fAvisos.querySelectorAll('[name]')){
+    campo.value = c[campo.name] ?? '';
+    if(campo.name !== 'modo'){
+      campo.disabled = {{ 'false' if es_admin else 'true' }} || c.modo === 'porcentaje';
+    }
+  }
+  document.getElementById('avisosTexto').innerHTML = `Hoy: <b>crítico</b> cuando ${escapar(c.texto.critico)}; <b>próximo</b> cuando ${escapar(c.texto.proximo)}.`;
+}
+api('/api/avisos-config').then(pintarAvisos).catch(e=>toast(e.message));
+fAvisos.querySelector('[name=modo]').onchange = e=>{
+  fAvisos.querySelectorAll('input').forEach(i=>i.disabled = e.target.value === 'porcentaje');
+};
+fAvisos.onsubmit = async e=>{
+  e.preventDefault();
+  const d = {};
+  for(const campo of fAvisos.querySelectorAll('[name]')) d[campo.name] = campo.value;
+  try{ pintarAvisos(await api('/api/avisos-config', {method:'PUT', body:d})); toast('Avisos guardados'); }
+  catch(err){ toast(err.message); }
+};
 
 document.getElementById('formPass').onsubmit = async e=>{
   e.preventDefault();

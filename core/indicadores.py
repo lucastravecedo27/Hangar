@@ -18,6 +18,9 @@ from core import flota as core_flota
 
 REGISTRO = {}
 
+# Indicadores con ingreso, margen o nómina: sólo los ve la gerencia (core.db.ROLES_COSTOS).
+CLAVES_GERENCIA = ("ingreso_ha", "margen", "costo_personal", "costo_ha")
+
 
 def indicador(clave, nombre, unidad="", aplica=("dron", "avion"), mejor="alto", grupo="Operación",
               decimales=1, formula=""):
@@ -275,6 +278,13 @@ def _incidentes(con, f):
     return None if v is None else v * 100
 
 
+@indicador("incidentes", "Incidentes reportados", "", mejor="bajo", grupo="Personal y seguridad", decimales=0,
+           formula="golpes, caídas, aterrizajes duros y colisiones registrados")
+def _incidentes_n(con, f):
+    w, p = f.where("i")
+    return _uno(con, f"SELECT COUNT(*) FROM incidentes i WHERE {w}", p)
+
+
 @indicador("dias_sin_datos", "Días sin registrar (peor activo)", "días", mejor="bajo", decimales=0,
            grupo="Flota y aeronavegabilidad", formula="días desde la última operación del activo más atrasado")
 def _dias_sin_datos(con, f):
@@ -306,17 +316,50 @@ def _costo_combustible(con, f):
     return gal * precio
 
 
+# Valor que factura una operación con la tarifa vigente de su cliente (la del tipo de activo si
+# la hay, si no la general). La tarifa se cobra por hectárea o por hora de vuelo según `unidad`.
+# Necesita los alias `o` (operaciones) y `e` (equipos). La usa también la ruta de rentabilidad.
+SQL_INGRESO_OP = """(
+    SELECT (CASE WHEN t.unidad = 'hora' THEN o.horas_vuelo ELSE o.hectareas END) * t.valor_ha FROM tarifas t
+    WHERE lower(t.cliente) = lower(o.cliente)
+      AND (t.tipo_activo = 'todos' OR t.tipo_activo = e.tipo_activo)
+      AND (t.desde IS NULL OR t.desde <= o.fecha)
+    ORDER BY (t.tipo_activo = e.tipo_activo) DESC, t.desde DESC NULLS LAST LIMIT 1)"""
+
+
 def _ingreso(con, f):
-    """Σ ha × tarifa vigente del cliente (la del tipo de activo si la hay, si no la general)."""
+    """Σ lo facturado a cada cliente: ha × tarifa o horas × tarifa, según cómo cobre."""
     w, p = f.where()
-    return _uno(con, f"""
-        SELECT COALESCE(SUM(o.hectareas * (
-            SELECT t.valor_ha FROM tarifas t
-            WHERE lower(t.cliente) = lower(o.cliente)
-              AND (t.tipo_activo = 'todos' OR t.tipo_activo = e.tipo_activo)
-              AND (t.desde IS NULL OR t.desde <= o.fecha)
-            ORDER BY (t.tipo_activo = e.tipo_activo) DESC, t.desde DESC NULLS LAST LIMIT 1)), 0)
-        FROM operaciones o JOIN equipos e ON e.id = o.equipo_id WHERE {w}""", p)
+    return _uno(con, f"SELECT COALESCE(SUM({SQL_INGRESO_OP}), 0) "
+                     f"FROM operaciones o JOIN equipos e ON e.id = o.equipo_id WHERE {w}", p)
+
+
+def _meses_periodo(con, f):
+    """Meses que cubre el período (para prorratear costos mensuales). Sin fechas, del primer al
+    último día con operación."""
+    d0, d1 = f.desde, f.hasta
+    if not d0 or not d1:
+        fila = con.execute("SELECT MIN(fecha) a, MAX(fecha) b FROM operaciones").fetchone()
+        d0, d1 = d0 or fila["a"], d1 or fila["b"]
+    if not d0 or not d1:
+        return 0
+    return ((date.fromisoformat(d1[:10]) - date.fromisoformat(d0[:10])).days + 1) / 30.4375
+
+
+def nomina_hora(con, f):
+    """Costo de nómina (pilotos y técnicos, con prestaciones) por hora volada de TODA la flota en
+    el período: la nómina se reparte entre activos y clientes según las horas que volaron."""
+    nomina = _meta_num(con, "nomina_mes")
+    if not nomina:
+        return None
+    flota = replace(f, tipo=None, equipo_id=None)
+    horas = _horas(con, flota)
+    return _div(nomina * _meses_periodo(con, flota), horas)
+
+
+def _costo_personal(con, f):
+    por_hora = nomina_hora(con, f)
+    return None if por_hora is None else por_hora * (_horas(con, f) or 0)
 
 
 @indicador("costo_mant_hora", "Costo de mantenimiento por hora", "$/h", mejor="bajo", grupo="Costos y rentabilidad",
@@ -347,26 +390,32 @@ def _costo_combustible_hora(con, f):
 
 
 @indicador("costo_ha", "Costo por hectárea", "$/ha", mejor="bajo", grupo="Costos y rentabilidad", decimales=0,
-           formula="(mantenimiento + combustible) ÷ ha")
+           formula="(mantenimiento + combustible + nómina) ÷ ha")
 def _costo_ha(con, f):
-    costo = (_costo_mant(con, f) or 0) + (_costo_combustible(con, f) or 0)
+    costo = (_costo_mant(con, f) or 0) + (_costo_combustible(con, f) or 0) + (_costo_personal(con, f) or 0)
     return _div(costo, _hectareas(con, f)) if costo else None
 
 
 @indicador("ingreso_ha", "Ingreso por hectárea", "$/ha", grupo="Costos y rentabilidad", decimales=0,
-           formula="tarifa vigente del cliente")
+           formula="lo facturado (por ha o por hora, según la tarifa del cliente) ÷ ha")
 def _ingreso_ha(con, f):
     ing = _ingreso(con, f)
     return _div(ing, _hectareas(con, f)) if ing else None
 
 
 @indicador("margen", "Margen de la operación", "$", grupo="Costos y rentabilidad", decimales=0,
-           formula="ingreso − mantenimiento − combustible")
+           formula="ingreso − mantenimiento − combustible − nómina")
 def _margen(con, f):
     ing = _ingreso(con, f)
     if not ing:
         return None
-    return ing - (_costo_mant(con, f) or 0) - (_costo_combustible(con, f) or 0)
+    return ing - (_costo_mant(con, f) or 0) - (_costo_combustible(con, f) or 0) - (_costo_personal(con, f) or 0)
+
+
+@indicador("costo_personal", "Costo de nómina", "$", mejor="bajo", grupo="Costos y rentabilidad", decimales=0,
+           formula="nómina mensual × meses del período, repartida por horas de vuelo")
+def _costo_personal_total(con, f):
+    return _costo_personal(con, f)
 
 
 # ======================= Eficiencia por activo =======================

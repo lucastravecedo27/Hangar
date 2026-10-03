@@ -177,6 +177,12 @@ function abrirNueva(){
           <div class="campo"><label>Hora</label><input type="time" name="hora"></div>
           <div class="campo"><label>Aeronave que va a volar *</label>
             <select name="equipo_id" required>${opcionesEquipos(activos, activos[0]?.id)}</select></div>
+          <div class="campo ancho"><label>Mapa o polígono del lote <span class="un">(enlace)</span></label>
+            <input name="mapa_url" type="url" placeholder="https://maps.google.com/… o el KML compartido"></div>
+          <div class="campo"><label>Condiciones del tiempo</label>
+            <input name="condiciones_tiempo" placeholder="Viento 8 km/h NE · 28 °C · sin lluvia hasta las 11"></div>
+          <div class="campo"><label>Zonas a evitar</label>
+            <input name="zonas_evitar" placeholder="Casas, quebrada, cable de alta tensión al norte"></div>
           <div class="campo ancho"><label>Observaciones adicionales</label>
             <textarea name="observaciones" placeholder="Accesos, obstáculos, contacto en finca, restricciones de viento…"></textarea></div>
         </div>
@@ -275,6 +281,9 @@ async function abrirDetalle(id){
           <tr><td class="mut">Fecha</td><td>${o.fecha?fmtFecha(o.fecha):'—'} ${escapar(o.hora||'')}</td></tr>
           <tr><td class="mut">Dron</td><td>${escapar(o.equipo||'—')}${o.modelo?` · ${escapar(o.modelo)}`:''}</td></tr>
           <tr><td class="mut">Hectáreas</td><td>${o.hectareas?fmt(o.hectareas,1)+' ha':'—'}</td></tr>
+          ${o.condiciones_tiempo?`<tr><td class="mut">Tiempo</td><td>${escapar(o.condiciones_tiempo)}</td></tr>`:''}
+          ${o.zonas_evitar?`<tr><td class="mut">Zonas a evitar</td><td><b>${escapar(o.zonas_evitar)}</b></td></tr>`:''}
+          ${o.mapa_url?`<tr><td class="mut">Mapa</td><td><a href="${escapar(o.mapa_url)}" target="_blank" rel="noopener">Abrir el mapa del lote →</a></td></tr>`:''}
         </tbody></table>
         ${o.observaciones?`<div style="margin-top:12px;background:var(--acc-soft);border-radius:10px;padding:10px 12px;font-size:12.5px">${escapar(o.observaciones)}</div>`:''}
       </div>

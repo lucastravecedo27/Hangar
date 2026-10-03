@@ -424,6 +424,33 @@ def registrar(app, get_con, login_requerido, admin_requerido):
     def api_bodega_compras():
         return jsonify(core_bod.compras(get_con(), request.args.get("horizonte", default=core_bod.HORIZONTE_COMPRA, type=int)))
 
+    @app.route("/api/bodega/envases", methods=["GET", "POST"])
+    @login_requerido
+    def api_bodega_envases():
+        con = get_con()
+        if request.method == "POST":
+            id_, error = core_bod.guardar_envase(con, _datos(), session.get("usuario"))
+            if error:
+                return jsonify({"error": error}), 400
+            return jsonify({"ok": True, "id": id_}), 201
+        desde, hasta = _rango()
+        return jsonify(core_bod.envases(con, desde, hasta))
+
+    @app.route("/api/bodega/envases/<int:id_>", methods=["PUT", "DELETE"])
+    @login_requerido
+    def api_bodega_envase(id_):
+        con = get_con()
+        if request.method == "DELETE":
+            if _rol() not in ("admin", "superadmin"):
+                return jsonify({"error": "sólo el administrador borra registros de envases"}), 403
+            con.execute("DELETE FROM envases WHERE id=?", (id_,))
+            con.commit()
+            return jsonify({"ok": True})
+        _, error = core_bod.guardar_envase(con, _datos(), session.get("usuario"), id_)
+        if error:
+            return jsonify({"error": error}), 400
+        return jsonify({"ok": True})
+
     @app.route("/api/bodega/registro-aplicaciones.csv")
     @login_requerido
     def api_bodega_registro_csv():

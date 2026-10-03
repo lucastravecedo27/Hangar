@@ -192,6 +192,7 @@
       <button data-t="insumos">Insumos de operación</button>
       <button data-t="control">Control de consumo</button>
       <button data-t="kardex">Kardex</button>
+      <button data-t="envases">Envases</button>
     </div>
     <div class="segmento" id="segPeriodo" style="margin-left:auto">
       <button data-p="30d">30 días</button><button data-p="90d" class="activo">90 días</button>
@@ -283,6 +284,18 @@
         <div class="fila-flex"><button class="btn secundario" id="btnRac" type="button">Descargar registro del período (CSV)</button>
           <button class="btn secundario" id="btnConciliar2" type="button">Conciliar operaciones</button></div></div>
     </div>
+  </div>
+</section>
+
+<!-- ===================== Envases ===================== -->
+<section class="pane" data-pane="envases">
+  <div class="kpis" id="kpisEnv"></div>
+  <div class="card">
+    <div class="card-cab"><h3>Triple lavado y devolución de envases vacíos</h3>
+      <div class="der"><button class="btn" type="button" id="btnEnvase">Registrar envases</button></div></div>
+    <p class="pista" style="margin-top:0">Lo revisan GlobalG.A.P., Rainforest Alliance y las auditorías del cliente: cada envase vacío se lava tres
+      veces, se perfora para que no se reutilice y se entrega al programa posconsumo (Campo Limpio) con su certificado.</p>
+    <div class="tabla-envoltura"><table class="bd-tabla" id="tEnv" style="min-width:900px"></table></div>
   </div>
 </section>
 
@@ -592,12 +605,12 @@ function pintarInsumos(){
   document.getElementById('tIns').innerHTML = `<thead><tr><th>Producto</th><th>Categoría</th><th>Tox.</th><th>Existencias</th>
       <th class="num">Total</th><th>Próximo vencimiento</th><th class="num">Cobertura</th><th class="num">Costo prom.</th><th class="num">Valor</th><th>Estado</th></tr></thead><tbody>` +
     (l.map(i=>`<tr class="fila" data-item="${i.id}"><td class="art"><b><i class="bd-punto" style="background:${i.color_final};margin-right:6px"></i>${escapar(i.nombre)}</b>
-        <small>${[i.ingrediente_activo, i.concentracion, i.registro_ica?'ICA '+i.registro_ica:null, i.presentacion].filter(Boolean).map(escapar).join(' · ')||'—'}</small></td>
+        <small>${[i.de_cliente ? `Del cliente${i.cliente ? ' '+i.cliente : ''}` : null, i.ingrediente_activo, i.concentracion, i.registro_ica?'ICA '+i.registro_ica:null, i.presentacion].filter(Boolean).map(escapar).join(' · ')||'—'}</small></td>
       <td>${chipCat(i)}</td><td>${chipTox(i.categoria_tox)}</td><td>${exChips(i, ubic)}</td>
       <td class="num"><b>${fmt(i.saldo,2)}</b> ${escapar(i.unidad)}</td>
       <td>${i.proximo_vence?`${fmtFecha(i.proximo_vence)}`:'<span class="mut">—</span>'}</td>
       <td class="num">${i.cobertura_dias!=null?fmtDias(i.cobertura_dias):'<span class="mut">sin consumo</span>'}</td>
-      <td class="num">${dinero(i.costo)}</td><td class="num">${dinero(i.valor)}</td><td>${tagNiv(i.nivel, i.nivel_txt)}</td></tr>`).join('') ||
+      <td class="num">${i.de_cliente ? '<span class="mut">del cliente</span>' : dinero(i.costo)}</td><td class="num">${i.de_cliente ? '<span class="mut">—</span>' : dinero(i.valor)}</td><td>${tagNiv(i.nivel, i.nivel_txt)}</td></tr>`).join('') ||
       `<tr><td colspan="10"><div class="empty">${D.inventario.some(i=>i.clase==='insumo') ? 'Ningún producto coincide con el filtro.' :
         'Aún no hay insumos.' + (ES_ADMIN ? ' Crea tus fitosanitarios, aceite agrícola y demás con «Nuevo artículo».' : '')}</div></td></tr>`) + '</tbody>';
   document.querySelectorAll('#tIns [data-item]').forEach(f=>f.onclick=()=>abrirItem(Number(f.dataset.item)));
@@ -986,6 +999,10 @@ function formArticulo(previo=null, pre={}){
         <div id="aSug"></div>
         <form class="form-grid" onsubmit="return false" style="margin-top:14px">
           <div class="campo" style="grid-column:span 2"><label>Nombre comercial *</label><input name="nombre" value="${escapar(E.nombre||'')}" required></div>
+          <div class="campo"><label>¿De quién es el producto?</label><select name="propietario">
+            <option value="empresa" ${(E.propietario||'empresa')==='empresa'?'selected':''}>De la empresa (inventario y costo)</option>
+            <option value="cliente" ${E.propietario==='cliente'?'selected':''}>Lo pone el cliente (sólo trazabilidad)</option></select></div>
+          <div class="campo"><label>Cliente <span class="un">(si lo pone el cliente)</span></label><input name="cliente" value="${escapar(E.cliente||'')}"></div>
           <div class="campo"><label>Ingrediente activo</label><input name="ingrediente_activo" value="${escapar(E.ingrediente_activo||'')}"></div>
           <div class="campo"><label>Concentración</label><input name="concentracion" value="${escapar(E.concentracion||'')}" placeholder="480 g/L, 80 % WP…"></div>
           <div class="campo"><label>Registro ICA</label><input name="registro_ica" value="${escapar(E.registro_ica||'')}"></div>
@@ -1257,18 +1274,78 @@ function comoFunciona(inicio){
   pintarPaso();
 }
 
+// ------------------------------------------------------------------ Envases (triple lavado)
+let ENV = null;
+async function cargarEnvases(){
+  try{ ENV = await api('/api/bodega/envases?' + new URLSearchParams({periodo:EST.periodo})); }
+  catch(e){ toast(e.message); return; }
+  const k = ENV.kpis;
+  const caja = (lbl, val, nota, clase='') => `<div class="kpi"><div class="lbl">${lbl}</div><div class="val ${clase}">${val}</div><div class="note">${nota}</div></div>`;
+  document.getElementById('kpisEnv').innerHTML =
+    caja('Envases vacíos', fmt(k.envases,0), 'en el período') +
+    caja('Con triple lavado', k.pct_lavado!=null ? fmt(k.pct_lavado,0)+' %' : '—', `${fmt(k.lavados,0)} de ${fmt(k.envases,0)}`, k.pct_lavado!=null && k.pct_lavado<100 ? 'ambar' : '') +
+    caja('Devueltos al posconsumo', k.pct_devuelto!=null ? fmt(k.pct_devuelto,0)+' %' : '—', `${fmt(k.devueltos,0)} entregados`) +
+    caja('Por devolver', fmt(k.por_devolver,0), 'guardados a la espera de entrega', k.por_devolver ? 'ambar' : '');
+  document.getElementById('tEnv').innerHTML = `<thead><tr><th>Fecha</th><th>Producto</th><th>Cliente · OS</th><th class="num">Envases</th>
+    <th>Triple lavado</th><th>Perforado</th><th>Devolución</th><th>Certificado</th><th></th></tr></thead><tbody>` +
+    (ENV.filas.map(f=>`<tr><td class="nowrap">${fmtFecha(f.fecha)}</td><td class="art"><b>${escapar(f.producto)}</b><small>${escapar(f.capacidad||'')}</small></td>
+      <td>${escapar([f.cliente, f.orden_servicio].filter(Boolean).join(' · ')||'—')}</td><td class="num">${fmt(f.cantidad,0)}</td>
+      <td>${f.triple_lavado ? `<span class="tag ok">Sí</span> <small>${escapar(f.lavado_por||'')}</small>` : '<span class="tag critico">No</span>'}</td>
+      <td>${f.perforado ? 'Sí' : '<span class="mut">No</span>'}</td>
+      <td>${f.devuelto_en ? `${fmtFecha(f.devuelto_en)}<small>${escapar(f.centro_acopio||'')}</small>` : '<span class="tag proximo">Pendiente</span>'}</td>
+      <td>${escapar(f.certificado||'—')}</td>
+      <td style="text-align:right"><button class="btn secundario peq" type="button" data-env="${f.id}">${f.devuelto_en?'Editar':'Registrar entrega'}</button></td></tr>`).join('')
+     || '<tr><td colspan="9"><div class="empty">Sin envases registrados en el período.</div></td></tr>') + '</tbody>';
+  document.querySelectorAll('#tEnv [data-env]').forEach(b=>b.onclick = ()=>formEnvase(ENV.filas.find(x=>x.id==b.dataset.env)));
+}
+function formEnvase(x){
+  const nuevo = !x; x = x || {fecha: new Date().toISOString().slice(0,10), triple_lavado: 1, perforado: 1, cantidad: 1};
+  const productos = (D && D.inventario || []).filter(i=>i.clase==='insumo').map(i=>i.nombre);
+  const v = ventana({titulo: nuevo ? 'Registrar envases vacíos' : 'Envases · entrega al posconsumo', ancho:'angosta',
+    cuerpo: `<form id="fEnv" class="form-grid" style="grid-template-columns:1fr 1fr">
+      <div class="campo"><label>Fecha</label><input type="date" name="fecha" value="${escapar(x.fecha||'')}" required></div>
+      <div class="campo"><label>Envases</label><input type="number" min="1" step="1" name="cantidad" value="${x.cantidad||1}" required></div>
+      <div class="campo ancho"><label>Producto</label><input name="producto" list="envProd" value="${escapar(x.producto||'')}" required>
+        <datalist id="envProd">${productos.map(n=>`<option value="${escapar(n)}">`).join('')}</datalist></div>
+      <div class="campo"><label>Capacidad</label><input name="capacidad" value="${escapar(x.capacidad||'')}" placeholder="Garrafa 20 L"></div>
+      <div class="campo"><label>Cliente</label><input name="cliente" value="${escapar(x.cliente||'')}"></div>
+      <div class="campo"><label>Orden de servicio</label><input name="orden_servicio" value="${escapar(x.orden_servicio||'')}" placeholder="OS-0012"></div>
+      <div class="campo"><label>Lavado por</label><input name="lavado_por" value="${escapar(x.lavado_por||'')}"></div>
+      <label class="fila-flex campo"><input type="checkbox" name="triple_lavado" ${x.triple_lavado?'checked':''} style="width:16px;height:16px"> Triple lavado hecho</label>
+      <label class="fila-flex campo"><input type="checkbox" name="perforado" ${x.perforado?'checked':''} style="width:16px;height:16px"> Perforado</label>
+      <div class="campo"><label>Entregado el</label><input type="date" name="devuelto_en" value="${escapar(x.devuelto_en||'')}"></div>
+      <div class="campo"><label>Centro de acopio</label><input name="centro_acopio" value="${escapar(x.centro_acopio||'')}" placeholder="Campo Limpio · Apartadó"></div>
+      <div class="campo ancho"><label>N.º de certificado de entrega</label><input name="certificado" value="${escapar(x.certificado||'')}"></div>
+      <div class="campo ancho"><label>Nota</label><input name="nota" value="${escapar(x.nota||'')}"></div>
+    </form>`,
+    pie: `<div class="der"><button class="btn secundario" data-no type="button">Cancelar</button><button class="btn" data-si type="button">Guardar</button></div>`});
+  v.$('[data-no]').onclick = ()=>v.cerrar();
+  v.$('[data-si]').onclick = async ()=>{
+    const f = v.$('#fEnv'); if(!f.reportValidity()) return;
+    const d = Object.fromEntries(new FormData(f).entries());
+    d.triple_lavado = f.triple_lavado.checked; d.perforado = f.perforado.checked;
+    try{
+      if(nuevo) await api('/api/bodega/envases', {method:'POST', body:d});
+      else await api('/api/bodega/envases/'+x.id, {method:'PUT', body:d});
+      toast('Envases guardados'); await v.cerrar(); cargarEnvases();
+    }catch(e){ toast(e.message); }
+  };
+}
+document.getElementById('btnEnvase').onclick = ()=>formEnvase(null);
+
 // ------------------------------------------------------------------ Enganches
 function irA(tab){
   EST.tab = tab;
   document.querySelectorAll('#segTab button').forEach(b=>b.classList.toggle('activo', b.dataset.t===tab));
   document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('ver', p.dataset.pane===tab));
   if(tab==='kardex') cargarKardex();
+  if(tab==='envases') cargarEnvases();
   // Las gráficas se dibujan con el ancho real: al mostrar una pestaña oculta se repintan.
   if(tab==='panorama' && D){ pintarGraficaControl(); pintarUbic(); }
   history.replaceState(null, '', tab==='panorama' ? location.pathname : `?tab=${tab}`);
 }
 document.getElementById('segTab').onclick = e=>{ const b = e.target.closest('button'); if(b) irA(b.dataset.t); };
-document.getElementById('segPeriodo').onclick = e=>{ const b = e.target.closest('button'); if(!b) return; EST.periodo = b.dataset.p; cargar(); };
+document.getElementById('segPeriodo').onclick = e=>{ const b = e.target.closest('button'); if(!b) return; EST.periodo = b.dataset.p; cargar(); if(EST.tab==='envases') cargarEnvases(); };
 document.getElementById('segTipo').onclick = e=>{ const b = e.target.closest('button'); if(!b) return; EST.tipoK = b.dataset.k;
   document.querySelectorAll('#segTipo button').forEach(x=>x.classList.toggle('activo', x===b)); cargarKardex(); };
 ['fKClase','fKUbic'].forEach(id=>document.getElementById(id).onchange = cargarKardex);

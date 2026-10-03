@@ -59,7 +59,7 @@
 {% block barra %}
 <div class="tabsbar"><div class="wrap"><div class="nr-filtros">
   <div class="segmento" id="segAplica">
-    <button data-a="" class="activo">Todo</button><button data-a="avion">Avión</button><button data-a="dron">Drones</button>
+    <button data-a="" class="activo">Todo</button><button data-a="avion">Aviación tripulada</button><button data-a="dron">UAS (drones)</button>
     <button data-a="empresa">Empresa</button><button data-a="personal">Pilotos</button>
   </div>
   <span style="margin-left:auto;font-size:12px;color:var(--mut)" id="nrFecha"></span>
@@ -89,7 +89,12 @@
 {% block scripts %}
 <script>
 const EST_TXT = {cumple:'Cumple', atencion:'Atención', falta:'Falta dato', manual:'En campo', no_aplica:'No aplica'};
-const APLICA_TXT = {avion:'Avión', dron:'Drones', empresa:'Empresa', personal:'Pilotos'};
+const APLICA_TXT = {avion:'Aviación tripulada', dron:'UAS', empresa:'Empresa', personal:'Pilotos'};
+// La norma no es la misma para los dos mundos: lo dejó claro el ingeniero de la encuesta.
+const NOTA_APLICA = {
+  avion: 'Aviación tripulada (RAC 91, 43, 137): inspecciones con plazo, directivas, liberación firmada por un mecánico certificador con licencia y, en las órdenes de trabajo, aprobación del jefe técnico, inspección independiente y trabajo diferido con plazo.',
+  dron: 'UAS (RAC 100): la norma pide mantener según el fabricante y un programa de mantenimiento propio, pero no fija el paso a paso ni quién firma como en la aviación tripulada. Hangar no le exige al dron los controles del avión; los adicionales (criterios de rechazo, avisos más tempranos) los decide el explotador y nunca rebajan lo del fabricante.',
+};
 const IC_DOC = `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11.6 2.8H5.6A1.6 1.6 0 0 0 4 4.4v11.2a1.6 1.6 0 0 0 1.6 1.6h8.8a1.6 1.6 0 0 0 1.6-1.6V7.2z"/><path d="M11.6 2.8v4.4H16M7 11h6M7 14h4"/></svg>`;
 // Entregables que exige la norma. Se generan en el módulo de Informes (PDF y Excel).
 const ENTREGABLES = [
@@ -136,7 +141,7 @@ function pintar(){
   lista.forEach(q=>{ const g = q.rac.split(' · ')[0]; (grupos[g] = grupos[g] || []).push(q); });
   const cont = document.getElementById('requisitos');
   if(!lista.length){ cont.innerHTML = `<div class="empty">Nada con ese filtro.</div>`; return; }
-  cont.innerHTML = Object.entries(grupos).map(([g, qs])=>`<div class="nr-grupo"><h3>${escapar(g)}</h3><div class="nr-lista">
+  cont.innerHTML = (NOTA_APLICA[APLICA] ? `<div class="aviso gris" style="margin-bottom:14px"><div>${escapar(NOTA_APLICA[APLICA])}</div></div>` : '') + Object.entries(grupos).map(([g, qs])=>`<div class="nr-grupo"><h3>${escapar(g)}</h3><div class="nr-lista">
     ${qs.sort((a,b)=>orden[a.estado]-orden[b.estado]).map(q=>`<button class="req ${q.estado}" type="button" data-id="${q.id}">
       <span class="num">${escapar(q.rac)} · ${escapar(q.numeral)}</span>
       <span class="tit">${escapar(q.titulo)}</span>

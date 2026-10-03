@@ -135,7 +135,10 @@ def color_item(item):
 CAMPOS_ITEM = ("clase", "nombre", "codigo", "modelo", "catalogo", "catalogo_ref", "categoria",
                "ingrediente_activo", "concentracion", "categoria_tox", "registro_ica", "unidad",
                "presentacion", "contenido", "stock_minimo", "cantidad_cambio", "dosis_ha", "proveedor",
-               "costo_referencia", "color", "serializado", "activo", "nota")
+               "costo_referencia", "color", "serializado", "activo", "nota", "propietario", "cliente")
+# De quién es el producto. Lo que pone el cliente se registra (trazabilidad de la aplicación,
+# RAC 137.71) pero no es inventario de la empresa: no tiene valor, mínimo ni alerta de compra.
+PROPIETARIOS = {"empresa": "De la empresa", "cliente": "Del cliente"}
 _NUMERICOS_ITEM = ("contenido", "stock_minimo", "cantidad_cambio", "dosis_ha", "costo_referencia")
 
 
@@ -173,6 +176,15 @@ def limpiar_item(datos, previo=None):
         d["color"] = None
     if d.get("catalogo") not in (None, "pieza", "despiece"):
         d["catalogo"] = None
+    if d.get("propietario") not in PROPIETARIOS:
+        d["propietario"] = "empresa"
+    if d["propietario"] == "cliente":
+        if d["clase"] != "insumo":
+            return None, "sólo los insumos de aplicación pueden ser del cliente"
+        d["stock_minimo"] = 0
+        d["costo_referencia"] = None
+    else:
+        d["cliente"] = None
     d.setdefault("serializado", 0)
     d.setdefault("activo", 1)
     return d, None
@@ -362,6 +374,9 @@ def inventario(con, clase=None, hoy=None):
         d["reservado"] = _r(reservas.get(it["id"], 0), 3)
         d["disponible"] = _r((s["saldo"] or 0) - d["reservado"], 3)
         d["color_final"] = color_item(it)
+        d["de_cliente"] = (it.get("propietario") or "empresa") == "cliente"
+        if d["de_cliente"]:
+            d["valor"] = 0   # no es de la empresa: no suma al valor del inventario
         d["existencias"] = [{"ubicacion_id": k, "ubicacion": (ubic.get(k) or {}).get("nombre") or "Sin ubicación",
                              "cantidad": v} for k, v in sorted(s["por_ubicacion"].items(), key=lambda x: -x[1])]
         lotes = []
@@ -788,7 +803,7 @@ def compras(con, horizonte=HORIZONTE_COMPRA, inv=None):
             s["eventos"].append(evento)
     lista = []
     for it in inv:
-        if not it["activo"]:
+        if not it["activo"] or it.get("de_cliente"):
             continue
         prevista = necesidad.get(it["id"], {"cantidad": 0, "eventos": []})
         necesita = prevista["cantidad"] + (it["reservado"] or 0)
@@ -1120,3 +1135,63 @@ def resumen(con, desde=None, hasta=None, hoy=None):
         "inventario": inv, "tanques": tanques, "compras": comp, "control": ctrl, "vencen": vencen,
         "ubicaciones": ubic,
     }
+
+
+# ======================================================================
+# Envases vacíos: triple lavado y devolución (posconsumo)
+# ======================================================================
+# Lo pidió la gerencia en la encuesta de validación: GlobalG.A.P., Rainforest Alliance y las
+# auditorías del cliente preguntan por el triple lavado y por la devolución de envases vacíos al
+# programa posconsumo (en Colombia, Campo Limpio). Un registro por lote de envases.
+
+def envases(con, desde=None, hasta=None, limite=500):
+    cond, p = ["1=1"], []
+    if desde:
+        cond.append("fecha>=?"); p.append(desde)
+    if hasta:
+        cond.append("fecha<=?"); p.append(hasta)
+    filas = [dict(f) for f in con.execute(
+        f"SELECT * FROM envases WHERE {' AND '.join(cond)} ORDER BY fecha DESC, id DESC LIMIT ?", p + [limite]).fetchall()]
+    total = sum(f["cantidad"] or 0 for f in filas)
+    lavados = sum(f["cantidad"] or 0 for f in filas if f["triple_lavado"])
+    devueltos = sum(f["cantidad"] or 0 for f in filas if f["devuelto_en"])
+    return {"filas": filas, "kpis": {
+        "envases": total, "lavados": lavados, "devueltos": devueltos, "por_devolver": total - devueltos,
+        "pct_lavado": _r(lavados / total * 100, 1) if total else None,
+        "pct_devuelto": _r(devueltos / total * 100, 1) if total else None}}
+
+
+def guardar_envase(con, datos, usuario=None, id_=None):
+    """Valida y guarda un lote de envases. Devuelve (id, error)."""
+    producto = (datos.get("producto") or "").strip()
+    if not producto:
+        return None, "falta el producto"
+    cantidad = _entero(datos.get("cantidad"))
+    if not cantidad or cantidad <= 0:
+        return None, "la cantidad de envases tiene que ser un número entero mayor que cero"
+    si = lambda k: 1 if datos.get(k) in (1, True, "1", "true", "on") else 0
+    devuelto = (datos.get("devuelto_en") or "").strip() or None
+    if devuelto and not (datos.get("centro_acopio") or "").strip():
+        return None, "indica el centro de acopio donde se entregaron"
+    if devuelto and not si("triple_lavado"):
+        return None, "un envase sólo se devuelve con triple lavado"
+    valores = {"fecha": datos.get("fecha") or date.today().isoformat(), "producto": producto,
+               "cliente": (datos.get("cliente") or "").strip() or None,
+               "operacion_id": _entero(datos.get("operacion_id")),
+               "orden_servicio": (datos.get("orden_servicio") or "").strip() or None,
+               "cantidad": cantidad, "capacidad": (datos.get("capacidad") or "").strip() or None,
+               "triple_lavado": si("triple_lavado"), "perforado": si("perforado"),
+               "lavado_por": (datos.get("lavado_por") or "").strip() or None, "devuelto_en": devuelto,
+               "centro_acopio": (datos.get("centro_acopio") or "").strip() or None,
+               "certificado": (datos.get("certificado") or "").strip() or None,
+               "archivo": datos.get("archivo") or None, "nota": (datos.get("nota") or "").strip() or None}
+    if id_:
+        con.execute(f"UPDATE envases SET {', '.join(f'{k}=?' for k in valores)} WHERE id=?",
+                    list(valores.values()) + [id_])
+    else:
+        valores["usuario"] = usuario
+        cur = con.execute(f"INSERT INTO envases({', '.join(valores)}) VALUES({', '.join('?' * len(valores))})",
+                          list(valores.values()))
+        id_ = cur.lastrowid
+    con.commit()
+    return id_, None

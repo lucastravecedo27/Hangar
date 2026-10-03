@@ -16,10 +16,11 @@ from core import correo as core_correo
 from core import db as core_db
 from core import proyeccion as core_proyeccion
 
-ESTADOS_OT = ["borrador", "programada", "enviada", "en_proceso", "completada", "cancelada"]
+ESTADOS_OT = ["borrador", "programada", "enviada", "en_proceso", "diferida", "completada", "cancelada"]
 ESTADOS_OS = ["programada", "enviada", "en_ruta", "en_ejecucion", "finalizada", "cancelada"]
 ETIQUETA_OT = {"borrador": "Borrador", "programada": "Programada", "enviada": "Enviada",
-               "en_proceso": "En proceso", "completada": "Completada", "cancelada": "Cancelada"}
+               "en_proceso": "En proceso", "diferida": "Diferida", "completada": "Completada",
+               "cancelada": "Cancelada"}
 ETIQUETA_OS = {"programada": "Programada", "enviada": "Enviada", "en_ruta": "En ruta",
                "en_ejecucion": "En ejecución", "finalizada": "Finalizada", "cancelada": "Cancelada"}
 
@@ -137,8 +138,22 @@ def listar_ot(con, estado=None, equipo_id=None):
     return salida
 
 
+def diferidas(con):
+    """Órdenes diferidas con su plazo: vencida si ya pasó la fecha límite."""
+    from datetime import date
+    hoy = date.today().isoformat()
+    salida = []
+    for f in con.execute("SELECT id, codigo, equipo_id, titulo, diferida_hasta, diferida_motivo FROM ordenes_trabajo "
+                         "WHERE estado='diferida'").fetchall():
+        d = dict(f)
+        d["vencida"] = bool(d["diferida_hasta"] and d["diferida_hasta"] < hoy)
+        salida.append(d)
+    return salida
+
+
 def cerrar_ot_registrando_mantenimientos(con, orden_id, realizado_por=None, firmado_por=None, licencia=None,
-                                         fecha=None, costo_hora=None, usuario=None):
+                                         fecha=None, costo_hora=None, usuario=None, inspector=None,
+                                         inspector_licencia=None, horas_hombre=None):
     """Al completar la orden, cada tarea hecha se anota en la bitácora de reparaciones y las que
     van contra una pieza concreta (o una inspección) vuelven a cero desde la fecha de cierre.
 
@@ -180,9 +195,12 @@ def cerrar_ot_registrando_mantenimientos(con, orden_id, realizado_por=None, firm
         costo_total += (rep or 0) + (mano or 0)
         if t["componente_id"]:
             piezas += 1
+    if horas_hombre is None:
+        horas_hombre = sum(t.get("horas_mano_obra") or 0 for t in hechas) or None
     con.execute("UPDATE ordenes_trabajo SET estado='completada', cerrado_en=datetime('now'), "
-                "actualizado=datetime('now'), firmado_por=?, licencia_firma=? WHERE id=?",
-                (firmado_por, licencia, orden_id))
+                "actualizado=datetime('now'), firmado_por=?, licencia_firma=?, inspector=?, "
+                "inspector_licencia=?, horas_hombre=? WHERE id=?",
+                (firmado_por, licencia, inspector, inspector_licencia, horas_hombre, orden_id))
     con.commit()
     return {"ok": True, "mantenimientos": len(hechas), "piezas": piezas, "costo": round(costo_total, 2),
             "bodega": bodega,
@@ -246,6 +264,12 @@ def productos_os(con, orden_id):
         "SELECT * FROM os_productos WHERE orden_id=? ORDER BY orden_n, id", (orden_id,)).fetchall()]
 
 
+def url_mapa(v):
+    """Enlace al mapa o polígono del lote (Google Maps, KML compartido…). Sólo http(s)."""
+    v = (v or "").strip()
+    return v if v.lower().startswith(("https://", "http://")) else None
+
+
 def crear_os(con, datos, usuario=None):
     codigo = core_db.siguiente_codigo(con, "ordenes_servicio", "OS")
     try:
@@ -255,13 +279,15 @@ def crear_os(con, datos, usuario=None):
     cur = con.execute(
         """INSERT INTO ordenes_servicio(codigo, piloto, piloto_email, cliente, finca, zona, productos,
                                         fecha, hora, equipo_id, hectareas, dosis, observaciones,
-                                        estado, creado_por)
-           VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                                        estado, creado_por, condiciones_tiempo, zonas_evitar, mapa_url)
+           VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
         (codigo, datos.get("piloto") or None, datos.get("piloto_email") or None,
          datos.get("cliente") or None, datos.get("finca") or None, datos.get("zona") or None,
          datos.get("productos") or None, datos.get("fecha") or None, datos.get("hora") or None,
          datos.get("equipo_id") or None, hectareas, datos.get("dosis") or None,
-         datos.get("observaciones") or None, datos.get("estado") or "programada", usuario),
+         datos.get("observaciones") or None, datos.get("estado") or "programada", usuario,
+         (datos.get("condiciones_tiempo") or "").strip() or None, (datos.get("zonas_evitar") or "").strip() or None,
+         url_mapa(datos.get("mapa_url"))),
     )
     orden_id = cur.lastrowid
     if datos.get("productos_lista"):
@@ -397,7 +423,10 @@ def cuerpo_os(os_):
             ("Aeronave asignada", f'{os_.get("equipo") or "—"}' + (f' · {os_["modelo"]}' if os_.get("modelo") else "")),
             ("Hectáreas previstas", f'{os_["hectareas"]:.1f} ha' if os_.get("hectareas") else None),
             ("Dosis", os_.get("dosis")),
+            ("Condiciones del tiempo", os_.get("condiciones_tiempo")),
+            ("Zonas a evitar", os_.get("zonas_evitar")),
         ])
+        + (f'<p><a href="{escape(os_["mapa_url"])}">Ver el mapa del lote</a></p>' if os_.get("mapa_url") else "")
         + (_lista_productos_html(productos) if productos else "")
         + (f'<div style="background:#f3f7fc;border-radius:10px;padding:12px 14px;margin-top:8px">'
            f'<b>Observaciones adicionales</b><br>{escape(os_["observaciones"])}</div>' if os_.get("observaciones") else ""))

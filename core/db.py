@@ -404,9 +404,30 @@ COLUMNAS_FLOTA = {
                        "ciclos_inicial_anterior": "DOUBLE PRECISION", "pieza_serie_id": "INTEGER"},
     "ot_tareas": {"costo_repuesto": "DOUBLE PRECISION", "costo_mano_obra": "DOUBLE PRECISION",
                   "horas_mano_obra": "DOUBLE PRECISION"},
-    "ordenes_trabajo": {"firmado_por": "TEXT", "licencia_firma": "TEXT"},
+    "ordenes_trabajo": {"firmado_por": "TEXT", "licencia_firma": "TEXT",
+                        # Pasos que pide la aviación tripulada (RAC 145 / 43): aprobación del jefe
+                        # técnico antes de empezar, inspección independiente (segunda firma), trabajo
+                        # diferido con plazo y trabajo contratado a un taller externo.
+                        "aprobado_por": "TEXT", "aprobado_en": "TEXT",
+                        "inspector": "TEXT", "inspector_licencia": "TEXT",
+                        "diferida_hasta": "TEXT", "diferida_motivo": "TEXT",
+                        "taller_externo": "TEXT", "taller_certificado": "TEXT",
+                        "horas_hombre": "DOUBLE PRECISION"},
     "personal": {"licencia_tipo": "TEXT", "habilitaciones": "TEXT"},
+    # Orden de servicio: lo que el piloto pidió saber antes de salir (encuesta de validación).
+    "ordenes_servicio": {"condiciones_tiempo": "TEXT", "zonas_evitar": "TEXT", "mapa_url": "TEXT",
+                         "mapa_archivo": "TEXT"},
     "usuarios": {"tema": "TEXT"},
+    # Cómo cobra el cliente: 'ha' (valor_ha es por hectárea) u 'hora' (valor_ha es por hora de vuelo).
+    "tarifas": {"unidad": "TEXT NOT NULL DEFAULT 'ha'"},
+}
+
+# Columnas nuevas de tablas que crea ESQUEMA_FLOTA: se añaden DESPUÉS de crearlo (en una base
+# nueva la tabla aún no existe cuando se aplican las de COLUMNAS_FLOTA).
+COLUMNAS_POSTERIORES = {
+    # Producto de la empresa o del cliente: el inventario y el costo sólo cuentan lo propio; lo del
+    # cliente se registra para la trazabilidad de la aplicación (RAC 137.71).
+    "bodega_items": {"propietario": "TEXT NOT NULL DEFAULT 'empresa'", "cliente": "TEXT"},
 }
 
 ESQUEMA_FLOTA = f"""
@@ -794,6 +815,76 @@ CREATE TABLE IF NOT EXISTS bodega_aplicaciones(
   FOREIGN KEY(empresa_id, item_id) REFERENCES bodega_items(empresa_id, id) ON DELETE CASCADE
 );
 CREATE INDEX IF NOT EXISTS ix_bod_apl_op ON bodega_aplicaciones(operacion_id);
+
+-- ===== Incidentes (core/incidentes.py) =====
+-- Golpe, caída, aterrizaje duro, colisión… Mientras un incidente no tenga su inspección cerrada el
+-- activo queda «No recomendado volar». La inspección la firma, en un avión, el inspector o
+-- mecánico certificador (con licencia); en un dron, el técnico asignado o el representante del
+-- fabricante.
+CREATE TABLE IF NOT EXISTS incidentes(
+  id {_ID},
+  empresa_id INTEGER NOT NULL DEFAULT empresa_actual() REFERENCES empresas(id) ON DELETE CASCADE,
+  equipo_id INTEGER NOT NULL,
+  fecha TEXT NOT NULL,
+  tipo TEXT NOT NULL DEFAULT 'otro',
+  descripcion TEXT NOT NULL,
+  danos TEXT,
+  lugar TEXT,
+  piloto TEXT,
+  operacion_id INTEGER,
+  orden_id INTEGER,
+  estado TEXT NOT NULL DEFAULT 'abierto',
+  inspeccion_fecha TEXT,
+  inspeccion_resultado TEXT,
+  inspeccion_firmado_por TEXT,
+  inspeccion_cargo TEXT,
+  inspeccion_licencia TEXT,
+  inspeccion_nota TEXT,
+  inspeccion_usuario TEXT,
+  usuario TEXT,
+  creado {_AHORA},
+  UNIQUE(empresa_id, id),
+  FOREIGN KEY(empresa_id, equipo_id) REFERENCES equipos(empresa_id, id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS ix_incidentes_equipo ON incidentes(equipo_id, estado);
+
+-- ===== Envases de agroquímicos (core/bodega.py) =====
+-- Triple lavado y devolución de envases vacíos al programa posconsumo: lo piden GlobalG.A.P.,
+-- Rainforest Alliance y las auditorías del cliente. Un registro por lote de envases.
+CREATE TABLE IF NOT EXISTS envases(
+  id {_ID},
+  empresa_id INTEGER NOT NULL DEFAULT empresa_actual() REFERENCES empresas(id) ON DELETE CASCADE,
+  fecha TEXT NOT NULL,
+  producto TEXT NOT NULL,
+  cliente TEXT,
+  operacion_id INTEGER,
+  orden_servicio TEXT,
+  cantidad INTEGER NOT NULL DEFAULT 1,
+  capacidad TEXT,
+  triple_lavado INTEGER NOT NULL DEFAULT 0,
+  perforado INTEGER NOT NULL DEFAULT 0,
+  lavado_por TEXT,
+  devuelto_en TEXT,
+  centro_acopio TEXT,
+  certificado TEXT,
+  archivo TEXT,
+  nota TEXT,
+  usuario TEXT,
+  creado {_AHORA}
+);
+CREATE INDEX IF NOT EXISTS ix_envases_fecha ON envases(fecha);
+
+-- Criterio de rechazo escrito de cada pieza «on-condition» (sin plazo del fabricante): qué hay que
+-- ver para cambiarla. Es de cada empresa, también para las piezas del catálogo del sistema.
+CREATE TABLE IF NOT EXISTS criterios_rechazo(
+  id {_ID},
+  empresa_id INTEGER NOT NULL DEFAULT empresa_actual() REFERENCES empresas(id) ON DELETE CASCADE,
+  pieza_id INTEGER NOT NULL REFERENCES catalogo_piezas(id) ON DELETE CASCADE,
+  texto TEXT NOT NULL,
+  usuario TEXT,
+  actualizado {_AHORA},
+  UNIQUE(empresa_id, pieza_id)
+);
 """
 
 
@@ -807,7 +898,9 @@ TABLAS_EMPRESA = ["meta", "equipos", "registros", "componentes", "operaciones", 
                   "estado_diario", "combustible_depositos", "combustible_movimientos",
                   # Bodega (core/bodega.py)
                   "bodega_ubicaciones", "bodega_items", "bodega_tanques", "bodega_movimientos",
-                  "bodega_ot_lineas", "bodega_aplicaciones"]
+                  "bodega_ot_lineas", "bodega_aplicaciones",
+                  # Encuesta de validación: incidentes y envases
+                  "incidentes", "envases", "criterios_rechazo"]
 
 # Tablas con filas globales (sembradas por el sistema, empresa_id nulo) y filas propias de cada
 # empresa: cada empresa ve las globales más las suyas y sólo puede escribir las suyas.
@@ -840,7 +933,7 @@ TABLAS = ["empresas", "usuarios", "meta", "login_intentos", "equipos", "registro
           "directivas", "cumplimiento_directiva", "documentos", "tarifas", "auditoria", "checklists",
           "estado_diario", "combustible_depositos", "combustible_movimientos",
           "bodega_ubicaciones", "bodega_items", "bodega_tanques", "bodega_movimientos",
-          "bodega_ot_lineas", "bodega_aplicaciones"]
+          "bodega_ot_lineas", "bodega_aplicaciones", "incidentes", "envases", "criterios_rechazo"]
 
 
 TODAS = "*"   # valor de app.empresa_id que desactiva el filtro (sólo administración)
@@ -902,6 +995,8 @@ def _inicializar_sqlite(con):
     for tabla, columnas in COLUMNAS_FLOTA.items():
         _añadir_columnas(con, tabla, {k: a_sqlite(v) for k, v in columnas.items()})
     con.executescript(a_sqlite(ESQUEMA_FLOTA))
+    for tabla, columnas in COLUMNAS_POSTERIORES.items():
+        _añadir_columnas(con, tabla, {k: a_sqlite(v) for k, v in columnas.items()})
     for t in TABLAS_EMPRESA + TABLAS_MIXTAS:
         con.execute(f"CREATE INDEX IF NOT EXISTS ix_{t}_empresa ON {t}(empresa_id)")
     if not con.execute("SELECT 1 FROM empresas WHERE id=?", (EMPRESA_ESCRITORIO,)).fetchone():
@@ -920,6 +1015,8 @@ def _inicializar_postgres(con):
     for tabla, columnas in COLUMNAS_FLOTA.items():
         _añadir_columnas(con, tabla, columnas)
     con.executescript(ESQUEMA_FLOTA)
+    for tabla, columnas in COLUMNAS_POSTERIORES.items():
+        _añadir_columnas(con, tabla, columnas)
     _arreglar_set_null(con)
     con.executescript(RLS)
     con.commit()
@@ -1146,7 +1243,9 @@ def meta_set(con, clave, valor):
 
 
 ROLES_USUARIO = {"admin": "Administrador", "tecnico": "Técnico", "certificador": "Mecánico certificador",
-                 "piloto": "Piloto"}
+                 "piloto": "Piloto", "gerencia": "Gerencia / finanzas"}
+# Quién ve la plata: ingreso, tarifas, nómina, margen (la gerencia lo pidió así en la encuesta).
+ROLES_COSTOS = ("admin", "superadmin", "gerencia")
 ROL_SUPERADMIN = "superadmin"   # gestiona las empresas; puede entrar a cualquiera
 
 

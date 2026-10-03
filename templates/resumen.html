@@ -295,7 +295,7 @@ async function cargarKpis(){
       {nota: disp == null ? 'aún sin historial diario' : `días en servicio · ${per}`,
        clase: 'kpi-disp', claseVal: disp == null ? '' : disp >= 85 ? 'verde' : disp >= 60 ? 'ambar' : 'rojo'}) +
     tarjetaKpi(I.documentos_vencer, {nota:'vencidos o en 30 días', claseVal: docs ? 'ambar' : 'verde'}) +
-    tarjetaKpi(I.costo_ha, {nota:'mantenimiento + combustible'}) +
+    tarjetaKpi(I.costo_ha, {nota: I.costo_ha && I.costo_ha.oculto ? 'sólo lo ve la gerencia' : 'mantenimiento + combustible + nómina'}) +
     tarjetaKpi(I.dias_sin_datos, {nota:'activo más atrasado', claseVal: sin == null ? '' : sin > 3 ? 'rojo' : 'verde'});
   const kd = document.querySelector('#kpis2 .kpi-disp');
   if(kd){ kd.style.cursor = 'pointer'; kd.title = 'Ver la disponibilidad día a día';

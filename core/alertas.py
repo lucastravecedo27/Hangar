@@ -10,6 +10,11 @@ primero, que es como redactan sus tablas DJI y los fabricantes de aviones:
 Del T50 hay vida útil en horas de vuelo y del T100 sólo plazos en meses; de un motor de avión,
 TBO en horas de Tach y en años. La `tolerancia` (en unidades del contador base) permite cumplir
 una inspección un poco después del límite sin que el activo quede como vencido.
+
+Avisos. «Vencido» es siempre el límite del fabricante o del RAC y no se configura: los avisos sólo
+pueden saltar ANTES, nunca después. Por defecto avisan por lo que FALTA (horas, ciclos o días
+restantes), que es como lo pidieron los ingenieros en la encuesta de validación; la empresa puede
+volver al aviso por porcentaje de vida (75 % / 90 %) en Ajustes.
 """
 from datetime import date
 
@@ -17,6 +22,13 @@ from core import flota as core_flota
 
 UMBRAL_PROXIMO = 0.75
 UMBRAL_CRITICO = 0.90
+
+# Avisos por lo que falta: (próximo, crítico) por unidad. Se guardan en `meta` con estas claves.
+# Un aviso nunca es más largo que el 25 % (próximo) o el 10 % (crítico) de la vida de la pieza:
+# así una inspección de 25 h no queda en amarillo desde el día que se hace.
+AVISOS_DEFECTO = {"aviso_horas_proximo": 25, "aviso_horas_critico": 10,
+                  "aviso_ciclos_proximo": 50, "aviso_ciclos_critico": 20,
+                  "aviso_dias_proximo": 30, "aviso_dias_critico": 10}
 ORDEN_NIVEL = {"vencido": 0, "critico": 1, "proximo": 2, "ok": 3}
 DIAS_POR_MES = 30.44
 
@@ -33,6 +45,49 @@ def _nivel_de_fraccion(pct):
 
 def nivel_de(horas_uso, vida_util):
     return _nivel_de_fraccion(horas_uso / vida_util if vida_util > 0 else 0)
+
+
+def config_avisos(con):
+    """Modo de aviso ('restante' o 'porcentaje') y umbrales de la empresa."""
+    filas = {f["clave"]: f["valor"] for f in con.execute(
+        "SELECT clave, valor FROM meta WHERE clave='aviso_modo' OR clave LIKE 'aviso_%'").fetchall()}
+    cfg = {"modo": filas.get("aviso_modo") or "restante"}
+    for k, defecto in AVISOS_DEFECTO.items():
+        try:
+            v = float(filas.get(k)) if filas.get(k) not in (None, "") else defecto
+        except ValueError:
+            v = defecto
+        cfg[k] = max(v, 0)
+    return cfg
+
+
+def texto_avisos(cfg):
+    """Cuándo salta cada aviso, en palabras: para leyendas y notas de los informes."""
+    if cfg["modo"] == "porcentaje":
+        return {"critico": "90 % o más de su límite", "proximo": "entre el 75 % y el 90 % de su límite"}
+    n = lambda v: f"{v:g}"
+    return {"critico": f"faltan {n(cfg['aviso_horas_critico'])} h, {n(cfg['aviso_ciclos_critico'])} ciclos "
+                       f"o {n(cfg['aviso_dias_critico'])} días o menos",
+            "proximo": f"faltan {n(cfg['aviso_horas_proximo'])} h, {n(cfg['aviso_ciclos_proximo'])} ciclos "
+                       f"o {n(cfg['aviso_dias_proximo'])} días o menos"}
+
+
+def _nivel_de_restante(usado, limite, proximo, critico):
+    """Nivel por lo que falta para el límite. El umbral se acota a una parte de la vida."""
+    if not limite:
+        return "ok"
+    falta = limite - usado
+    if falta <= 0:
+        return "vencido"
+    if falta <= min(critico, limite * (1 - UMBRAL_CRITICO)):
+        return "critico"
+    if falta <= min(proximo, limite * (1 - UMBRAL_PROXIMO)):
+        return "proximo"
+    return "ok"
+
+
+def _peor(*niveles):
+    return min(niveles, key=lambda n: ORDEN_NIVEL[n])
 
 
 def _meses_desde(texto):
@@ -69,14 +124,16 @@ def _calcular(con, equipo_id=None):
                    p.vida_util_meses, p.nota, p.mesh, p.tipo_item, p.contador_base, p.contador_ciclos,
                    p.limite_ciclos, p.tolerancia, p.serializada, p.referencia, p.precio,
                    e.nombre AS equipo, e.modelo, e.estado AS equipo_estado, e.tipo_activo, e.matricula,
-                   s.serial
+                   s.serial, cr.texto AS criterio_rechazo
             FROM componentes c
             JOIN catalogo_piezas p ON p.id = c.pieza_id
             JOIN equipos e ON e.id = c.equipo_id
             LEFT JOIN piezas_serie s ON s.id = c.pieza_serie_id
+            LEFT JOIN criterios_rechazo cr ON cr.pieza_id = p.id AND cr.empresa_id = c.empresa_id
             {filtro} ORDER BY p.modulo, p.nombre""",
         params,
     ).fetchall()
+    cfg = config_avisos(con)
     salida = []
     for f in filas:
         d = dict(f)
@@ -110,7 +167,14 @@ def _calcular(con, equipo_id=None):
         d["pct_horas"] = round(pct_horas * 100, 1)
         d["pct_ciclos"] = round(pct_ciclos * 100, 1)
         d["pct_meses"] = round(pct_meses * 100, 1)
-        d["nivel"] = _nivel_de_fraccion(peor)
+        if cfg["modo"] == "porcentaje":
+            d["nivel"] = _nivel_de_fraccion(peor)
+        else:
+            d["nivel"] = _peor(
+                _nivel_de_restante(d["horas_uso"], vida, cfg["aviso_horas_proximo"], cfg["aviso_horas_critico"]),
+                _nivel_de_restante(d["ciclos_uso"], ciclos_lim, cfg["aviso_ciclos_proximo"], cfg["aviso_ciclos_critico"]),
+                _nivel_de_restante((transcurridos or 0) * DIAS_POR_MES, meses * DIAS_POR_MES if transcurridos is not None else 0,
+                                   cfg["aviso_dias_proximo"], cfg["aviso_dias_critico"]))
         d["motivo_alerta"] = ("calendario" if pct_meses > max(pct_horas, pct_ciclos) else
                               "ciclos" if pct_ciclos > pct_horas else "horas" if pct_horas else None)
         # Tolerancia: pasado el límite de horas pero dentro del margen, se marca crítica, no vencida.

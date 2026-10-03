@@ -10,8 +10,8 @@
 {% block contenido %}
 <div class="kpis">
   <div class="kpi"><div class="lbl">Vencidas</div><div class="val rojo" id="kV">0</div><div class="note">Superaron su vida útil</div></div>
-  <div class="kpi"><div class="lbl">Críticas</div><div class="val ambar" id="kC">0</div><div class="note">Más del 90 % de uso</div></div>
-  <div class="kpi"><div class="lbl">Próximas</div><div class="val" id="kP">0</div><div class="note">Más del 75 % de uso</div></div>
+  <div class="kpi"><div class="lbl">Críticas</div><div class="val ambar" id="kC">0</div><div class="note">{{ avisos_txt.critico|capitalize }}</div></div>
+  <div class="kpi"><div class="lbl">Próximas</div><div class="val" id="kP">0</div><div class="note">{{ avisos_txt.proximo|capitalize }}</div></div>
   <div class="kpi"><div class="lbl">Mantenimientos</div><div class="val acc" id="kM">0</div><div class="note" id="kMNota"></div></div>
 </div>
 

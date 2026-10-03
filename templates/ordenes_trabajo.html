@@ -153,7 +153,7 @@ async function refrescarConteo(equipoId, destino){
 const PRIORIDADES = [{v:'baja',t:'Baja'},{v:'normal',t:'Normal'},{v:'alta',t:'Alta'},{v:'urgente',t:'Urgente'}];
 const TIPOS = [{v:'preventivo',t:'Preventivo'},{v:'correctivo',t:'Correctivo'},{v:'inspeccion',t:'Inspección'}];
 const ESTADOS = [{v:'borrador',t:'Borrador'},{v:'programada',t:'Programada'},{v:'enviada',t:'Enviada'},
-                 {v:'en_proceso',t:'En proceso'},{v:'completada',t:'Completada'},{v:'cancelada',t:'Cancelada'}];
+                 {v:'en_proceso',t:'En proceso'},{v:'diferida',t:'Diferida (con plazo)'},{v:'completada',t:'Completada'},{v:'cancelada',t:'Cancelada'}];
 
 async function cargarBase(){
   [EQUIPOS, PERSONAL, CONTEO_PIEZAS] = await Promise.all([
@@ -506,11 +506,23 @@ async function abrirDetalle(id){
 
       <div class="card">
         <div class="card-cab"><h3>Estado</h3></div>
+        ${esAvion ? (o.aprobado_por
+          ? `<div class="aviso verde" style="margin:0 0 10px"><div>Aprobada por el jefe técnico: <b>${escapar(o.aprobado_por)}</b> · ${fmtFecha(o.aprobado_en)} ${escapar((o.aprobado_en||"").slice(11,16))}</div></div>`
+          : `<div class="aviso ambar" style="margin:0 0 10px"><div><b>Falta la aprobación del jefe técnico.</b> Un avión no pasa a «En proceso» sin ella.
+              ${PUEDE_LIBERAR && !cerrada ? `<div style="margin-top:8px"><button class="btn peq" type="button" id="btnAprobar">Aprobar como jefe técnico</button></div>` : ''}</div></div>`) : ''}
         <select id="cambiarEstado" style="width:100%">${opciones(ESTADOS, o.estado)}</select>
+        ${o.estado === 'diferida' ? `<div class="aviso ${o.diferida_hasta && o.diferida_hasta < new Date().toISOString().slice(0,10) ? 'rojo' : 'ambar'}" style="margin:10px 0 0"><div>
+          <b>Diferida hasta ${fmtFecha(o.diferida_hasta)}.</b> ${escapar(o.diferida_motivo||'')}<br>Pasada esa fecha el activo queda «No recomendado volar».</div></div>` : ''}
+        <div class="form-grid" style="grid-template-columns:1fr 1fr;margin-top:12px">
+          <div class="campo"><label>Taller externo <span class="un">(si se contrató)</span></label><input data-ot="taller_externo" value="${escapar(o.taller_externo||'')}" ${cerrada?'disabled':''} placeholder="Nombre del taller"></div>
+          <div class="campo"><label>Certificado del taller</label><input data-ot="taller_certificado" value="${escapar(o.taller_certificado||'')}" ${cerrada?'disabled':''} placeholder="N.º de certificado o de la orden"></div>
+          <div class="campo"><label>Horas-hombre de la orden</label><input data-ot="horas_hombre" type="number" min="0" step="any" value="${o.horas_hombre??''}" ${cerrada?'disabled':''}></div>
+        </div>
         <div class="pista" style="margin-top:10px;margin-bottom:0">Al marcar <b>Completada</b> cada trabajo hecho
           sobre una pieza se registra como mantenimiento y reinicia su vida útil.
-          ${esAvion ? '<br><b>Avión:</b> sólo un mecánico certificador o el administrador la completa y libera el avión, con su firma y número de licencia.' : ''}</div>
-        ${o.firmado_por ? `<div class="aviso verde" style="margin:12px 0 0"><div>Liberado por <b>${escapar(o.firmado_por)}</b>${o.licencia_firma ? ` · licencia ${escapar(o.licencia_firma)}` : ''}</div></div>` : ''}
+          ${esAvion ? '<br><b>Avión:</b> sólo un mecánico certificador o el administrador la completa y libera el avión, con su firma y número de licencia.'
+                    : '<br><b>Dron (UAS):</b> la norma no fija el paso a paso; firma la conformidad el técnico asignado o el representante del fabricante.'}</div>
+        ${o.firmado_por ? `<div class="aviso verde" style="margin:12px 0 0"><div>Liberado por <b>${escapar(o.firmado_por)}</b>${o.licencia_firma ? ` · licencia ${escapar(o.licencia_firma)}` : ''}${o.inspector ? `<br>Inspección independiente: <b>${escapar(o.inspector)}</b>${o.inspector_licencia ? ` · licencia ${escapar(o.inspector_licencia)}` : ''}` : ''}</div></div>` : ''}
       </div>`,
     pie: `<button class="btn" id="btnEnviar">Enviar por correo</button>
           <button class="btn secundario" id="btnImprimir">Imprimir / PDF</button>
@@ -655,8 +667,25 @@ async function abrirDetalle(id){
     await p.cerrar(); await cargar(); await abrirDetalle(id);
   };
 
+  if(p.$('#btnAprobar')) p.$('#btnAprobar').onclick = async ()=>{
+    try{ await api(`/api/ot/${id}/aprobar`, {method:'POST', body:{}}); toast('Orden aprobada'); await p.cerrar(); await cargar(); abrirDetalle(id); }
+    catch(err){ toast(err.message); }
+  };
+  p.$$('[data-ot]').forEach(inp=>inp.onchange = async ()=>{
+    try{ await api(`/api/ot/${id}`, {method:'PUT', body:{[inp.dataset.ot]: inp.value.trim()}}); toast('Guardado'); }
+    catch(err){ toast(err.message); }
+  });
+
   p.$('#cambiarEstado').onchange = async e=>{
     const estado = e.target.value;
+    if(estado === 'diferida'){
+      const d = await pedirDiferido(o);
+      if(!d){ e.target.value = o.estado; return; }
+      try{ await api(`/api/ot/${id}`, {method:'PUT', body:{estado, ...d}}); toast('Trabajo diferido'); }
+      catch(err){ toast(err.message); e.target.value = o.estado; return; }
+      await p.cerrar(); cargar();
+      return;
+    }
     if(estado === 'completada'){
       const r = await completarOT(o, esAvion);
       if(!r){ e.target.value = o.estado; return; }
@@ -664,8 +693,8 @@ async function abrirDetalle(id){
       mostrarCierre(o, r);
       return;
     } else {
-      await api(`/api/ot/${id}`, {method:'PUT', body:{estado}});
-      toast('Estado actualizado');
+      try{ await api(`/api/ot/${id}`, {method:'PUT', body:{estado}}); toast('Estado actualizado'); }
+      catch(err){ toast(err.message); e.target.value = o.estado; return; }
     }
     await p.cerrar(); cargar();
   };
@@ -747,6 +776,31 @@ function sacarDeBodega(o, t, alTerminar){
   };
 }
 
+// ---------- Diferir con plazo ----------
+function pedirDiferido(o){
+  return new Promise(resolve=>{
+    let datos = null;
+    const v = ventana({
+      titulo: 'Diferir el trabajo', ancho: 'angosta', subtitulo: `${escapar(o.codigo)} · ${escapar(o.equipo)}`,
+      cuerpo: `<form id="fDif" class="form-grid">
+        <div class="campo"><label>Plazo máximo</label><input type="date" name="diferida_hasta" required min="${new Date().toISOString().slice(0,10)}"></div>
+        <div class="campo ancho"><label>Por qué se difiere</label><textarea name="diferida_motivo" rows="3" required placeholder="Ej.: repuesto en camino; el ítem no afecta la seguridad del vuelo según el MEL"></textarea></div>
+      </form>
+      <p class="pista" style="margin:8px 0 0">Mientras el plazo esté vigente el activo queda «con observaciones»; pasado el plazo, «No recomendado volar».</p>`,
+      pie: `<div class="der"><button class="btn secundario" data-no type="button">Cancelar</button><button class="btn" data-si type="button">Diferir</button></div>`,
+      alCerrar: ()=>resolve(datos),
+    });
+    v.raiz.classList.add('encima');
+    v.$('[data-no]').onclick = ()=>v.cerrar();
+    v.$('[data-si]').onclick = ()=>{
+      const f = v.$('#fDif');
+      if(!f.reportValidity()) return;
+      datos = Object.fromEntries(new FormData(f).entries());
+      v.cerrar();
+    };
+  });
+}
+
 // ---------- Completar (y liberar, si es avión) ----------
 // Devuelve la respuesta del servidor, o null si se canceló. Los errores 403/400 se muestran
 // dentro de la ventana, sin cerrarla, para que se pueda corregir la firma o la licencia.
@@ -776,7 +830,11 @@ function completarOT(o, esAvion){
           <div class="campo ancho"><label>Realizado por</label><input name="realizado_por" value="${escapar(o.asignado_a || '')}"></div>
           ${esAvion ? `
           <div class="campo"><label>Firmado por *</label><input name="firmado_por" required placeholder="Nombre del certificador"></div>
-          <div class="campo"><label>Licencia N.º *</label><input name="licencia" required placeholder="p. ej. TMA-1234"></div>` : ''}
+          <div class="campo"><label>Licencia N.º *</label><input name="licencia" required placeholder="p. ej. TMA-1234"></div>
+          <div class="campo"><label>Inspección independiente <span class="un">(doble firma)</span></label><input name="inspector" placeholder="Otra persona, si aplica"></div>
+          <div class="campo"><label>Licencia del inspector</label><input name="inspector_licencia"></div>`
+          : `<div class="campo ancho"><label>Firma la conformidad <span class="un">(técnico asignado o representante del fabricante)</span></label><input name="firmado_por" placeholder="Nombre de quien firma"></div>`}
+          <div class="campo"><label>Horas-hombre</label><input type="number" min="0" step="any" name="horas_hombre" value="${o.horas_hombre ?? (o.tareas.reduce((a,t)=>a+(numero(t.horas_mano_obra)||0),0) || '')}"></div>
           <div class="campo"><label>Fecha</label><input type="date" name="fecha" value="${(()=>{ const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0,10); })()}"></div>
         </form>`,
       pie: `<div class="der"><button class="btn secundario" data-no>Cancelar</button>

@@ -65,15 +65,16 @@
 <script>
 // Los roles los manda el servidor (GET /api/empresas/<id>/usuarios → roles); esto es sólo el
 // respaldo mientras llega la primera respuesta.
-let EMPRESAS = [], ROLES = {admin:'Administrador', tecnico:'Técnico', certificador:'Mecánico certificador', piloto:'Piloto'};
+let EMPRESAS = [], ROLES = {admin:'Administrador', tecnico:'Técnico', certificador:'Mecánico certificador', piloto:'Piloto', gerencia:'Gerencia / finanzas'};
 const ROL_DESC = {
   admin: 'Todo en su empresa: flota, operaciones, mantenimiento, órdenes, reportes y ajustes.',
   tecnico: 'Equipos, mantenimiento y órdenes de trabajo (OT).',
   certificador: 'Lo mismo que el técnico y, además, firma la liberación de los aviones y da por cumplidas las directivas AD/SB.',
   piloto: 'Operaciones, chequeo pre-vuelo y órdenes de servicio.',
+  gerencia: 'Ve toda la operación, la rentabilidad, las tarifas y los informes; no cambia datos. Pensado para gerencia y finanzas.',
 };
 // Flask ordena las claves del JSON alfabéticamente; se muestran en un orden fijo.
-const ORDEN_ROLES = ['admin', 'tecnico', 'certificador', 'piloto'];
+const ORDEN_ROLES = ['admin', 'gerencia', 'tecnico', 'certificador', 'piloto'];
 const rolesOrdenados = () => Object.entries(ROLES).sort(([a], [b]) =>
   (ORDEN_ROLES.indexOf(a) + 1 || 99) - (ORDEN_ROLES.indexOf(b) + 1 || 99));
 const opcionesRol = sel => rolesOrdenados().map(([k,v]) => `<option value="${k}" ${k === sel ? 'selected' : ''}>${escapar(v)}</option>`).join('');

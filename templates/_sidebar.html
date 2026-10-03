@@ -91,7 +91,7 @@
     <div class="side-lbl">Análisis</div>
     {{ nav('informes', '/informes', 'Informes', ic_informes) }}
     {{ nav('reportes', url_for('reportes'), 'Reportes', ic_reportes) }}
-    {% if es_admin and not es_piloto %}
+    {% if ve_costos %}
     {{ nav('rentabilidad', url_for('pagina_rentabilidad'), 'Rentabilidad', ic_rentabilidad) }}
     {% endif %}
     {{ nav('despiece', url_for('despiece'), 'Diagramas', ic_diagramas) }}
@@ -109,7 +109,7 @@
   <div class="side-foot">
     <div class="side-estado">
       <span class="punto-vivo"></span>
-      <span class="txt">{{ empresa_actual or 'Plataforma' }}<br><b id="hora">--:--</b> · {{ {"admin":"Administrador","tecnico":"Técnico","piloto":"Piloto","superadmin":"Superadmin"}.get(rol_actual, rol_actual) }}</span>
+      <span class="txt">{{ empresa_actual or 'Plataforma' }}<br><b id="hora">--:--</b> · {{ {"admin":"Administrador","tecnico":"Técnico","piloto":"Piloto","superadmin":"Superadmin","certificador":"Certificador","gerencia":"Gerencia"}.get(rol_actual, rol_actual) }}</span>
     </div>
     <button class="side-accion" id="btnPantallaCompleta" type="button" title="Pantalla completa (F)">
       <span class="ic"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7.4 3.4H3.4v4M12.6 3.4h4v4M16.6 12.6v4h-4M7.4 16.6h-4v-4"/></svg></span>

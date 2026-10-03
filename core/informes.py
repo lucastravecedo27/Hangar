@@ -50,9 +50,9 @@ PERIODOS = [("mes", "Este mes"), ("30d", "Últimos 30 días"), ("90d", "Últimos
 NOMBRE_PERIODO = dict(PERIODOS)
 
 # Roles de la app (ver PERMISOS en app.py). El piloto no ve costos ni márgenes.
-TODOS = ("admin", "superadmin", "tecnico", "certificador", "piloto")
-SIN_PILOTO = ("admin", "superadmin", "tecnico", "certificador")
-ADMIN = ("admin", "superadmin")
+TODOS = ("admin", "superadmin", "tecnico", "certificador", "piloto", "gerencia")
+SIN_PILOTO = ("admin", "superadmin", "tecnico", "certificador", "gerencia")
+ADMIN = ("admin", "superadmin", "gerencia")   # costos y rentabilidad: también la gerencia (sólo lectura)
 
 # Estados que se pintan como semáforo: (texto, clase). La clase es la del semáforo de la app
 # (ok verde, proximo ámbar, critico/vencido rojo) o «gris» si no es bueno ni malo.
@@ -919,7 +919,7 @@ def _rac_fiaa(con, p):
                  kpi("Directivas por atender", kpis_dir, "entero", estado="critico" if kpis_dir else "ok",
                      nota="Directivas pendientes o repetitivas vencidas o próximas a vencer."),
                  kpi("Componentes críticos o vencidos", kpis_comp, "entero", estado="vencido" if kpis_comp else "ok",
-                     nota="Componentes o inspecciones que consumieron el 90 % o más de su límite.")],
+                     nota="Componentes o inspecciones en aviso crítico o vencidos.")],
         "avisos": [] if aviones else [{"nivel": "info", "texto": "No hay aviones en la flota con estos filtros."}],
         "secciones": secciones,
         "firmas": ["Director de mantenimiento / inspector autorizado (licencia)", "Explotador (representante legal)"],
@@ -1342,22 +1342,24 @@ def _estado_mantenimiento(con, p):
     nombres = [f["equipo"] for f in flota]
     serie = {n: [sum(1 for a in venc if a["equipo"] == eq and a["nivel"] == n) for eq in nombres]
              for n in ("vencido", "critico", "proximo")}
+    avisos = core_alertas.texto_avisos(core_alertas.config_avisos(con))
     return {
-        "subtitulo": "Situación de hoy. Un activo «no recomendado volar» tiene algo vencido o está en taller.",
+        "subtitulo": "Situación de hoy. Un activo «no recomendado volar» tiene algo vencido, un incidente sin "
+                     "inspeccionar o está en taller.",
         "kpis": [kpi("Aptos", conteo_est["apto"], "entero", estado="ok",
                      nota="Activos sin nada vencido ni crítico."),
                  kpi("Con observaciones", conteo_est["observaciones"], "entero",
                      estado="proximo" if conteo_est["observaciones"] else "ok",
-                     nota="Algo crítico (90 % de su límite) o una directiva o documento por vencer."),
+                     nota="Algo en aviso crítico o una directiva o documento por vencer."),
                  kpi("No recomendado volar", conteo_est["no_apto"], "entero",
                      estado="vencido" if conteo_est["no_apto"] else "ok",
                      nota="Pieza, inspección, directiva o documento vencido, o el activo en taller."),
                  kpi("Vencidos", conteo["vencido"], "entero", estado="vencido" if conteo["vencido"] else "ok",
                      nota="Ítems que ya pasaron su límite de horas, ciclos o calendario."),
                  kpi("Críticos", conteo["critico"], "entero", estado="critico" if conteo["critico"] else "ok",
-                     nota="Ítems entre el 90 % y el 100 % de su límite."),
+                     nota=f"Ítems a punto de vencer: {avisos['critico']}."),
                  kpi("Próximos", conteo["proximo"], "entero", estado="proximo" if conteo["proximo"] else "ok",
-                     nota="Ítems entre el 75 % y el 90 % de su límite."),
+                     nota=f"Ítems por vencer: {avisos['proximo']}."),
                  kpi("Cambios en 120 días", len(proy), "entero",
                      nota="Piezas e inspecciones que caen en los próximos 120 días al ritmo de vuelo actual.")],
         "graficas": [grafica("barras", "Vencimientos por activo", nombres,
@@ -1611,19 +1613,16 @@ def _combustible(con, p):
 # ======================================================================
 
 def rentabilidad_clientes(con, f, mant_por_activo=None, horas_por_activo=None):
-    """Ingreso, combustible, mantenimiento prorrateado y margen por cliente y finca. Es el mismo cálculo
-    de la pantalla de Rentabilidad: el mantenimiento de cada activo se reparte por sus horas de vuelo."""
+    """Ingreso, combustible, mantenimiento y nómina prorrateados y margen por cliente y finca. Es el
+    mismo cálculo de la pantalla de Rentabilidad: el mantenimiento de cada activo se reparte por sus
+    horas de vuelo, y la nómina por las horas de toda la flota."""
     w, p = f.where()
     precio = core_ind._meta_num(con, "precio_combustible_gal") or 0
     clientes = _filas(con, f"""
         SELECT COALESCE(o.cliente,'Sin cliente') cliente, COALESCE(o.lote,'') finca, e.tipo_activo,
                ROUND(COALESCE(SUM(o.hectareas),0),1) ha, ROUND(SUM(o.horas_vuelo),1) horas,
                ROUND(COALESCE(SUM(o.combustible_gal),0) * ?, 0) combustible,
-               ROUND(COALESCE(SUM(o.hectareas * (
-                    SELECT t.valor_ha FROM tarifas t WHERE lower(t.cliente)=lower(o.cliente)
-                      AND (t.tipo_activo='todos' OR t.tipo_activo=e.tipo_activo)
-                      AND (t.desde IS NULL OR t.desde <= o.fecha)
-                    ORDER BY (t.tipo_activo=e.tipo_activo) DESC, t.desde DESC NULLS LAST LIMIT 1)),0), 0) ingreso
+               ROUND(COALESCE(SUM({core_ind.SQL_INGRESO_OP}),0), 0) ingreso
         FROM operaciones o JOIN equipos e ON e.id=o.equipo_id WHERE {w}
         GROUP BY 1, 2, 3 ORDER BY ingreso DESC, ha DESC""", [precio] + p)
     reparto = _filas(con, f"""SELECT COALESCE(o.cliente,'Sin cliente') cliente, COALESCE(o.lote,'') finca,
@@ -1634,23 +1633,26 @@ def rentabilidad_clientes(con, f, mant_por_activo=None, horas_por_activo=None):
         if m and h:
             k = (r["cliente"], r["finca"])
             mant_cf[k] = mant_cf.get(k, 0) + m * (r["h"] or 0) / h
+    nomina_h = core_ind.nomina_hora(con, f) or 0
     for c in clientes:
         c["mantenimiento"] = round(mant_cf.get((c["cliente"], c["finca"]), 0))
-        c["margen"] = round((c["ingreso"] or 0) - (c["combustible"] or 0) - c["mantenimiento"]) if c["ingreso"] else None
+        c["nomina"] = round(nomina_h * (c["horas"] or 0))
+        c["margen"] = (round((c["ingreso"] or 0) - (c["combustible"] or 0) - c["mantenimiento"] - c["nomina"])
+                       if c["ingreso"] else None)
         c["margen_ha"] = round(c["margen"] / c["ha"]) if c["margen"] is not None and c["ha"] else None
     return clientes
 
 
 @informe("rentabilidad", "Rentabilidad por activo y por cliente", "costos",
-         "Ingreso según las tarifas, costos de mantenimiento y combustible y margen de cada activo y de cada "
+         "Ingreso según las tarifas (por hectárea o por hora), costos de mantenimiento, combustible y nómina y margen de cada activo y de cada "
          "cliente y finca.",
          filtros=("periodo", "tipo", "equipo", "cliente"), roles=ADMIN, periodo="90d", destacado=True,
          palabras="margen ingreso tarifa costo utilidad ganancia",
          para='Para la gerencia: qué activos y qué clientes dejan margen y cuáles no.')
 def _rentabilidad(con, p):
     f = p.filtros()
-    claves = ["hectareas", "horas", "costo_mant", "costo_mant_hora", "costo_combustible_hora", "costo_ha",
-              "ingreso_ha", "margen"]
+    claves = ["hectareas", "horas", "costo_mant", "costo_mant_hora", "costo_combustible_hora", "costo_personal",
+              "costo_ha", "ingreso_ha", "margen"]
     total = core_ind.calcular(con, claves, f)
     activos = core_ind.por_activo(con, ["hectareas", "horas", "costo_mant", "costo_ha", "ingreso_ha", "margen"],
                                   replace(f, equipo_id=None))
@@ -1679,6 +1681,10 @@ def _rentabilidad(con, p):
         avisos.append({"nivel": "info", "enlace": "/rentabilidad",
                        "texto": "Sin precio del galón de combustible en la configuración de costos: el costo de combustible "
                                 "no se incluye."})
+    if not core_ind._meta_num(con, "nomina_mes"):
+        avisos.append({"nivel": "proximo", "enlace": "/rentabilidad",
+                       "texto": "Sin nómina mensual de pilotos y técnicos en la configuración de costos: el margen no "
+                                "descuenta el personal."})
     por_cliente = {}
     for c in clientes:
         if c["margen"] is not None:
@@ -1699,9 +1705,11 @@ def _rentabilidad(con, p):
                     [col("cliente", "Cliente", ancho=20), col("finca", "Finca", ancho=18), col("tipo", "Tipo", ancho=7),
                      col("ha", "Hectáreas", "numero", 1, total=True), col("horas", "Horas", "horas", 1, total=True),
                      col("ingreso", "Ingreso", "dinero", total=True), col("combustible", "Combustible", "dinero", total=True),
-                     col("mantenimiento", "Mantenimiento", "dinero", total=True), col("margen", "Margen", "dinero", total=True),
+                     col("mantenimiento", "Mantenimiento", "dinero", total=True),
+                     col("nomina", "Nómina", "dinero", total=True), col("margen", "Margen", "dinero", total=True),
                      col("margen_ha", "Margen/ha", "dinero")], clientes,
-                    descripcion="El mantenimiento de cada activo se reparte entre clientes según las horas voladas para cada uno."),
+                    descripcion="El mantenimiento de cada activo y la nómina se reparten entre clientes según las horas "
+                                "voladas para cada uno. El ingreso usa la tarifa del cliente, por hectárea o por hora."),
         ],
     }
 

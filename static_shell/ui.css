@@ -105,7 +105,7 @@ table.editable tbody tr:hover{background:rgba(253,185,19,.035)}
 .orden-card .avance{flex:1;min-width:80px}
 .tag.programada{background:var(--acc-soft);color:var(--acc-deep)}
 .tag.enviada{background:rgba(13,148,136,.14);color:var(--o-tx-teal,#0b6b62)}
-.tag.en_proceso,.tag.en_ejecucion,.tag.en_ruta{background:var(--o-suave-ambar,#fff3d1);color:var(--o-tx-ambar,#7a5400)}
+.tag.en_proceso,.tag.en_ejecucion,.tag.en_ruta,.tag.diferida{background:var(--o-suave-ambar,#fff3d1);color:var(--o-tx-ambar,#7a5400)}
 .tag.completada,.tag.finalizada{background:rgba(47,143,78,.14);color:var(--o-tx-verde,#1d6b38)}
 .tag.cancelada{background:rgba(115,122,134,.16);color:var(--ink2)}
 .tag.borrador{background:rgba(115,122,134,.12);color:var(--mut)}

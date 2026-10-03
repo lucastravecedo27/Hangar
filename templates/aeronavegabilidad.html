@@ -224,7 +224,8 @@
 <section id="tabDespacho">
   <div class="card">
     <div class="card-cab"><h3>Tablero de despacho <span class="mut" id="tabCuenta"></span></h3>
-      <span class="der" id="tabFiltroTxt"></span></div>
+      <span class="der"><span id="tabFiltroTxt"></span>
+        <button class="btn secundario peq" type="button" id="btnWhatsapp" title="Abre WhatsApp con el resumen listo para mandar">Enviar por WhatsApp</button></span></div>
     <div class="ae-tablero" id="tablero"></div>
   </div>
 
@@ -236,6 +237,12 @@
       <div class="grupo" id="fNivel"></div>
     </div>
     <div class="ae-pend" id="pendientes"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-cab"><h3>Incidentes</h3>
+      <span class="der">Un golpe, caída o aterrizaje duro deja el activo en tierra hasta que se firma su inspección</span></div>
+    <div id="incidentes"></div>
   </div>
 </section>
 
@@ -360,12 +367,19 @@ function nombreCont(c){ return (CONT[c]||[c||'horas'])[0]; }
 function unidadCont(c){ return (CONT[c]||['','h'])[1]; }
 
 // ================= Carga =================
+document.getElementById('btnWhatsapp').onclick = async ()=>{
+  try{
+    const r = await api('/api/alertas/texto');
+    window.open('https://wa.me/?text=' + encodeURIComponent(r.texto), '_blank', 'noopener');
+  }catch(e){ toast(e.message); }
+};
 async function cargar(){
   const q = TIPO ? `?tipo=${TIPO}` : '';
   const [aero, dir, docs] = await Promise.all([
     api('/api/aeronavegabilidad' + q), api('/api/directivas'), api('/api/documentos')]);
   AERO = aero; DIR = dir; DOCS = docs;
   pintarKpis(); pintarTablero(); pintarPendientes(); pintarDirectivas(); pintarDocumentos(); pintarContadoresTabs();
+  pintarIncidentes(document.getElementById('incidentes'), {rol: ROL, alCambiar: cargar, limite: 15});
   // La disponibilidad se pide sólo si su pestaña está a la vista; si no, se pedirá al abrirla.
   if(TAB === 'disponibilidad') cargarDisp(); else DISP = null;
 }

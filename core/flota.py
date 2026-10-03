@@ -698,7 +698,8 @@ def estado_aeronavegable(con, comps_por_equipo, directivas=None, documentos=None
     """Estado de cada equipo a partir de lo ya calculado (no vuelve a consultar componentes).
 
     No apto: pieza o inspección vencida (fuera de tolerancia), directiva vencida, documento del
-    activo vencido, o el activo en taller/baja. Con observaciones: algo crítico, o una directiva /
+    activo vencido, un incidente sin inspección cerrada (core/incidentes.py), o el activo en
+    taller/baja. Con observaciones: algo crítico, o una directiva /
     documento por vencer. Apto: nada de lo anterior."""
     directivas = directivas or []
     documentos = documentos or []
@@ -729,6 +730,20 @@ def estado_aeronavegable(con, comps_por_equipo, directivas=None, documentos=None
         if d.get("equipo_id") and d["nivel"] != "ok":
             marcar(d["equipo_id"], d["nivel"], f"Documento {d['tipo_txt'].lower()} "
                    + ("vencido" if d["nivel"] == "vencido" else f"vence en {d['dias_restantes']} días"))
+    # Un golpe, caída o aterrizaje duro deja el activo en tierra hasta que se firme su inspección.
+    for inc in con.execute("SELECT equipo_id, fecha, tipo FROM incidentes WHERE estado='abierto' "
+                           "ORDER BY fecha").fetchall():
+        tipo = {"aterrizaje_duro": "aterrizaje duro", "caida": "caída", "colision": "colisión",
+                "falla_vuelo": "falla en vuelo"}.get(inc["tipo"], inc["tipo"])
+        marcar(inc["equipo_id"], "vencido", f"Incidente ({tipo}) del {inc['fecha']} sin inspección")
+    # Trabajo diferido: con plazo vigente es una observación; pasado el plazo, el activo no vuela.
+    hoy = date.today().isoformat()
+    for ot in con.execute("SELECT equipo_id, codigo, diferida_hasta FROM ordenes_trabajo WHERE estado='diferida'").fetchall():
+        if ot["diferida_hasta"] and ot["diferida_hasta"] < hoy:
+            marcar(ot["equipo_id"], "vencido", f"Trabajo diferido {ot['codigo']} vencido el {ot['diferida_hasta']}")
+        else:
+            marcar(ot["equipo_id"], "critico", f"Trabajo diferido {ot['codigo']}"
+                   + (f" hasta el {ot['diferida_hasta']}" if ot["diferida_hasta"] else ""))
     for eq in (equipos or []):
         if eq.get("estado") in ("taller", "mantenimiento"):
             salida[eq["id"]]["estado"] = "no_apto"

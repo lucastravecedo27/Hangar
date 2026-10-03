@@ -251,6 +251,18 @@
     </div>
   </div>
 
+  <div class="card" id="cardOnCondition" style="display:none">
+    <div class="card-cab"><h3>Piezas on-condition <span class="mut" id="ocConteo"></span></h3>
+      <span class="der pista" style="margin:0">Sin plazo del fabricante: se cambian cuando cumplen su criterio de rechazo</span></div>
+    <div id="onCondition"></div>
+  </div>
+
+  <div class="card" id="cardIncidentes">
+    <div class="card-cab"><h3>Incidentes</h3>
+      <span class="der"><button class="btn secundario peq" type="button" id="btnIncidente">Reportar incidente</button></span></div>
+    <div id="incidentes"></div>
+  </div>
+
   <div class="fila2">
     <div class="card">
       <div class="card-cab"><h3>Últimas operaciones</h3>
@@ -270,6 +282,7 @@
 <script src="{{ url_for('static_shell', archivo='avion.js') }}" onerror="this.dataset.falta=1"></script>
 <script>
 const EQUIPO_ID = {{ equipo_id|tojson }};
+const ROL = {{ (rol_actual or '')|tojson }};
 let E = null, ZONA = null, DIAG = null, VER_TODO = {inspeccion:false, pieza:false};
 let LIM_PV = 6, ALTO_TEND = 170, IND_AUTO = true;   // se ajustan en equilibrar()
 
@@ -310,6 +323,9 @@ async function cargar(){
   document.getElementById('ficha').style.display = '';
   pintarHero(); pintarMedidores(); pintarVencer(); pintarSerial(); pintarDirDoc();
   pintarRepuestos(); pintarOperaciones(); pintarMantenimientos();
+  pintarIncidentes(document.getElementById('incidentes'), {equipoId: E.id, rol: ROL, alCambiar: cargar, limite: 6});
+  pintarOnCondition();
+  document.getElementById('btnIncidente').onclick = ()=>reportarIncidente(E, cargar);
   // Aviones y drones llevan diagrama de zonas; los drones además la tarjeta de baterías.
   document.getElementById('cardDiagrama').style.display = '';
   document.getElementById('tituloDiagrama').textContent = esAvion() ? 'Diagrama del avión' : 'Diagrama del dron';
@@ -644,6 +660,39 @@ function pintarVencer(){
       ${VER_TODO[t] && !ZONA && items.length > LIM ? `<button class="btn secundario peq pv-mas" type="button" onclick="VER_TODO['${t}']=false;pintarVencer()">Ver menos</button>` : ''}`;
   }).join('<div style="height:14px"></div>');
   document.getElementById('vencer').innerHTML = html || '<div class="empty" style="padding:30px">Sin ítems de seguimiento en esta zona.</div>';
+}
+
+// ===================== Piezas on-condition =====================
+// Lo pidió ingeniería en la encuesta: una pieza sin plazo del fabricante no se «salta», se revisa
+// con un criterio de rechazo escrito (fisura > 2 mm, holgura, corrosión…).
+const PUEDE_CRITERIO = ['admin','superadmin','certificador'].includes(ROL);
+function pintarOnCondition(){
+  const lista = E.componentes.filter(c=>c.sin_plazo);
+  const card = document.getElementById('cardOnCondition');
+  card.style.display = lista.length ? '' : 'none';
+  if(!lista.length) return;
+  const sin = lista.filter(c=>!c.criterio_rechazo).length;
+  document.getElementById('ocConteo').textContent = `· ${lista.length}${sin ? ` · ${sin} sin criterio escrito` : ''}`;
+  document.getElementById('onCondition').innerHTML = `<div class="lista">${lista.map(c=>`<div class="item">
+    <span class="punto ${c.criterio_rechazo ? 'ok' : 'proximo'}"></span>
+    <div class="cuerpo"><b>${escapar(c.nombre)}</b><div class="mut">${escapar(c.modulo)}</div>
+      <div style="font-size:12.5px;margin-top:3px">${c.criterio_rechazo ? `Rechazar si: ${escapar(c.criterio_rechazo)}` : '<span class="mut">Falta el criterio de rechazo.</span>'}</div></div>
+    ${PUEDE_CRITERIO ? `<div class="der"><button class="btn secundario peq" type="button" data-crit="${c.pieza_id}">${c.criterio_rechazo ? 'Editar' : 'Escribir criterio'}</button></div>` : ''}
+  </div>`).join('')}</div>`;
+  document.querySelectorAll('[data-crit]').forEach(b=>b.onclick = ()=>{
+    const c = lista.find(x=>x.pieza_id == b.dataset.crit);
+    const v = ventana({titulo: 'Criterio de rechazo', subtitulo: escapar(c.nombre), ancho: 'angosta',
+      cuerpo: `<div class="campo"><label>Se rechaza (y se cambia) cuando…</label>
+        <textarea id="txtCrit" rows="4" placeholder="Ej.: fisura visible, holgura en el eje, deformación > 2 mm o pérdida de material en el borde">${escapar(c.criterio_rechazo||'')}</textarea></div>
+        <p class="pista" style="margin:8px 0 0">Aplica a esta pieza en todos los activos del modelo. Vacío lo borra.</p>`,
+      pie: `<div class="der"><button class="btn secundario" data-no type="button">Cancelar</button><button class="btn" data-si type="button">Guardar</button></div>`});
+    v.$('[data-no]').onclick = ()=>v.cerrar();
+    v.$('[data-si]').onclick = async ()=>{
+      try{ await api(`/api/criterios-rechazo/${c.pieza_id}`, {method:'PUT', body:{texto: v.$('#txtCrit').value}});
+           toast('Criterio guardado'); await v.cerrar(); cargar(); }
+      catch(e){ toast(e.message); }
+    };
+  });
 }
 
 // ===================== Piezas con serial =====================

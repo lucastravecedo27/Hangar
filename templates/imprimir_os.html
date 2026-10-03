@@ -50,6 +50,12 @@
     <div class="d"><div class="l">Notificada</div><div class="v">{{ orden.enviado_en or 'No enviada' }}</div></div>
     <div class="d"><div class="l">Programada por</div><div class="v">{{ orden.creado_por or '—' }}</div></div>
   </div>
+  {% if orden.condiciones_tiempo or orden.zonas_evitar or orden.mapa_url %}
+  <div style="margin-top:14px;background:var(--bg);border-radius:10px;padding:12px 14px;font-size:13px">
+    {% if orden.condiciones_tiempo %}<div><b>Condiciones del tiempo:</b> {{ orden.condiciones_tiempo }}</div>{% endif %}
+    {% if orden.zonas_evitar %}<div><b>Zonas a evitar:</b> {{ orden.zonas_evitar }}</div>{% endif %}
+    {% if orden.mapa_url %}<div><b>Mapa del lote:</b> {{ orden.mapa_url }}</div>{% endif %}</div>
+  {% endif %}
   {% if orden.observaciones %}
   <div style="margin-top:14px;background:var(--bg);border-radius:10px;padding:12px 14px;font-size:13px">
     <b>Observaciones adicionales:</b> {{ orden.observaciones }}</div>
