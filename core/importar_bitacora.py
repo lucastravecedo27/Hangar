@@ -2,9 +2,10 @@
 
     python manage.py importar-bitacora "ruta/Datos de Bitacora.xlsx"
 
-Sólo se importa una vez por serial (queda anotado en `meta`); en el servidor la app nunca lo
-hace sola al arrancar.
+Se puede correr con cada bitácora nueva: sólo añade las filas que aún no están en la base
+(emparejadas por fecha, horas de vuelo y finca). En el servidor la app nunca lo hace sola al arrancar.
 """
+from collections import Counter
 from datetime import date, datetime
 
 from core import db as core_db
@@ -45,16 +46,13 @@ def importar(con, ruta):
     ruta = Path(ruta)
     if not ruta.exists():
         raise FileNotFoundError(ruta)
-    pendientes = [s for s in SERIALES if not core_db.meta_get(con, f"bitacora_importada:{s}")]
-    if not pendientes:
-        return 0
     importadas = 0
 
     import openpyxl
     ws = openpyxl.load_workbook(ruta, data_only=True, read_only=True).worksheets[0]
     filas = list(ws.iter_rows(values_only=True))[1:]
 
-    for serial in pendientes:
+    for serial in SERIALES:
         clave = serial.replace(" ", "").upper()
         propias = [f for f in filas if _texto(f[COL["serial"]]) and f[COL["serial"]].replace(" ", "").upper() == clave]
         propias.sort(key=lambda f: (f[COL["fecha"]] or datetime.min))
@@ -64,13 +62,24 @@ def importar(con, ruta):
             con, serial, MODELO_POR_SERIAL[serial], serial,
             "Importado desde la bitácora de operaciones."
         )
+        primera_vez = not core_db.meta_get(con, f"bitacora_importada:{serial}")
+        # Lo que ya está en la base no se vuelve a meter: cada fila del Excel consume una operación
+        # igual (fecha, horas, finca) y sólo las que sobran son nuevas.
+        ya = Counter((str(o["fecha"])[:10], round(o["horas_vuelo"] or 0, 2), o["lote"]) for o in con.execute(
+            "SELECT fecha, horas_vuelo, lote FROM operaciones WHERE equipo_id=?", (equipo_id,)).fetchall())
+        nuevas = 0
 
         for f in propias:
             fecha = _fecha(f[COL["fecha"]])
             horas = _num(f[COL["horas_vuelo"]])
             if not fecha or horas is None:
                 continue
+            clave_op = (fecha, round(horas, 2), _texto(f[COL["finca"]]))
+            if ya[clave_op] > 0:
+                ya[clave_op] -= 1
+                continue
             importadas += 1
+            nuevas += 1
             core_db.registrar_operacion(
                 con, equipo_id, horas, fecha=fecha, commit=False,
                 tiempo_total=_num(f[COL["tiempo_total"]]),
@@ -91,7 +100,9 @@ def importar(con, ruta):
                 altura=_num(f[COL["altura"]]),
                 recalcular=False,
             )
-        if propias:
+        if not nuevas:
+            continue
+        if propias and primera_vez:
             primera = _fecha(propias[0][COL["fecha"]])
             if primera:
                 con.execute("UPDATE equipos SET fecha_alta=? WHERE id=?", (primera, equipo_id))
