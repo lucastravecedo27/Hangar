@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{{ 'Crea tu usuario' if primera_vez else 'Entrar' }} · {{ nombre_app|default('Hangar') }}</title>
+<title>{{ 'Cambia tu contraseña' if cambiar_clave else ('Crea tu usuario' if primera_vez else 'Entrar') }} · {{ nombre_app|default('Hangar') }}</title>
 <link rel="icon" type="image/svg+xml" href="{{ url_for('favicon') }}">
 <meta name="theme-color" content="#ffffff">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -79,11 +79,25 @@
   </div>
 
   <div class="panel">
+    {% if cambiar_clave %}
+    <h1>Cambia tu contraseña</h1>
+    <div class="hola">Hola, {{ usuario }}. Entraste con una contraseña temporal: elige una nueva para continuar.</div>
+    {% else %}
     <h1>{{ 'Crea el superadministrador' if primera_vez else 'Bienvenido' }}</h1>
     <div class="hola">{{ 'Es la primera vez que se abre Hangar. Este usuario administra la plataforma: desde su panel creará las empresas cliente y sus usuarios.' if primera_vez else 'Mantenimiento y operación de drones y avionetas agrícolas.' }}</div>
+    {% endif %}
     <form method="post" autocomplete="on">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-      {% if primera_vez %}
+      {% if cambiar_clave %}
+        <input type="hidden" name="usuario" value="{{ usuario }}" autocomplete="username">
+        <label>Contraseña temporal</label>
+        <input name="actual" type="password" required autofocus autocomplete="current-password">
+        <label>Nueva contraseña</label>
+        <input name="nueva" type="password" required minlength="8" autocomplete="new-password">
+        <label>Repite la nueva contraseña</label>
+        <input name="nueva2" type="password" required minlength="8" autocomplete="new-password">
+        <button>Guardar y continuar</button>
+      {% elif primera_vez %}
         <label>Usuario</label>
         <input name="usuario" required autofocus autocomplete="username" placeholder="p. ej. ernesto">
         <label>Contraseña</label>
@@ -101,7 +115,7 @@
       {% if error %}<div class="error">{{ error }}</div>{% endif %}
     </form>
   </div>
-  <div class="pie">Acceso restringido al personal autorizado</div>
+  <div class="pie">{% if cambiar_clave %}<a href="{{ url_for('salir') }}" style="color:inherit">Salir</a> · {% endif %}Acceso restringido al personal autorizado</div>
 </div>
 </body>
 </html>

@@ -1,0 +1,21 @@
+# Hangar en un servidor COMPARTIDO (el de Jaraba: Rocky Linux con Nginx + Certbot en el host,
+# que ya ocupa los puertos 80/443 para CERNIVA, AGRAP, n8n…).
+#
+# Se suma a docker-compose.yml sin editarlo. En el servidor no hace falta escribir -f dos veces:
+# el .env de /opt/hangar lleva
+#     COMPOSE_FILE=docker-compose.yml:docker-compose.servidor.yml
+# y cualquier `docker compose …` (y ./desplegar.sh) usa los dos archivos solo.
+#
+# Diferencias con el VPS dedicado:
+#   · Caddy NO arranca (queda en un perfil que nunca se activa): el HTTPS lo pone el Nginx del host.
+#   · La app se publica SÓLO en 127.0.0.1:HANGAR_PUERTO (8082 por defecto); desde Internet no se ve.
+#     El Nginx del host reenvía el dominio ahí (plantilla en servidor/nginx-hangar.conf).
+#   · Un solo proxy delante de la app (el Nginx del host): PROXIES_DELANTE=1 sigue siendo correcto.
+
+services:
+  app:
+    ports:
+      - "127.0.0.1:${HANGAR_PUERTO:-8082}:8000"
+
+  caddy:
+    profiles: ["vps-dedicado"]

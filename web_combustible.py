@@ -198,11 +198,13 @@ def registrar(app, get_con, login_requerido, admin_requerido):
         c["cargas"] = [{k: v for k, v in x.items() if k != "vuelos"} for x in reversed(cargas)
                        if (not desde or x["fecha"] >= desde) and (not hasta or x["fecha"] <= hasta)]
         c["por_mes"] = [dict(f) for f in con.execute(
-            """SELECT substr(o.fecha,1,7) mes, SUM(o.horas_vuelo) horas, SUM(o.combustible_gal) reportado,
-                      (SELECT SUM(galones) FROM combustible_movimientos m WHERE m.equipo_id=o.equipo_id
-                         AND m.tipo='tanqueo' AND substr(m.fecha,1,7)=substr(o.fecha,1,7)) tanqueado
-               FROM operaciones o WHERE o.equipo_id=? AND o.fecha>=COALESCE(?, '0000') AND o.fecha<=COALESCE(?, '9999')
-               GROUP BY substr(o.fecha,1,7) ORDER BY 1""", (id_, desde, hasta)).fetchall()]
+            """SELECT x.mes, x.horas, x.reportado,
+                      (SELECT SUM(galones) FROM combustible_movimientos m WHERE m.equipo_id=?
+                         AND m.tipo='tanqueo' AND substr(m.fecha,1,7)=x.mes) tanqueado
+               FROM (SELECT substr(o.fecha,1,7) mes, SUM(o.horas_vuelo) horas, SUM(o.combustible_gal) reportado
+                     FROM operaciones o WHERE o.equipo_id=? AND o.fecha>=COALESCE(?, '0000') AND o.fecha<=COALESCE(?, '9999')
+                     GROUP BY substr(o.fecha,1,7)) x
+               ORDER BY 1""", (id_, id_, desde, hasta)).fetchall()]
         return jsonify(c)
 
     # ------------------------------------------------------------------ normativa RAC

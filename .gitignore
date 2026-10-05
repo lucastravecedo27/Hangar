@@ -6,3 +6,4 @@ datos/
 *.log
 .DS_Store
 .pytest_cache/
+respaldos/

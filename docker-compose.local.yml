@@ -4,16 +4,18 @@
 # Los datos quedan en el volumen "pgdata_local" (sobreviven a reinicios).
 services:
   db:
-    image: postgres:16-alpine
+    build: ./db
     environment:
-      POSTGRES_DB: hangar
-      POSTGRES_USER: hangar
-      POSTGRES_PASSWORD: hangar
+      # Igual que en producción: la app entra con el rol "hangar" (sin superusuario) para que
+      # la Row-Level Security se aplique también al probar.
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      HANGAR_DB_PASSWORD: hangar
       TZ: America/Bogota
     volumes:
       - pgdata_local:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U hangar -d hangar"]
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U hangar -d hangar"]
       interval: 5s
       timeout: 5s
       retries: 20

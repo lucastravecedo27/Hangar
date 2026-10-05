@@ -278,6 +278,23 @@ def _permitido(rol, metodo, ruta):
     return False
 
 
+# Lo único accesible con una contraseña temporal: cambiarla, salir y los estáticos de la pantalla.
+_LIBRE_CON_CLAVE_TEMPORAL = ("/cambiar-clave", "/salir", "/login", "/favicon", "/static_shell/",
+                             "/api/cuenta/password", "/api/log-js")
+
+
+@app.before_request
+def exigir_cambio_de_clave():
+    """Con contraseña temporal (p. ej. el superadministrador sembrado) no se usa nada más hasta
+    cambiarla. Va aquí y no en `login_requerido` para cubrir también las rutas que validan la
+    sesión por su cuenta, como /admin."""
+    if not session.get("debe_cambiar") or request.path.startswith(_LIBRE_CON_CLAVE_TEMPORAL):
+        return None
+    if request.path.startswith("/api/"):
+        return jsonify({"error": "debes cambiar tu contraseña antes de continuar"}), 403
+    return redirect(url_for("cambiar_clave"))
+
+
 @app.before_request
 def proteger_peticion():
     if request.method not in ("POST", "PUT", "PATCH", "DELETE"):
@@ -379,6 +396,8 @@ def _abrir_sesion(con, fila, empresa_id=None):
     session["rol"] = fila["rol"] or "admin"
     session["usuario_id"] = fila["id"]
     session["tema"] = (fila["tema"] if "tema" in fila.keys() else None) or "sistema"
+    if "debe_cambiar_password" in fila.keys() and fila["debe_cambiar_password"]:
+        session["debe_cambiar"] = True
     # El superadministrador arranca en el panel de clientes, sin empresa activa.
     if fila["rol"] == core_db.ROL_SUPERADMIN and not empresa_id:
         _fijar_empresa_sesion(con, None)
@@ -405,7 +424,10 @@ def _fijar_empresa_sesion(con, empresa_id):
 @app.route("/login", methods=["GET", "POST"])
 def login():
     con = get_con()
-    primera_vez = not core_db.hay_usuarios(con)
+    # El formulario de «crear superadministrador» sólo existe en desarrollo y en el escritorio
+    # (127.0.0.1). En el servidor el superadministrador lo crea `manage.py init` al arrancar el
+    # contenedor, así nadie puede adelantarse a reclamar la plataforma con sólo abrir la página.
+    primera_vez = (config.ENTORNO == "desarrollo" or config.ES_ESCRITORIO) and not core_db.hay_usuarios(con)
 
     if request.method == "POST":
         usuario = (request.form.get("usuario") or "").strip()[:64]
@@ -439,6 +461,8 @@ def login():
                                        error="La empresa está desactivada. Contacta al administrador del servicio."), 403
             _abrir_sesion(con, fila)
             app.logger.info("login ok usuario=%s ip=%s", usuario, _ip())
+            if session.get("debe_cambiar"):
+                return redirect(url_for("cambiar_clave"))
             return redirect(url_for("admin_panel" if _es_superadmin() else "resumen"))
         _anotar_fallo(con, usuario)
         app.logger.warning("login fallido usuario=%s ip=%s", usuario, _ip())
@@ -451,6 +475,36 @@ def login():
 def salir():
     session.clear()
     return redirect(url_for("login"))
+
+
+@app.route("/cambiar-clave", methods=["GET", "POST"])
+def cambiar_clave():
+    """Cambio obligatorio de la contraseña temporal (p. ej. la del superadministrador sembrado)."""
+    if not session.get("usuario"):
+        return redirect(url_for("login"))
+    if not session.get("debe_cambiar"):
+        return redirect(url_for("admin_panel" if _es_superadmin() else "resumen"))
+    error = None
+    if request.method == "POST":
+        con = get_con()
+        actual = request.form.get("actual") or ""
+        nueva, nueva2 = request.form.get("nueva") or "", request.form.get("nueva2") or ""
+        fila = core_db.usuario_por_nombre(con, session["usuario"])
+        if not fila or not check_password_hash(fila["password_hash"], actual):
+            error = "La contraseña actual no es correcta."
+        elif len(nueva) < config.LONGITUD_MINIMA_PASSWORD:
+            error = f"La nueva contraseña necesita al menos {config.LONGITUD_MINIMA_PASSWORD} caracteres."
+        elif nueva != nueva2:
+            error = "Las contraseñas nuevas no coinciden."
+        elif nueva == actual:
+            error = "La nueva contraseña debe ser distinta de la temporal."
+        else:
+            core_db.cambiar_password(con, session["usuario"], nueva)
+            session.pop("debe_cambiar", None)
+            app.logger.info("contraseña temporal cambiada usuario=%s", session["usuario"])
+            return redirect(url_for("admin_panel" if _es_superadmin() else "resumen"))
+    return render_template("login.html", primera_vez=False, cambiar_clave=True,
+                           usuario=session["usuario"], error=error), (400 if error else 200)
 
 
 # ---------- Pantallas ----------
@@ -1323,6 +1377,7 @@ def api_cuenta_password():
     if len(nueva) < config.LONGITUD_MINIMA_PASSWORD:
         return jsonify({"error": f"la nueva contraseña necesita al menos {config.LONGITUD_MINIMA_PASSWORD} caracteres"}), 400
     core_db.cambiar_password(con, session["usuario"], nueva)
+    session.pop("debe_cambiar", None)
     return jsonify({"ok": True})
 
 

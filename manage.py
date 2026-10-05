@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Tareas de administración de Hangar (se corren en el servidor, no desde la interfaz).
 
-  python manage.py init                                  crea/actualiza el esquema y siembra los catálogos
+  python manage.py init                                  crea/actualiza el esquema y siembra los catálogos;
+                                                         si no hay cuentas crea el superadministrador
   python manage.py empresas                              lista las empresas
   python manage.py crear-empresa "Nombre"                crea una empresa (devuelve su id)
   python manage.py migrar-sqlite datos/app.db [EMPRESA]  copia los datos de la base SQLite antigua a esa
@@ -17,6 +18,7 @@
 """
 import getpass
 import sqlite3
+import os
 import sys
 
 from core import db as core_db
@@ -25,6 +27,22 @@ from core import db as core_db
 def cmd_init():
     core_db.inicializar()
     print("Esquema listo y catálogos sembrados.")
+    if core_db.ES_SQLITE:
+        return          # en el escritorio el primer usuario se crea desde la pantalla de acceso
+    con = core_db.conectar(core_db.TODAS)
+    try:
+        creado = core_db.sembrar_superadmin(con, os.environ.get("SUPERADMIN_USUARIO") or "superadmin",
+                                            os.environ.get("SUPERADMIN_PASSWORD") or None)
+    finally:
+        con.close()
+    if creado:
+        usuario, clave = creado
+        print("=" * 64)
+        print(f"  Superadministrador creado.  Usuario: {usuario}")
+        if not os.environ.get("SUPERADMIN_PASSWORD"):
+            print(f"  Contraseña temporal: {clave}")
+        print("  Al entrar por primera vez la app pedirá cambiar la contraseña.")
+        print("=" * 64)
 
 
 def _resolver_empresa(con, ref, crear=True):

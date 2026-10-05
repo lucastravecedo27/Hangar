@@ -17,6 +17,7 @@ from pathlib import Path
 
 from werkzeug.security import generate_password_hash as _generar_hash
 import hashlib
+import secrets
 
 
 def generate_password_hash(password):
@@ -417,14 +418,16 @@ COLUMNAS_FLOTA = {
     # Orden de servicio: lo que el piloto pidió saber antes de salir (encuesta de validación).
     "ordenes_servicio": {"condiciones_tiempo": "TEXT", "zonas_evitar": "TEXT", "mapa_url": "TEXT",
                          "mapa_archivo": "TEXT"},
-    "usuarios": {"tema": "TEXT"},
-    # Cómo cobra el cliente: 'ha' (valor_ha es por hectárea) u 'hora' (valor_ha es por hora de vuelo).
-    "tarifas": {"unidad": "TEXT NOT NULL DEFAULT 'ha'"},
+    "usuarios": {"tema": "TEXT",
+                 # 1 = al entrar, la app obliga a cambiar la contraseña antes de nada.
+                 "debe_cambiar_password": "INTEGER NOT NULL DEFAULT 0"},
 }
 
 # Columnas nuevas de tablas que crea ESQUEMA_FLOTA: se añaden DESPUÉS de crearlo (en una base
 # nueva la tabla aún no existe cuando se aplican las de COLUMNAS_FLOTA).
 COLUMNAS_POSTERIORES = {
+    # Cómo cobra el cliente: 'ha' (valor_ha es por hectárea) u 'hora' (valor_ha es por hora de vuelo).
+    "tarifas": {"unidad": "TEXT NOT NULL DEFAULT 'ha'"},
     # Producto de la empresa o del cliente: el inventario y el costo sólo cuentan lo propio; lo del
     # cliente se registra para la trazabilidad de la aplicación (RAC 137.71).
     "bodega_items": {"propietario": "TEXT NOT NULL DEFAULT 'empresa'", "cliente": "TEXT"},
@@ -974,6 +977,10 @@ def inicializar(sembrar=True):
     if ES_SQLITE:
         _inicializar_sqlite(con)
     else:
+        # Varios procesos pueden arrancar a la vez (workers de Gunicorn en desarrollo, réplicas en
+        # el servidor): el candado de sesión hace que migren de a uno; se suelta al cerrar `con`.
+        con.execute("SELECT pg_advisory_lock(4826001)")
+        con.commit()
         _inicializar_postgres(con)
     if sembrar:
         for clave in core_modelos.claves():
@@ -1351,9 +1358,22 @@ def empresa(con, empresa_id):
 
 
 def cambiar_password(con, usuario, password):
-    con.execute("UPDATE usuarios SET password_hash=? WHERE usuario=?",
+    con.execute("UPDATE usuarios SET password_hash=?, debe_cambiar_password=0 WHERE usuario=?",
                 (generate_password_hash(password), usuario))
     con.commit()
+
+
+def sembrar_superadmin(con, usuario, password=None):
+    """Primer despliegue: si la base no tiene ninguna cuenta, crea el superadministrador con una
+    contraseña temporal que hay que cambiar al entrar. Sin `password` se genera una aleatoria.
+    Devuelve (usuario, contraseña) si lo creó, o None si ya había cuentas (no toca nada)."""
+    if hay_usuarios(con):
+        return None
+    password = password or secrets.token_urlsafe(12)
+    crear_usuario(con, usuario, password, rol=ROL_SUPERADMIN, empresa_id=None)
+    con.execute("UPDATE usuarios SET debe_cambiar_password=1 WHERE usuario=?", (usuario,))
+    con.commit()
+    return usuario, password
 
 
 def usuario_por_nombre(con, usuario):

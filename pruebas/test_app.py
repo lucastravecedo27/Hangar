@@ -531,3 +531,65 @@ def test_primer_arranque_crea_solo_superadmin():
         if not core_conexion.ES_SQLITE:
             con.execute("SELECT setval(pg_get_serial_sequence('usuarios','id'), COALESCE((SELECT MAX(id) FROM usuarios),0)+1, false)")
         con.commit(); con.close()
+
+
+def _sin_usuarios(con):
+    """Vacía `usuarios` y devuelve una función que los restaura (para pruebas de primer arranque)."""
+    respaldo = [dict(u) for u in con.execute("SELECT * FROM usuarios").fetchall()]
+    con.execute("DELETE FROM usuarios"); con.commit()
+
+    def restaurar():
+        con.execute("DELETE FROM usuarios")
+        cols = list(respaldo[0].keys()) if respaldo else []
+        for u in respaldo:
+            con.execute(f"INSERT INTO usuarios({', '.join(cols)}) VALUES({', '.join('?'*len(cols))})", tuple(u[k] for k in cols))
+        con.execute("SELECT setval(pg_get_serial_sequence('usuarios','id'), COALESCE((SELECT MAX(id) FROM usuarios),0)+1, false)")
+        con.commit(); con.close()
+    return restaurar
+
+
+@SOLO_SERVIDOR
+def test_seeder_crea_superadmin_que_debe_cambiar_la_clave():
+    import app as m
+    con = core_db.conectar(core_db.TODAS)
+    restaurar = _sin_usuarios(con)
+    try:
+        usuario, temporal = core_db.sembrar_superadmin(con, "super_semilla")
+        assert core_db.sembrar_superadmin(con, "otro") is None          # con cuentas no hace nada
+        u = core_db.usuario_por_nombre(con, "super_semilla")
+        assert u["rol"] == "superadmin" and u["empresa_id"] is None and u["debe_cambiar_password"] == 1
+
+        c = m.app.test_client()
+        tok = re.search(r'name="csrf_token" value="([^"]+)"', c.get("/login").data.decode()).group(1)
+        r = c.post("/login", data={"usuario": usuario, "password": temporal, "csrf_token": tok})
+        assert r.status_code == 302 and r.headers["Location"].endswith("/cambiar-clave")
+        # Mientras no la cambie, todo lo demás lo devuelve a cambiar la clave.
+        assert c.get("/admin").headers["Location"].endswith("/cambiar-clave")
+        assert c.get("/api/empresas").status_code == 403
+        html = c.get("/cambiar-clave").data.decode()
+        tok = re.search(r'name="csrf_token" value="([^"]+)"', html).group(1)
+        r = c.post("/cambiar-clave", data={"actual": temporal, "nueva": temporal, "nueva2": temporal, "csrf_token": tok})
+        assert r.status_code == 400                                     # no vale repetir la temporal
+        r = c.post("/cambiar-clave", data={"actual": temporal, "nueva": "nueva-clave-77", "nueva2": "nueva-clave-77", "csrf_token": tok})
+        assert r.status_code == 302 and r.headers["Location"].endswith("/admin")
+        assert c.get("/admin").status_code == 200
+        assert core_db.usuario_por_nombre(con, usuario)["debe_cambiar_password"] == 0
+    finally:
+        restaurar()
+
+
+@SOLO_SERVIDOR
+def test_en_produccion_no_se_ofrece_crear_superadmin_por_la_web(monkeypatch):
+    import app as m
+    monkeypatch.setattr(m.config, "ENTORNO", "produccion")
+    con = core_db.conectar(core_db.TODAS)
+    restaurar = _sin_usuarios(con)
+    try:
+        c = m.app.test_client()
+        html = c.get("/login").data.decode()
+        assert 'name="password2"' not in html
+        tok = re.search(r'name="csrf_token" value="([^"]+)"', html).group(1)
+        r = c.post("/login", data={"usuario": "intruso", "password": "clave-larga-9", "password2": "clave-larga-9", "csrf_token": tok})
+        assert r.status_code == 401 and not core_db.hay_usuarios(con)
+    finally:
+        restaurar()

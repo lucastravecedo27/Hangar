@@ -1,0 +1,44 @@
+# En cada push y PR: construye la imagen y levanta el stack de PRODUCCIÓN completo
+# (Postgres + app + Caddy + respaldos + tareas) para comprobar que arranca, responde por HTTPS
+# y que el respaldo funciona. Si esto falla, no despliegues.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  stack-produccion:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      COMPOSE_PROJECT_NAME: hangar-ci
+      COMPOSE_ENV_FILES: servidor/env.produccion-local
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Construir imagen
+        run: docker compose build app
+
+      - name: Levantar stack de producción
+        run: docker compose up -d --wait --wait-timeout 180
+
+      - name: La app responde por HTTPS (Caddy)
+        run: |
+          curl -skf https://localhost/login -o /dev/null
+          curl -skf https://localhost/static_shell/app.js -o /dev/null
+          curl -sI http://localhost/login | grep -q "308"
+
+      - name: Respaldo manual
+        run: |
+          docker compose exec -T respaldos sh /servidor/respaldos.sh ahora
+          ls -la respaldos/
+
+      - name: Logs si algo falló
+        if: failure()
+        run: docker compose logs --tail=200
+
+      - name: Apagar
+        if: always()
+        run: docker compose down -v

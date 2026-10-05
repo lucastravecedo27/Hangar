@@ -1,52 +1,123 @@
-# Hangar en producción: app (Gunicorn) + PostgreSQL + Caddy (HTTPS automático con Let's Encrypt).
-#   1) cp .env.example .env  y rellena DOMINIO, SECRET_KEY y POSTGRES_PASSWORD
+# Hangar en producción: app (Gunicorn) + PostgreSQL + Caddy (HTTPS automático con Let's Encrypt)
+# + respaldos diarios + tarea nocturna de la flota.
+#   1) cp .env.example .env  y rellena DOMINIO, CORREO_TLS, SECRET_KEY, POSTGRES_PASSWORD y HANGAR_DB_PASSWORD
+#      (servidor/preparar-vps.sh lo hace solo, con claves aleatorias)
 #   2) docker compose up -d --build
-#   3) abre https://TU_DOMINIO  -> la primera vez pide crear el usuario administrador
+#   3) docker compose logs app | grep -A3 Superadministrador   -> usuario y contraseña temporal
+#   4) abre https://TU_DOMINIO, entra con esos datos y la app te pide cambiar la contraseña
+
+# Logs de Docker con tope (por defecto crecen sin límite y acaban llenando el disco del VPS).
+x-logs: &logs
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "5"
+
+x-entorno-app: &entorno-app
+  DATABASE_URL: postgresql://hangar:${HANGAR_DB_PASSWORD:?define HANGAR_DB_PASSWORD en .env}@db:5432/hangar
+  SECRET_KEY: ${SECRET_KEY:?define SECRET_KEY en .env}
+  HANGAR_ENTORNO: produccion
+  # Superadministrador que crea `manage.py init` en el primer arranque (contraseña temporal).
+  SUPERADMIN_USUARIO: ${SUPERADMIN_USUARIO:-superadmin}
+  SUPERADMIN_PASSWORD: ${SUPERADMIN_PASSWORD:-}
+  COOKIE_SEGURA: "1"
+  PROXIES_DELANTE: "1"
+  TZ: ${TZ:-America/Bogota}
+  WEB_CONCURRENCY: ${WEB_CONCURRENCY:-3}
+  SMTP_SERVIDOR: ${SMTP_SERVIDOR:-}
+  SMTP_PUERTO: ${SMTP_PUERTO:-}
+  SMTP_USUARIO: ${SMTP_USUARIO:-}
+  SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+  SMTP_REMITENTE: ${SMTP_REMITENTE:-}
+  SMTP_NOMBRE: ${SMTP_NOMBRE:-}
+  SMTP_SEGURIDAD: ${SMTP_SEGURIDAD:-}
+
 services:
   db:
-    image: postgres:16-alpine
+    build: ./db                # postgres:16-alpine + db/01-rol-app.sh
+    image: hangar-db:16
     restart: unless-stopped
+    <<: *logs
     environment:
-      POSTGRES_DB: hangar
-      POSTGRES_USER: hangar
+      # Superusuario sólo para administrar y respaldar. La app usa el rol "hangar", sin
+      # privilegios, que crea db/01-rol-app.sh: así PostgreSQL aplica Row-Level Security.
+      POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?define POSTGRES_PASSWORD en .env}
+      HANGAR_DB_PASSWORD: ${HANGAR_DB_PASSWORD:?define HANGAR_DB_PASSWORD en .env}
       TZ: ${TZ:-America/Bogota}
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U hangar -d hangar"]
+      # Por TCP: durante la creación inicial Postgres sólo escucha por socket y daría "listo" antes de tiempo.
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U hangar -d hangar"]
       interval: 10s
       timeout: 5s
       retries: 10
 
   app:
     build: .
+    image: hangar:${HANGAR_VERSION:-latest}
     restart: unless-stopped
+    init: true
+    <<: *logs
+    depends_on:
+      db:
+        condition: service_healthy
+    environment: *entorno-app
+    volumes:
+      - appdatos:/app/datos        # fotos y PDF subidos (datos/archivos/<empresa>/)
+    expose:
+      - "8000"
+
+  # Foto diaria del estado de la flota (disponibilidad histórica), a las 23:50 hora local.
+  # Reemplaza la línea de crontab del servidor: viaja con el proyecto.
+  tareas:
+    image: hangar:${HANGAR_VERSION:-latest}
+    restart: unless-stopped
+    init: true
+    <<: *logs
+    depends_on:
+      app:
+        condition: service_healthy
+    environment: *entorno-app
+    entrypoint: ["sh", "/app/servidor/tareas.sh"]
+    healthcheck:               # no sirve web: en vez del chequeo HTTP de la imagen, que llegue a la base
+      test: ["CMD", "python", "-c", "from core import db; db.conectar(None).close()"]
+      interval: 5m
+      timeout: 10s
+      start_period: 30s
+      start_interval: 5s
+    volumes:
+      - ./servidor:/app/servidor:ro
+
+  # Copia de seguridad diaria (03:00): base de datos + archivos subidos, en ./respaldos del
+  # servidor. Guarda 14 días. Para sacar copias fuera del VPS ver DESPLIEGUE.md.
+  respaldos:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    <<: *logs
     depends_on:
       db:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql://hangar:${POSTGRES_PASSWORD}@db:5432/hangar
-      SECRET_KEY: ${SECRET_KEY:?define SECRET_KEY en .env}
-      HANGAR_ENTORNO: produccion
-      COOKIE_SEGURA: "1"
-      PROXIES_DELANTE: "1"
+      PGHOST: db
+      # Superusuario: pg_dump debe ver las filas de TODAS las empresas (la RLS no aplica).
+      PGUSER: postgres
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: hangar
       TZ: ${TZ:-America/Bogota}
-      SMTP_SERVIDOR: ${SMTP_SERVIDOR:-}
-      SMTP_PUERTO: ${SMTP_PUERTO:-}
-      SMTP_USUARIO: ${SMTP_USUARIO:-}
-      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
-      SMTP_REMITENTE: ${SMTP_REMITENTE:-}
-      SMTP_NOMBRE: ${SMTP_NOMBRE:-}
-      SMTP_SEGURIDAD: ${SMTP_SEGURIDAD:-}
+      DIAS_RESPALDO: ${DIAS_RESPALDO:-14}
+    entrypoint: ["sh", "/servidor/respaldos.sh", "programar"]
     volumes:
-      - appdatos:/app/datos
-    expose:
-      - "8000"
+      - ./servidor:/servidor:ro
+      - ./respaldos:/respaldos
+      - appdatos:/appdatos:ro
 
   caddy:
     image: caddy:2-alpine
     restart: unless-stopped
+    <<: *logs
     depends_on:
       - app
     ports:
@@ -55,7 +126,8 @@ services:
       - "443:443/udp"
     environment:
       DOMINIO: ${DOMINIO:?define DOMINIO en .env}
-      CORREO_TLS: ${CORREO_TLS:-}
+      # Obligatorio: con el correo vacío Caddy no arranca (y Let's Encrypt avisa ahí si algo falla).
+      CORREO_TLS: ${CORREO_TLS:?define CORREO_TLS en .env}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - ./static_shell:/srv/static_shell:ro
